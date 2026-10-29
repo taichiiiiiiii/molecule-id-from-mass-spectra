@@ -1,0 +1,27 @@
+# Envela CASMI 2026 - Molecule ID From Mass Spectra
+# Kaggle competition worktree configuration.
+
+[competition]
+slug = "envela-CASMI26-molecule-id-mass-spectra"
+name = "Envela CASMI 2026 - Molecule ID From Mass Spectra"
+url = "https://www.kaggle.com/competitions/envela-CASMI26-molecule-id-mass-spectra"
+
+[deadlines]
+start = "2026-09-14"
+entry = "2026-12-07"
+final = "2026-12-14"
+
+[prizes]
+total = "$50,000"
+first = "$16,000"
+second = "$12,000"
+third = "$9,000"
+
+[task]
+metric = "MRR@25"
+description = "Predict 2D chemical structures (SMILES) from LC-MS/MS spectra"
+
+[data]
+train_file = "train.parquet"
+test_file = "test.parquet"
+sample_submission = "sample_submission.csv"

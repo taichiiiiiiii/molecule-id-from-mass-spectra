@@ -1,0 +1,33 @@
+# Kaggle competition data
+data/
+outputs/
+results/
+*.parquet
+*.pq
+*.h5
+*.zarr
+
+# Model checkpoints / artifacts
+checkpoints/
+*.ckpt
+*.safetensors
+wandb/
+mlruns/
+
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+env/
+
+# Jupyter / logs
+.ipynb_checkpoints/
+*.log
+.nfs*
+
+# Secrets / local config
+!.gitignore
+secrets.toml
+.env
