@@ -35,3 +35,11 @@ kaggle competitions topics show envela-CASMI26-molecule-id-mass-spectra <topic-i
 | [overview.md](overview.md) | Overview / Evaluation / Timeline / Prizes / Code Requirements | 2026-10-30 |
 | [data.md](data.md) | data-description | 2026-10-30 |
 | [rules.md](rules.md) | rules / participation | 2026-10-30 |
+| [sota.md](sota.md) | 他参加者の手法・現状（外部リンク参照） | 2026-10-30 |
+| [validation.md](validation.md) | 検証ベンチマーク・リーク対策 | 2026-10-30 |
+
+## 補足
+
+本リポジトリの構成は、既存Kaggle競수협（RSNA, biohub 等）および本コンペ参加者
+（gnshx, nghianguyen7171, dmitriigluzdov ほか）の成果物に倣っています。
+詳細は `sota.md` を参照してください。

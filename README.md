@@ -84,6 +84,9 @@
 - RSNA: `/Users/taichi/コンペティション/Kaggle/RSNA-Knee-Abnormality-Detection/`
 - biohub: `/Users/taichi/コンペティション/Kaggle/biohub-cell-tracking/`
 
+- 他参加者の手法: `docs/competition/sota.md`（gnshx / nghianguyen7171 / dmitriigluzdov ほか）
+- 検証手法: `docs/competition/validation.md`（identity-disjoint folds / パネルベンチ）
+
 ---
 
-*このリポジトリは他のKaggleコンペ（RSNA, biohub 等）の構成に倣って整理しています。*
+*このリポジトリは他のKaggleコンペの構成と、他参加者の成果物に倣って整理しています。*
