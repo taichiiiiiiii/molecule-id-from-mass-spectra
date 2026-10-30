@@ -1,18 +1,27 @@
-# Kaggle competition data
+# データ (download.sh で data/ に取得する)
 data/
 outputs/
 results/
+work/
 *.parquet
 *.pq
 *.h5
 *.zarr
 
-# Model checkpoints / artifacts
+# 提出物
+submission.csv
+
+# Kaggle 認証 (config はローカル)
+kaggle.json
+.kaggle/
+
+# モデル重み / アーティファクト
 checkpoints/
 *.ckpt
 *.safetensors
 wandb/
 mlruns/
+*.safetensors
 
 # Python
 __pycache__/
@@ -24,10 +33,10 @@ env/
 
 # Jupyter / logs
 .ipynb_checkpoints/
+*.ipynb
 *.log
 .nfs*
 
-# Secrets / local config
-!.gitignore
-secrets.toml
+# ローカル設定
 .env
+secrets.toml
