@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Envela CASMI 2026 - Molecule ID From Mass Spectra
+Enveda CASMI 2026 - Molecule ID From Mass Spectra
 MRR@25 評価と提出形式チェック（docs/competition/overview.md の仕様どおり）
 
 - 分子ごとに最大 25 候補。正解が最初に出た順位 r で 1/r、25 位以内に無ければ 0。
