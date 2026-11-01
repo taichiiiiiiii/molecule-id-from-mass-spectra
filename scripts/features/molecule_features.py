@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Envela CASMI 2026 - Molecule ID From Mass Spectra
+Enveda CASMI 2026 - Molecule ID From Mass Spectra
 分子構造特徴量抽出スクリプト (SMILES/CANONICAL SMILES ベース)
 """
 import json

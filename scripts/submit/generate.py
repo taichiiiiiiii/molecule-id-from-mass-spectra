@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Envela CASMI 2026 - Molecule ID From Mass Spectra
+Enveda CASMI 2026 - Molecule ID From Mass Spectra
 提出物（submission.csv）生成スクリプト
 """
 import json

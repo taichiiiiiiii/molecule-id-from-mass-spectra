@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Envela CASMI 2026 - Molecule ID From Mass Spectra
+Enveda CASMI 2026 - Molecule ID From Mass Spectra
 ベースラインモデル学習スクリプト
 """
 import json
