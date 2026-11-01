@@ -1,10 +1,10 @@
-# Envela CASMI 2026 - Molecule ID From Mass Spectra
+# Enveda CASMI 2026 - Molecule ID From Mass Spectra
 # 改善ループ設定ファイル
 
 [competition]
-slug = "envela-CASMI26-molecule-id-mass-spectra"
-name = "Envela CASMI 2026 - Molecule ID From Mass Spectra"
-url = "https://www.kaggle.com/competitions/envela-CASMI26-molecule-id-mass-spectra"
+slug = "enveda-CASMI26-molecule-id-mass-spectra"
+name = "Enveda CASMI 2026 - Molecule ID From Mass Spectra"
+url = "https://www.kaggle.com/competitions/enveda-CASMI26-molecule-id-mass-spectra"
 entry_deadline = "2026-12-07"
 final_deadline = "2026-12-14"
 

@@ -1,9 +1,9 @@
 # Molecule ID From Mass Spectra（Kaggle）
 
-**Envela CASMI 2026 — Molecule ID From Mass Spectra**（コードコンペ）
+**Enveda CASMI 2026 — Molecule ID From Mass Spectra**（コードコンペ）
 
-- URL: https://www.kaggle.com/competitions/envela-CASMI26-molecule-id-mass-spectra
-- スラッグ: `envela-CASMI26-molecule-id-mass-spectra`
+- URL: https://www.kaggle.com/competitions/enveda-CASMI26-molecule-id-mass-spectra
+- スラッグ: `enveda-CASMI26-molecule-id-mass-spectra`
 - 開催期間: 2026-09-14 〜
 - エントリー締切: 2026-12-07 23:59 UTC
 - 最終提出締切: 2026-12-14 23:59 UTC

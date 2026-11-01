@@ -1,6 +1,6 @@
 # データ（要約）
 
-出典: https://www.kaggle.com/competitions/envela-CASMI26-molecule-id-mass-spectra/data
+出典: https://www.kaggle.com/competitions/enveda-CASMI26-molecule-id-mass-spectra/data
 最終更新: 2026-10-30
 
 ## 規模
@@ -32,7 +32,7 @@
 取得コマンド（参加登録後）:
 
 ```bash
-kaggle competitions download -c envela-CASMI26-molecule-id-mass-spectra -p data
+kaggle competitions download -c enveda-CASMI26-molecule-id-mass-spectra -p data
 ```
 
 引数 `-p` はダウンロード先ディレクトリ。`data/` に `train.parquet`,

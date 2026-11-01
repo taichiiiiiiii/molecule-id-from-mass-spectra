@@ -29,7 +29,7 @@
 ```python
 import pandas as pd
 F = '/kaggle/input/casmi26-identity-disjoint-validation-folds'
-train = pd.read_parquet('/kaggle/input/competitions/envela-CASMI26-molecule-id-mass-spectra/train.parquet',
+train = pd.read_parquet('/kaggle/input/competitions/enveda-CASMI26-molecule-id-mass-spectra/train.parquet',
                         columns=['inchikey14','normalized_smiles','precursor_mz','adduct'])
 folds = pd.read_parquet(f'{F}/structures.parquet').drop_duplicates('inchikey14').set_index('inchikey14')
 train['fold'] = folds.fold_identity.reindex(train.inchikey14).values  # fold_scaffold も可
