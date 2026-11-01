@@ -1,13 +1,13 @@
-# Envela CASMI 2026 — Molecule ID From Mass Spectra（概要）
+# Enveda CASMI 2026 — Molecule ID From Mass Spectra（概要）
 
-出典: https://www.kaggle.com/competitions/envela-CASMI26-molecule-id-mass-spectra/overview
+出典: https://www.kaggle.com/competitions/enveda-CASMI26-molecule-id-mass-spectra/overview
 最終更新: 2026-10-30
 
 ## 基本情報
 
 | 項目 | 内容 |
 |---|---|
-| Slug | `envela-CASMI26-molecule-id-mass-spectra` |
+| Slug | `enveda-CASMI26-molecule-id-mass-spectra` |
 | 開催種別 | Featured Code Competition |
 | タイトル | Enveda CASMI 2026 - Molecule ID From Mass Spectra |
 | 参加チーム数 | 4,270 teams |

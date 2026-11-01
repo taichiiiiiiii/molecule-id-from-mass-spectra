@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Envela CASMI 2026 - Molecule ID From Mass Spectra
+Enveda CASMI 2026 - Molecule ID From Mass Spectra
 改善ループ マスターピアニスト
 
 改善ループ全体を実行するエントリーポイント:
@@ -66,7 +66,7 @@ def step1_data_acquisition():
         ["kaggle", "competitions", "list", "--page-size", "200"],
         capture_output=True, text=True,
     )
-    if "envela" not in result.stdout.lower():
+    if "enveda" not in result.stdout.lower():
         logger.error("Kaggle CLI ウォレットにコンペ未登録です")
         logger.error("Kaggleウェブサイトで登録してください")
         logger.error("再ログイン: kaggle auth login --force")
@@ -139,7 +139,7 @@ def step6_kaggle_submit():
 
     run_command([
         "kaggle", "competitions", "submit",
-        "-c", "envela-CASMI26-molecule-id-mass-spectra",
+        "-c", "enveda-CASMI26-molecule-id-mass-spectra",
         "-f", "submission.csv",
         "-m", "改善ループ v1.0"
     ])

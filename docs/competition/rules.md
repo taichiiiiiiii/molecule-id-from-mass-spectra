@@ -1,6 +1,6 @@
 # 参加・提出ルール（要約）
 
-出典: https://www.kaggle.com/competitions/envela-CASMI26-molecule-id-mass-spectra/rules
+出典: https://www.kaggle.com/competitions/enveda-CASMI26-molecule-id-mass-spectra/rules
 最終更新: 2026-10-30
 
 ## 提出形式（必須条件）
