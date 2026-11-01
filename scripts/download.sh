@@ -24,7 +24,7 @@ fi
 
 mkdir -p "$OUT"
 for f in "${FILES[@]}"; do
-  if [[ -s "$OUT/$f" ]]; then
+  if [[ -s "$OUT/$f" && ! -e "$OUT/$f.kaggle-partial" ]]; then
     echo "==> $f は取得済み"
     continue
   fi
