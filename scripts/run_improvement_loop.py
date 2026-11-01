@@ -113,8 +113,9 @@ def step4_validation():
     logger.info("=" * 60)
 
     run_command(["python", "scripts/validate/mrr25.py",
-                 "--y_true", "data/train_targets.parquet",
-                 "--y_pred", "outputs/test_predictions.parquet",
+                 # 検証 fold の正解と予測（形式は mrr25.py の docstring を参照）
+                 "--truth", "outputs/valid_truth.csv",
+                 "--pred", "outputs/valid_submission.csv",
                  "--output", "results/validation.json"])
 
 
