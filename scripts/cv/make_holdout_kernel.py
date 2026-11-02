@@ -75,6 +75,11 @@ FROZEN_PATCHES = [
      "    assert comp in {f'/kaggle/input/{slug}', f'/kaggle/input/competitions/{slug}'} "
      "or comp == os.path.realpath(os.environ.get('CASMI_COMP', '-'))"),
 ]
+# PubChem チャネルの分子ごとの FPNet ロジット z と中性質量を保存する（ローカルで別の候補源を採点するため）
+LOGITS_PATCH = ("    del bank; torch.cuda.empty_cache()",
+                "    np.savez_compressed('/kaggle/working/pc_logits.npz', **{m: z for m, _, z in tasks}, "
+                "__targets__=np.array([[m, t] for m, t, _ in tasks], dtype=object))\n"
+                "    del bank; torch.cuda.empty_cache()")
 UNHIDE_PATCH = ("open('/kaggle/working/probe_core2.py', 'w').write(CORE + V17_PATCH)",
                 "open('/kaggle/working/probe_core2.py', 'w').write(CORE + V17_PATCH + " + repr(UNHIDE) + ")")
 
@@ -115,6 +120,14 @@ def main() -> None:
     assert hashlib.sha256(raw).hexdigest() == old_sha
     fr = json.loads(raw)
     patches = FROZEN_PATCHES + ([UNHIDE_PATCH] if args.unhide_pool else [])
+    if args.unhide_pool:  # RUNNER は文字列として埋め込まれているので、repr した形で置換する
+        cells = [c for c in fr["cells"] if c["cell_type"] == "code" and "RUNNER = " in src_of(c)]
+        assert len(cells) == 1
+        src = src_of(cells[0])
+        esc = lambda t: t.replace("\\", "\\\\").replace("'", "\\'").replace("\n", "\\n")  # 単一引用符の文字列リテラル内の表記
+        old, new = esc(LOGITS_PATCH[0]), esc(LOGITS_PATCH[1])
+        assert src.count(old) == 1, "RUNNER の del bank 行が見つからない"
+        cells[0]["source"] = src.replace(old, new, 1)
     for a, b in patches:
         cells = [c for c in fr["cells"] if c["cell_type"] == "code" and a in src_of(c)]
         assert len(cells) == 1 and src_of(cells[0]).count(a) == 1, a
