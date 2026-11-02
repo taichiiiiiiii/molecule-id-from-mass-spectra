@@ -23,6 +23,8 @@ import pyarrow.compute as pc
 import pyarrow.parquet as pq
 
 FOLDS = "data/ext/panel/casmi26-identity-disjoint-validation-folds/structures.parquet"
+# 低分解能の装置（三連四重極・イオントラップ）と装置不明のスペクトルはテストに使わない
+LOW_RES = r"(?i)qqq|qq/|-qq$|ion trap|^qit$|linear ion|^nan$|^n/a$|^$"
 TEST_COLS = ["molecule_id", "spectrum_id", "ms2_mzs", "ms2_normalized_intensities", "base_peak_intensity", "adduct",
              "ionization_mode", "instrument_type", "precursor_mz", "collision_energy_orig", "collision_energy_ev",
              "collision_energy_orig_units"]
@@ -42,6 +44,10 @@ def main() -> None:
     ap.add_argument("--np", action="store_true", help="天然物（LOTUS/NPAtlas）の構造から選び、全ライブラリのスペクトルをテストに使う")
     ap.add_argument("--np-table", default="data/ext/npk/descriptors.parquet")
     ap.add_argument("--write-train", action="store_true")
+    ap.add_argument("--adducts", default="[M+H]+,[M-H]-,[M+CH2O2-H]-,[M+Na]+,[M+NH4]+,[M+K]+,[M+Cl]-",
+                    help="テストに使う付加体（隠れテストの見本にある 7 種）。パイプラインは他の付加体を扱えない")
+    ap.add_argument("--max-ppm", type=float, default=10.0,
+                    help="プリカーサーの質量誤差の上限。低分解能の装置のスペクトルを除く（隠れテストは timsTOF）")
     args = ap.parse_args()
     rng = np.random.default_rng(args.seed)
     out = Path(args.out)
@@ -55,7 +61,8 @@ def main() -> None:
     else:
         pool = st[base & (st.n_enveda_spectra > 0)]
     pool = pool.drop_duplicates("identity_group")
-    pick = pool.sample(n=args.n, random_state=args.seed).copy()
+    # 使える付加体のスペクトルを持つ構造だけにするため、多めに引いて後で絞る
+    pick = pool.sample(n=min(len(pool), args.n * 3), random_state=args.seed).copy()
     # 参照ありの状況は作らない（Enveda 構造で他ライブラリに参照があるのは 1.2% だけで、
     # --np のときはテストに他ライブラリのスペクトルを使うため）
     pick["scenario"] = "no_reference"
@@ -68,12 +75,26 @@ def main() -> None:
         for k in (r.inchikey14, r.scorer_key):
             keys_all[k] = g_scn[r.identity_group]
 
-    meta = pq.read_table(args.train, columns=["inchikey14", "ingest_lib"]).to_pandas()
+    meta = pq.read_table(args.train, columns=["inchikey14", "ingest_lib", "adduct", "precursor_error_ppm",
+                                              "instrument_type"]).to_pandas()
+    low_res = meta.instrument_type.fillna("").str.contains(LOW_RES, regex=True)
+    ok_adduct = (meta.adduct.isin(args.adducts.split(",")) & (meta.precursor_error_ppm.abs() <= args.max_ppm)
+                 & ~low_res)
+    k2grp = {}
+    for r in grp.itertuples():
+        k2grp[r.inchikey14] = k2grp[r.scorer_key] = r.identity_group
+    usable = set(meta.inchikey14[ok_adduct & meta.inchikey14.isin(keys_all)
+                                 & (True if args.np else meta.ingest_lib.str.startswith("enveda"))].map(k2grp))
+    pick = pick[pick.identity_group.isin(usable)].head(args.n)
+    assert len(pick) == args.n, len(pick)
+    groups = set(pick.identity_group)
+    grp = grp[grp.identity_group.isin(groups)]
+    keys_all = {k: v for k, v in keys_all.items() if k2grp[k] in groups}
     scn = meta.inchikey14.map(keys_all)
     is_enveda = meta.ingest_lib.str.startswith("enveda")
     drop = scn.notna()
     (out / "drop_keys.txt").write_text("\n".join(sorted(keys_all)) + "\n")
-    test_cand = scn.notna() & (True if args.np else is_enveda)
+    test_cand = scn.notna() & ok_adduct & (True if args.np else is_enveda)
     print(f"holdout structures {len(pick)} ({pick.scenario.value_counts().to_dict()}), "
           f"train rows dropped {int(drop.sum()):,} of {len(meta):,}")
 
