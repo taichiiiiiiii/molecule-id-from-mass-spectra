@@ -48,12 +48,25 @@ for _b in _pf.iter_batches(batch_size=131072):
     _w.write_table(_t)
 _w.close(); del _pf, _w
 os.environ['CASMI_COMP'] = str(HOLD)
+os.environ['CASMI_POOL_UNHIDE'] = str(SRCD / 'drop_keys.txt')
 os.environ['CASMI_TEST_PATH'] = str(HOLD / 'test.parquet')
 os.environ['CASMI_SAMPLE_PATH'] = str(HOLD / 'sample_submission.csv')
 print(f'HOLDOUT {HOLDOUT}: train {_n_in:,} -> {_n_out:,} rows (dropped {_n_in - _n_out:,}) from {COMP_TRAIN} '
       f'in {time.time() - _t0:.0f}s; COMP={HOLD}')
 assert _n_in - _n_out > 0
 '''
+
+UNHIDE = r"""
+# ---- holdout patch: PubChem チャネルがホールドアウトの構造を「プールに無い」扱いにする（クラス 2 の測定用） ----
+_init_worker_v17 = init_worker
+def init_worker(pc_dir, bits_path, pool_meta_path, code_dir=None):
+    _init_worker_v17(pc_dir, bits_path, pool_meta_path, code_dir)
+    _p = os.environ.get('CASMI_POOL_UNHIDE')
+    if _p and os.path.isfile(_p):
+        _keys = set(open(_p).read().split())
+        _before = len(_W['pool_keys']); _W['pool_keys'] -= _keys
+        print('UNHIDE pool keys', _before, '->', len(_W['pool_keys']), flush=True)
+"""
 
 FROZEN_PATCHES = [
     ("COMP = os.path.dirname(find('test.parquet'))",
@@ -62,6 +75,8 @@ FROZEN_PATCHES = [
      "    assert comp in {f'/kaggle/input/{slug}', f'/kaggle/input/competitions/{slug}'} "
      "or comp == os.path.realpath(os.environ.get('CASMI_COMP', '-'))"),
 ]
+UNHIDE_PATCH = ("open('/kaggle/working/probe_core2.py', 'w').write(CORE + V17_PATCH)",
+                "open('/kaggle/working/probe_core2.py', 'w').write(CORE + V17_PATCH + " + repr(UNHIDE) + ")")
 
 
 def src_of(c) -> str:
@@ -73,10 +88,13 @@ def main() -> None:
     ap.add_argument("--dataset", required=True)
     ap.add_argument("--holdout", required=True, help="データセット内のサブディレクトリ名")
     ap.add_argument("--slug", default=None)
+    ap.add_argument("--unhide-pool", action="store_true",
+                    help="PubChem チャネルで drop_keys をプール外扱いにする（クラス 2 の測定）")
     args = ap.parse_args()
 
-    slug = args.slug or "casmi26-holdout-eval-" + args.holdout.replace("_", "-")
-    dst = Path("kernels") / f"holdout_{args.holdout}"
+    suffix = "-pcopen" if args.unhide_pool else ""
+    slug = args.slug or "casmi26-holdout-eval-" + args.holdout.replace("_", "-") + suffix
+    dst = Path("kernels") / f"holdout_{args.holdout}{suffix.replace('-', '_')}"
     nb = json.loads((SRC / "notebook.ipynb").read_text())
     code = [c for c in nb["cells"] if c["cell_type"] == "code"]
 
@@ -96,7 +114,8 @@ def main() -> None:
     raw = base64.b64decode(b64)
     assert hashlib.sha256(raw).hexdigest() == old_sha
     fr = json.loads(raw)
-    for a, b in FROZEN_PATCHES:
+    patches = FROZEN_PATCHES + ([UNHIDE_PATCH] if args.unhide_pool else [])
+    for a, b in patches:
         cells = [c for c in fr["cells"] if c["cell_type"] == "code" and a in src_of(c)]
         assert len(cells) == 1 and src_of(cells[0]).count(a) == 1, a
         cells[0]["source"] = src_of(cells[0]).replace(a, b, 1)
