@@ -40,3 +40,6 @@ env/
 # ローカル設定
 .env
 secrets.toml
+
+# Kaggle に push するノートブックは追跡する
+!kernels/**/*.ipynb
