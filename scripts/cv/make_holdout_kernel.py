@@ -49,6 +49,7 @@ for _b in _pf.iter_batches(batch_size=131072):
 _w.close(); del _pf, _w
 os.environ['CASMI_COMP'] = str(HOLD)
 os.environ['CASMI_POOL_UNHIDE'] = str(SRCD / 'drop_keys.txt')
+os.environ['CASMI_POOL_HIDE'] = str(SRCD / 'drop_keys.txt')
 os.environ['CASMI_TEST_PATH'] = str(HOLD / 'test.parquet')
 os.environ['CASMI_SAMPLE_PATH'] = str(HOLD / 'sample_submission.csv')
 print(f'HOLDOUT {HOLDOUT}: train {_n_in:,} -> {_n_out:,} rows (dropped {_n_in - _n_out:,}) from {COMP_TRAIN} '
@@ -80,6 +81,43 @@ LOGITS_PATCH = ("    del bank; torch.cuda.empty_cache()",
                 "    np.savez_compressed('/kaggle/working/pc_logits.npz', **{m: z for m, _, z in tasks}, "
                 "__targets__=np.array([[m, t] for m, t, _ in tasks], dtype=object))\n"
                 "    del bank; torch.cuda.empty_cache()")
+# ---- クラス 3（新規構造）の模擬: 正解を全候補プールから見えなくする ----
+# Engine 1（casmi.pool.Pool.window）はメインプロセスで import されるので、その場で差し替える（fork した worker にも伝わる）
+HIDE_POOL_MAIN = ("from casmi.pool import Pool\n",
+"""from casmi.pool import Pool
+import casmi.pool as _cp
+_HIDE_PATH = os.environ.get('CASMI_POOL_HIDE')
+if _HIDE_PATH and os.path.isfile(_HIDE_PATH):
+    _HIDE_KEYS = set(open(_HIDE_PATH).read().split())
+    _orig_window = _cp.Pool.window
+    def _hidden_window(self, target, ppm):
+        idx = _orig_window(self, target, ppm)
+        if not hasattr(self, '_hide_mask'):
+            self._hide_mask = np.fromiter((k in _HIDE_KEYS for k in self.key), dtype=bool, count=len(self.key))
+            print('HIDE pool rows', int(self._hide_mask.sum()), flush=True)
+        return idx[~self._hide_mask[idx]]
+    _cp.Pool.window = _hidden_window
+    Pool.window = _hidden_window
+""")
+# Engine 2（casmi_engine.py、サブプロセス）は ENG_FILES の文字列として埋め込まれている
+HIDE_POOL_ENG = ("""def pool_window(t, ppm):
+    a = np.searchsorted(POOL["mass"], t * (1 - ppm / 1e6), "left")
+    b = np.searchsorted(POOL["mass"], t * (1 + ppm / 1e6), "right")
+    return np.arange(a, b)
+""", """def pool_window(t, ppm):
+    a = np.searchsorted(POOL["mass"], t * (1 - ppm / 1e6), "left")
+    b = np.searchsorted(POOL["mass"], t * (1 + ppm / 1e6), "right")
+    idx = np.arange(a, b)
+    _h = os.environ.get("CASMI_POOL_HIDE")
+    if _h and os.path.isfile(_h):
+        if "hide" not in POOL:
+            _keys = set(open(_h).read().split())
+            POOL["hide"] = np.fromiter((k in _keys for k in POOL["keys"]), dtype=bool, count=len(POOL["keys"]))
+            log(f"HIDE engine2 pool rows {int(POOL['hide'].sum())}")
+        idx = idx[~POOL["hide"][idx]]
+    return idx
+""")
+
 UNHIDE_PATCH = ("open('/kaggle/working/probe_core2.py', 'w').write(CORE + V17_PATCH)",
                 "open('/kaggle/working/probe_core2.py', 'w').write(CORE + V17_PATCH + " + repr(UNHIDE) + ")")
 
@@ -93,11 +131,13 @@ def main() -> None:
     ap.add_argument("--dataset", required=True)
     ap.add_argument("--holdout", required=True, help="データセット内のサブディレクトリ名")
     ap.add_argument("--slug", default=None)
+    ap.add_argument("--hide-pool", action="store_true",
+                    help="クラス 3 の模擬: 正解を Engine 1/2 の候補プールから見えなくする（PubChem チャネルは元のまま）")
     ap.add_argument("--unhide-pool", action="store_true",
                     help="PubChem チャネルで drop_keys をプール外扱いにする（クラス 2 の測定）")
     args = ap.parse_args()
 
-    suffix = "-pcopen" if args.unhide_pool else ""
+    suffix = ("-pcopen" if args.unhide_pool else "") + ("-class3" if args.hide_pool else "")
     slug = args.slug or "casmi26-holdout-eval-" + args.holdout.replace("_", "-") + suffix
     dst = Path("kernels") / f"holdout_{args.holdout}{suffix.replace('-', '_')}"
     nb = json.loads((SRC / "notebook.ipynb").read_text())
@@ -127,6 +167,15 @@ def main() -> None:
         esc = lambda t: t.replace("\\", "\\\\").replace("'", "\\'").replace("\n", "\\n")  # 単一引用符の文字列リテラル内の表記
         old, new = esc(LOGITS_PATCH[0]), esc(LOGITS_PATCH[1])
         assert src.count(old) == 1, "RUNNER の del bank 行が見つからない"
+        cells[0]["source"] = src.replace(old, new, 1)
+    if args.hide_pool:
+        patches = patches + [HIDE_POOL_MAIN]
+        cells = [c for c in fr["cells"] if c["cell_type"] == "code" and "ENG_FILES = {" in src_of(c)]
+        assert len(cells) == 1
+        src = src_of(cells[0])
+        esc = lambda t: t.replace("\\", "\\\\").replace("'", "\\'").replace("\n", "\\n")
+        old, new = esc(HIDE_POOL_ENG[0]), esc(HIDE_POOL_ENG[1])
+        assert src.count(old) == 1, "casmi_engine.py の pool_window が見つからない"
         cells[0]["source"] = src.replace(old, new, 1)
     for a, b in patches:
         cells = [c for c in fr["cells"] if c["cell_type"] == "code" and a in src_of(c)]
