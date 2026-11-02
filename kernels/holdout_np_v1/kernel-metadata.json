@@ -1,6 +1,6 @@
 {
-  "id": "taichiiiii/casmi26-holdout-eval",
-  "title": "casmi26 holdout eval",
+  "id": "taichiiiii/casmi26-holdout-eval-np-v1",
+  "title": "casmi26 holdout eval np v1",
   "code_file": "notebook.ipynb",
   "language": "python",
   "kernel_type": "notebook",
@@ -13,7 +13,7 @@
     "chemistry"
   ],
   "dataset_sources": [
-    "taichiiiii/casmi26-holdout-v1",
+    "taichiiiii/casmi26-holdout-np-v1",
     "sanpier/casmi-spectrum-model-v1",
     "dmitriigluzdov/casmi26-fold-safe-fpnet",
     "dmitriigluzdov/casmi26-natural-product-knowledge-table",
