@@ -111,12 +111,51 @@ def move_branches(mol, max_branch=40):
     return out
 
 
+def _branches(mol, max_branch=40):
+    """非環単結合で切れる (枝側原子, 核側原子, 枝の原子集合) を列挙。枝は小さい側。"""
+    n = mol.GetNumAtoms()
+    out = []
+    for b in mol.GetBonds():
+        if b.IsInRing() or b.GetBondType() != Chem.BondType.SINGLE:
+            continue
+        i, j = b.GetBeginAtomIdx(), b.GetEndAtomIdx()
+        frags = Chem.FragmentOnBonds(mol, [b.GetIdx()], addDummies=False)
+        parts = Chem.GetMolFrags(frags, asMols=False, sanitizeFrags=False)
+        if len(parts) != 2:
+            continue
+        branch_set = set(parts[0]) if len(parts[0]) <= len(parts[1]) else set(parts[1])
+        if len(branch_set) > max_branch:
+            continue
+        ba, ca = (i, j) if i in branch_set else (j, i)
+        out.append((ba, ca, frozenset(branch_set)))
+    return out
+
+
+def swap_branches(mol):
+    """2 つの枝の付け根を入れ替える（OAc ↔ O-iBu、残基順の入れ替えなど）。枝同士が重ならないものだけ。"""
+    out = []
+    br = _branches(mol)
+    for x in range(len(br)):
+        b1, c1, s1 = br[x]
+        for y in range(x + 1, len(br)):
+            b2, c2, s2 = br[y]
+            if s1 & s2 or c1 in s2 or c2 in s1 or c1 == c2:
+                continue
+            rw = Chem.RWMol(mol)
+            rw.RemoveBond(b1, c1); rw.RemoveBond(b2, c2)
+            rw.AddBond(b1, c2, Chem.BondType.SINGLE); rw.AddBond(b2, c1, Chem.BondType.SINGLE)
+            m = sanitize(rw)
+            if m is not None and len(Chem.GetMolFrags(m)) == 1:
+                out.append(m)
+    return out
+
+
 def expand(smiles: str):
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return {}
     gen = {}
-    for m in shift_double_bonds(mol) + move_branches(mol):
+    for m in shift_double_bonds(mol) + move_branches(mol) + swap_branches(mol):
         k = ik14(m)
         if k and k not in gen:
             gen[k] = Chem.MolToSmiles(m)
