@@ -153,9 +153,14 @@ def one(mid, k14, tsmi, targets, z, pool, mass, bits, args):
                     reached_by = sk
         order = sorted(cand.items(), key=lambda kv: -kv[1][0])
         rank = next((r for r, (k, _) in enumerate(order, 1) if k == k14), 0)
+        # チャネル別の順位（プールだけ / 編集だけ）: 交互に差し込む統合の評価に使う
+        pool_order = [k for k, v in order if v[3] == "pool"]
+        gen_order = [k for k, v in order if v[3] != "pool"]
+        rank_pool = pool_order.index(k14) + 1 if k14 in pool_order else 0
+        rank_gen = gen_order.index(k14) + 1 if k14 in gen_order else 0
         return dict(molecule_id=mid, n_pool=int(len(win)), n_gen=n_gen, reached=reached_by is not None,
-                    rank=int(rank), fz_truth=cand[k14][0] if k14 in cand else None,
-                    fz_top=order[0][1][0] if order else None)
+                    rank=int(rank), rank_pool=int(rank_pool), rank_gen=int(rank_gen),
+                    fz_truth=cand[k14][0] if k14 in cand else None, fz_top=order[0][1][0] if order else None)
 
 
 def main() -> None:
