@@ -123,27 +123,13 @@ def expand(smiles: str):
     return gen
 
 
-def main() -> None:
-    ap = argparse.ArgumentParser()
-    ap.add_argument("--run", required=True)
-    ap.add_argument("--holdout", required=True)
-    ap.add_argument("--seeds", type=int, default=10, help="編集の出発点にする FPNet 上位の数")
-    ap.add_argument("--same-formula-only", action="store_true")
-    args = ap.parse_args()
-    bits = np.load("data/ext/v4g/casmi26-v2-pool/fp_bits.npy")
-    z = np.load(f"outputs/holdout_eval/{args.run}/pc_logits.npz", allow_pickle=True)
-    targets = {m: float(t) for m, t in z["__targets__"]}
-    truth = pd.read_csv(f"outputs/holdouts/{args.holdout}/truth.csv", dtype=str)
-    pool = pd.read_parquet("data/ext/v4g/casmi26-v2-pool/pool_meta.parquet", columns=["key", "smiles", "formula", "mass"]).sort_values("mass").reset_index(drop=True)
-    mass = pool.mass.values
-    rows = []
-    for mid, k14, tsmi in zip(truth.molecule_id, truth.inchikey14, truth.smiles):
-        if mid not in targets:
-            continue
+def one(mid, k14, tsmi, targets, z, pool, mass, bits, args):
+    if True:
         zz = z[mid].astype(np.float32); t = targets[mid]; tol = t * PPM * 1e-6
         a, b = np.searchsorted(mass, t - tol, "left"), np.searchsorted(mass, t + tol, "right")
         win = pool.iloc[a:b]
-        win = win[win.key != k14]  # クラス 3: 正解はどこにも無い
+        if not args.keep_truth:
+            win = win[win.key != k14]  # クラス 3: 正解はどこにも無い
         tform = chem.mol_props(tsmi)[0]
         cand = {}
         for key, smi, form in zip(win.key, win.smiles, win.formula):
@@ -167,20 +153,53 @@ def main() -> None:
                     reached_by = sk
         order = sorted(cand.items(), key=lambda kv: -kv[1][0])
         rank = next((r for r, (k, _) in enumerate(order, 1) if k == k14), 0)
-        rows.append(dict(molecule_id=mid, n_pool=len(win), n_gen=n_gen, reached=reached_by is not None,
-                         rank=rank, fz_truth=cand[k14][0] if k14 in cand else np.nan,
-                         fz_top=order[0][1][0] if order else np.nan))
-        print(f"{mid} pool={len(win)} gen={n_gen} reached={reached_by is not None} rank={rank}", flush=True)
+        return dict(molecule_id=mid, n_pool=int(len(win)), n_gen=n_gen, reached=reached_by is not None,
+                    rank=int(rank), fz_truth=cand[k14][0] if k14 in cand else None,
+                    fz_top=order[0][1][0] if order else None)
+
+
+def main() -> None:
+    ap = argparse.ArgumentParser()
+    ap.add_argument("--run", required=True)
+    ap.add_argument("--holdout", required=True)
+    ap.add_argument("--seeds", type=int, default=10, help="編集の出発点にする FPNet 上位の数")
+    ap.add_argument("--same-formula-only", action="store_true")
+    ap.add_argument("--keep-truth", action="store_true", help="クラス 2 の副作用測定: 正解をプールに残したまま編集候補を足す")
+    args = ap.parse_args()
+    bits = np.load("data/ext/v4g/casmi26-v2-pool/fp_bits.npy")
+    z = np.load(f"outputs/holdout_eval/{args.run}/pc_logits.npz", allow_pickle=True)
+    targets = {m: float(t) for m, t in z["__targets__"]}
+    truth = pd.read_csv(f"outputs/holdouts/{args.holdout}/truth.csv", dtype=str)
+    pool = pd.read_parquet("data/ext/v4g/casmi26-v2-pool/pool_meta.parquet", columns=["key", "smiles", "formula", "mass"]).sort_values("mass").reset_index(drop=True)
+    mass = pool.mass.values
+    tag = f"{args.run}_s{args.seeds}{'_sf' if args.same_formula_only else ''}{'_keep' if args.keep_truth else ''}"
+    Path("results").mkdir(exist_ok=True)
+    part = Path(f"results/analog_edit_reach_{tag}.partial.jsonl")
+    done = {json.loads(l)["molecule_id"] for l in part.read_text().splitlines()} if part.is_file() else set()
+    rows = [json.loads(l) for l in part.read_text().splitlines()] if part.is_file() else []
+    for mid, k14, tsmi in zip(truth.molecule_id, truth.inchikey14, truth.smiles):
+        if mid not in targets or mid in done:
+            continue
+        try:
+            row = one(mid, k14, tsmi, targets, z, pool, mass, bits, args)
+        except Exception as exc:  # 1 分子の失敗で全体を止めない
+            print(f"{mid} ERROR {type(exc).__name__}: {str(exc)[:120]}", flush=True)
+            row = dict(molecule_id=mid, n_pool=-1, n_gen=0, reached=False, rank=0, fz_truth=np.nan, fz_top=np.nan, error=type(exc).__name__)
+        rows.append(row)
+        with part.open("a") as f:
+            f.write(json.dumps(row) + "\n")
+        print(f"{mid} pool={row['n_pool']} gen={row['n_gen']} reached={row['reached']} rank={row['rank']}", flush=True)
     df = pd.DataFrame(rows)
+    summarize(df, args)
+def summarize(df, args):
     rr = np.where((df["rank"] > 0) & (df["rank"] <= K), 1 / df["rank"].clip(lower=1), 0.0)
-    out = dict(run=args.run, seeds=args.seeds, same_formula_only=args.same_formula_only, n=len(df),
+    out = dict(run=args.run, seeds=args.seeds, same_formula_only=args.same_formula_only, keep_truth=args.keep_truth, n=len(df),
                gen_per_molecule_median=int(df.n_gen.median()), reached=round(float(df.reached.mean()), 3),
                in_top25=round(float(((df["rank"] > 0) & (df["rank"] <= K)).mean()), 3),
                top1=round(float((df["rank"] == 1).mean()), 3), class3_mrr25=round(float(rr.mean()), 4),
-               rank_dist=df["rank"].clip(upper=26).value_counts().sort_index().to_dict())
+               rank_dist={int(k): int(v) for k, v in df["rank"].clip(upper=26).value_counts().sort_index().items()})
     print(json.dumps(out, indent=2))
-    tag = f"{args.run}_s{args.seeds}{'_sf' if args.same_formula_only else ''}"
-    Path("results").mkdir(exist_ok=True)
+    tag = f"{args.run}_s{args.seeds}{'_sf' if args.same_formula_only else ''}{'_keep' if args.keep_truth else ''}"
     Path(f"results/analog_edit_reach_{tag}.json").write_text(json.dumps(out, indent=2))
     df.to_csv(f"results/analog_edit_reach_{tag}.csv", index=False)
 
