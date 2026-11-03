@@ -68,11 +68,11 @@ def main() -> None:
             fp = fp_sel(smi, bits)
             if fp is None:
                 continue
-            cand.append((float(fp @ zz), key, form, fp))
+            cand.append((float(fp @ zz), key, form, fp, smi))
         cand.sort(key=lambda x: -x[0])
         # (a) クラス 2: 正解（プール内の同じキー）の順位、同キー重複は 1 つに
         seen, rank, r = set(), 0, 0
-        for fz, key, _, _ in cand:
+        for fz, key, _, _, _ in cand:
             if key in seen:
                 continue
             seen.add(key); r += 1
@@ -80,11 +80,26 @@ def main() -> None:
                 rank = r; break
         # (b) クラス 3: 正解キーを外した上位 K の近さ
         top = [c for c in cand if c[1] != k14][:K]
-        best_tani = max((tanimoto(tfp, c[3]) for c in top), default=0.0) if tfp is not None else np.nan
+        tanis = [tanimoto(tfp, c[3]) for c in top] if tfp is not None else []
+        best_tani = max(tanis, default=0.0)
+        best_smi = top[int(np.argmax(tanis))][4] if tanis else None
         same_formula = sum(c[2] == tform for c in top)
+        sf = [(ta, c[4]) for ta, c in zip(tanis, top) if c[2] == tform]
+        sf_best_tani, sf_best_smi = max(sf, default=(np.nan, None))
+        # 同一組成式の最良類似体と Murcko 骨格が一致するか（置換基の付け替えで届く目安）
+        same_scaffold = None
+        if sf_best_smi is not None:
+            from rdkit import Chem
+            from rdkit.Chem.Scaffolds import MurckoScaffold
+            try:
+                same_scaffold = MurckoScaffold.MurckoScaffoldSmiles(tsmi) == MurckoScaffold.MurckoScaffoldSmiles(sf_best_smi)
+            except Exception:
+                same_scaffold = None
         rows.append(dict(molecule_id=mid, n_window=len(win), rank_class2=rank, fz_truth=fz_t,
                          fz_top=cand[0][0] if cand else np.nan, best_tanimoto_top25=best_tani,
-                         same_formula_top25=same_formula, truth_in_pool=bool((win.key == k14).any())))
+                         same_formula_top25=same_formula, truth_in_pool=bool((win.key == k14).any()),
+                         best_analog_smiles=best_smi, sf_best_tanimoto=sf_best_tani, sf_best_smiles=sf_best_smi,
+                         sf_same_scaffold=same_scaffold, truth_smiles=tsmi))
     df = pd.DataFrame(rows)
     rr = np.where(df.rank_class2 > 0, 1 / df.rank_class2.clip(lower=1), 0.0)
     out = dict(run=args.run, n=len(df), window_median=int(df.n_window.median()),
@@ -94,7 +109,9 @@ def main() -> None:
                class3_proxy=dict(best_tanimoto_median=round(float(df.best_tanimoto_top25.median()), 3),
                                  best_tanimoto_ge_0_7=round(float((df.best_tanimoto_top25 >= 0.7).mean()), 3),
                                  best_tanimoto_ge_0_85=round(float((df.best_tanimoto_top25 >= 0.85).mean()), 3),
-                                 same_formula_in_top25=round(float((df.same_formula_top25 > 0).mean()), 3)))
+                                 same_formula_in_top25=round(float((df.same_formula_top25 > 0).mean()), 3),
+                                 sf_best_tanimoto_ge_0_85=round(float((df.sf_best_tanimoto >= 0.85).mean()), 3),
+                                 sf_same_scaffold=round(float(df.sf_same_scaffold.fillna(False).astype(bool).mean()), 3)))
     print(json.dumps(out, indent=2))
     Path("results").mkdir(exist_ok=True)
     Path(f"results/local_pc_score_{args.run}.json").write_text(json.dumps(out, indent=2))
