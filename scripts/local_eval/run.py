@@ -6,7 +6,9 @@
   1. candidates : 候補プール（pool_meta）の ±PPM 窓
   2. score      : fold-0 FPNet ロジット z で fp[bits] @ z（ホールドアウト分子を学習で見ていないモデル）
   3. prior      : 上位 TOPN を z 標準化 + POOLPOP_MU * (log1p 物質数 + log1p PubMed)（0.479 版 v19 と同じ定数）
-  4. output     : InChIKey14 で重複除去した上位 25 → submission 形式 → MRR@25
+  4. frag       : 上位 TOPN の同一組成式グループを MetFrag-lite 断片説明率で並べ替え（0.479 版 v7c と同じ:
+                  gl_fuse.rerank_multi、λ=0.5、学習なしなのでリーク無し）
+  5. output     : InChIKey14 で重複除去した上位 25 → submission 形式 → MRR@25
 
     python scripts/local_eval/run.py --holdout np_v2
     python scripts/local_eval/run.py --holdout enveda_v1 --stages score      # 文献 prior 無し
@@ -32,6 +34,7 @@ sys.path.insert(0, str(ROOT / "scripts/validate"))
 PPM = 10.0          # 0.479 版の PubChem チャネルと同じ
 TOPN = 60           # 0.479 版の base リスト長
 POOLPOP_MU = 0.15   # 0.479 版 v19
+FRAG_LAM = 0.5      # 0.479 版 v7c（frag_gap の λ）
 K = 25
 
 
@@ -108,6 +111,36 @@ def dedup(rows, pool: Pool, n: int):
     return out
 
 
+# ---------------------------------------------------------------- 段 4: 断片説明率（v7c と同じ並べ替え）
+def _load(name, path):
+    import importlib.util
+    spec = importlib.util.spec_from_file_location(name, path)
+    mod = importlib.util.module_from_spec(spec); spec.loader.exec_module(mod)
+    return mod
+
+
+def query_spectra(holdout: str) -> dict:
+    te = pd.read_parquet(ROOT / f"data/holdouts/{holdout}/test.parquet")
+    out = {}
+    for mid, g in te.groupby("molecule_id", sort=False):
+        out[str(mid)] = [dict(mz=np.asarray(r.ms2_mzs, np.float64), it=np.asarray(r.ms2_normalized_intensities, np.float64),
+                              adduct=r.adduct, prec=float(r.precursor_mz), mode=1 if r.ionization_mode == "positive" else -1)
+                         for r in g.itertuples()][:16]
+    return out
+
+
+def frag_rerank(rows, pool: Pool, spectra, frag, fuse, cache, formula_of, topn: int = TOPN, lam: float = FRAG_LAM):
+    head = dedup(rows, pool, topn)
+    if len(head) < 2 or not spectra:
+        return head
+    smis = [pool.smiles[i] for _, i in head]
+    sc = frag.score_molecule(spectra, smis, cache=cache)
+    order = fuse.rerank_multi(smis, [pool.key[i] for _, i in head], [r[0] for r in head],
+                              [formula_of[i] for _, i in head], [{s: v for s, v in zip(smis, sc) if v is not None}],
+                              [lam], top_n=len(head))
+    return [head[o] for o in order]
+
+
 # ---------------------------------------------------------------- 実行
 def run(holdout: str, stages: list[str], logits_run: str | None = None) -> dict:
     from mrr25 import calculate_mrr25, read_truth
@@ -118,6 +151,14 @@ def run(holdout: str, stages: list[str], logits_run: str | None = None) -> dict:
     pool = load_pool()
     fpc = FPCache(np.load(ROOT / "data/ext/v4g/casmi26-v2-pool/fp_bits.npy"))
     truth = read_truth(ROOT / f"outputs/holdouts/{holdout}/truth.csv")
+    if "frag" in stages:
+        sys.path.insert(0, str(ROOT / "data/ext/frag"))   # numba のキャッシュは通常の import でないと読めない
+        import frag_rescore as frag
+        frag.warmup()
+        fuse = _load("gl_fuse", ROOT / "data/ext/v4g/casmi26-glacier/gl_fuse.py")
+        meta = pd.read_parquet(ROOT / "data/ext/v4g/casmi26-v2-pool/pool_meta.parquet", columns=["mass", "formula"])
+        formula_of = meta["formula"].values[np.argsort(meta["mass"].values, kind="stable")]
+        spectra, fcache = query_spectra(holdout), {}
     preds = {}
     for mid in truth:
         if mid not in targets:
@@ -126,6 +167,8 @@ def run(holdout: str, stages: list[str], logits_run: str | None = None) -> dict:
         rows = score_window(pool.window(targets[mid]), pool, zf[mid].astype(np.float32), fpc)
         if "prior" in stages:
             rows = rerank_with_prior(rows, pool)
+        if "frag" in stages:
+            rows = frag_rerank(rows, pool, spectra.get(mid, []), frag, fuse, fcache, formula_of)
         preds[mid] = [pool.smiles[i] for _, i in dedup(rows, pool, K)]
     tag = "+".join(stages)
     out_dir = ROOT / f"outputs/local_eval/{holdout}"
@@ -143,7 +186,7 @@ def run(holdout: str, stages: list[str], logits_run: str | None = None) -> dict:
 def main() -> None:
     ap = argparse.ArgumentParser()
     ap.add_argument("--holdout", required=True)
-    ap.add_argument("--stages", default="score,prior", help="カンマ区切り: score[,prior]")
+    ap.add_argument("--stages", default="score,prior", help="カンマ区切り: score[,prior][,frag]")
     ap.add_argument("--logits-run", default=None, help="outputs/holdout_eval/<run>/pc_logits.npz（既定 <holdout>_fold0）")
     args = ap.parse_args()
     print(json.dumps(run(args.holdout, args.stages.split(","), args.logits_run), indent=2))
