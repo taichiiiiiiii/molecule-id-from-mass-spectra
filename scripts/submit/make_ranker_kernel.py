@@ -81,7 +81,9 @@ os.environ["NUMBA_CACHE_DIR"] = "/kaggle/working/numba_cache"
 try:
     import rdkit  # noqa
 except ImportError:
-    whl = sorted(glob.glob("/kaggle/input/**/rdkit*.whl", recursive=True))
+    tag = f"cp{sys.version_info.major}{sys.version_info.minor}"
+    whl = sorted(glob.glob(f"/kaggle/input/**/rdkit*-{tag}-*.whl", recursive=True))
+    print("rdkit wheel", tag, whl[:2])
     subprocess.run([sys.executable, "-m", "pip", "install", "--no-index", "--no-deps", whl[0]], check=True)
 import lightgbm, rdkit, torch
 print("lightgbm", lightgbm.__version__, "rdkit", rdkit.__version__, "torch", torch.__version__)
