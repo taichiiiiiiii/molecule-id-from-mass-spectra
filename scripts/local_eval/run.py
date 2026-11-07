@@ -30,11 +30,13 @@ import pandas as pd
 ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT / "data/ext/v4g/casmi26-v3-models/code"))
 sys.path.insert(0, str(ROOT / "scripts/validate"))
+sys.path.insert(0, str(ROOT / "scripts/local_eval"))
 
 PPM = 10.0          # 0.479 版の PubChem チャネルと同じ
 TOPN = 60           # 0.479 版の base リスト長
 POOLPOP_MU = 0.15   # 0.479 版 v19
 FRAG_LAM = 0.5      # 0.479 版 v7c（frag_gap の λ）
+LIB_TAU = 0.7       # 0.479 版のライブラリ一致の既存しきい値
 K = 25
 
 
@@ -66,6 +68,7 @@ def load_pool(root: Path = ROOT) -> Pool:
 # ---------------------------------------------------------------- 段 2: 採点
 class FPCache:
     """SMILES -> 選択ビットの指紋。同じ構造を何度も計算しない。"""
+    bits: np.ndarray
 
     def __init__(self, bits: np.ndarray):
         from casmi import chem
@@ -141,6 +144,26 @@ def frag_rerank(rows, pool: Pool, spectra, frag, fuse, cache, formula_of, topn: 
     return [head[o] for o in order]
 
 
+# ---------------------------------------------------------------- 段: PubChem 提案の差し込み（0.479 版 cell 33 の merge と同じ）
+PC_LIB_TAU, REL_TH, PROMOTE_REL = 0.9, 600.0, 150.0
+SLOTS_AGG, SLOTS_GENTLE = [2, 4, 6, 8, 10], [4, 8, 12, 16, 20]
+
+
+def merge_slots(base, base_keys, pc, pc_keys, slots, n=K):
+    """PubChem 提案を指定の順位（1 始まり）に差し込む。base と同じキーの提案は飛ばす。"""
+    seen = set(base_keys)
+    props = [(s, k) for s, k in zip(pc, pc_keys) if k not in seen]
+    out, bi, pi = [], 0, 0
+    while len(out) < n and (bi < len(base) or pi < len(props)):
+        if (len(out) + 1) in slots and pi < len(props):
+            out.append(props[pi][0]); pi += 1
+        elif bi < len(base):
+            out.append(base[bi]); bi += 1
+        else:
+            out.append(props[pi][0]); pi += 1
+    return out
+
+
 # ---------------------------------------------------------------- 実行
 def run(holdout: str, stages: list[str], logits_run: str | None = None) -> dict:
     from mrr25 import calculate_mrr25, read_truth
@@ -159,17 +182,82 @@ def run(holdout: str, stages: list[str], logits_run: str | None = None) -> dict:
         meta = pd.read_parquet(ROOT / "data/ext/v4g/casmi26-v2-pool/pool_meta.parquet", columns=["mass", "formula"])
         formula_of = meta["formula"].values[np.argsort(meta["mass"].values, kind="stable")]
         spectra, fcache = query_spectra(holdout), {}
-    preds = {}
+    import library as L
+    rule = L.hide_rule(holdout)
+    hidden = L.drop_keys(holdout) if rule.get("pool") == "remove" else set()   # クラス 2 型: 正解はプールに居ない
+    need_lib = "lib" in stages or "reflast" in stages
+    if need_lib and "frag" not in stages:
+        spectra = query_spectra(holdout)
+    lists = {}
     for mid in truth:
         if mid not in targets:
-            preds[mid] = []
             continue
-        rows = score_window(pool.window(targets[mid]), pool, zf[mid].astype(np.float32), fpc)
+        idx = pool.window(targets[mid])
+        if hidden:
+            idx = idx[~np.isin(pool.key[idx], list(hidden))]
+        rows = score_window(idx, pool, zf[mid].astype(np.float32), fpc)
         if "prior" in stages:
             rows = rerank_with_prior(rows, pool)
         if "frag" in stages:
             rows = frag_rerank(rows, pool, spectra.get(mid, []), frag, fuse, fcache, formula_of)
-        preds[mid] = [pool.smiles[i] for _, i in dedup(rows, pool, K)]
+        lists[mid] = dedup(rows, pool, TOPN)
+    diag = {}
+    if need_lib:
+        keys = {pool.key[i] for rows in lists.values() for _, i in rows}
+        refs = L.load_refs(holdout, keys, ROOT / f"outputs/local_eval/{holdout}/refs_top{TOPN}.parquet")
+        for mid, rows in lists.items():
+            ks = [pool.key[i] for _, i in rows]
+            sim = L.lib_scores(spectra.get(mid, []), ks, refs)
+            lib_max = max(sim.values(), default=0.0)
+            diag[mid] = dict(lib_max=lib_max, n_ref=len(sim))
+            if "lib" in stages and lib_max >= LIB_TAU:   # クラス 1: 一致の強い候補を類似度順に先頭へ
+                hit = sorted([r for r, k in zip(rows, ks) if sim.get(k, 0) >= LIB_TAU], key=lambda r: -sim[pool.key[r[1]]])
+                rows = hit + [r for r, k in zip(rows, ks) if sim.get(k, 0) < LIB_TAU]
+            if "reflast" in stages and lib_max < LIB_TAU:   # #22 の ref_last と同じ規則
+                rows = [r for r in rows if pool.key[r[1]] not in refs] + [r for r in rows if pool.key[r[1]] in refs]
+            lists[mid] = rows
+    preds = {mid: [pool.smiles[i] for _, i in lists[mid][:K]] if mid in lists else [] for mid in truth}
+    if "joint" in stages:   # 構造案: プール候補と PubChem 候補を同じ f·z の尺度で一列に並べる（差し込み枠を使わない）
+        import pubchem as PC
+        pool_keys = set(pool.key) - hidden
+        pcres = PC.run_holdout(holdout, {m: targets[m] for m in lists}, zf, fpc.bits, pool_keys)
+        for mid in lists:
+            idx = pool.window(targets[mid])
+            if hidden:
+                idx = idx[~np.isin(pool.key[idx], list(hidden))]
+            prow = [(fz, pool.smiles[i], pool.key[i]) for fz, i in dedup(score_window(idx, pool, zf[mid].astype(np.float32), fpc), pool, TOPN)]
+            allr = sorted(prow + [(fz, s_, k) for s_, fz, k in (pcres.get(mid) or [])], key=lambda r: -r[0])
+            out, seen = [], set()
+            for fz, s_, k in allr:
+                if k in seen:
+                    continue
+                seen.add(k); out.append(s_)
+                if len(out) >= K:
+                    break
+            preds[mid] = out
+    if "pubchem" in stages:   # 0.479 版の merge / promote（cell 33）と同じ規則で PubChem 提案を差し込む
+        import pubchem as PC
+        pool_keys = set(pool.key) - hidden
+        pcres = PC.run_holdout(holdout, {m: targets[m] for m in lists}, zf, fpc.bits, pool_keys)
+        n_ins = n_prom = 0
+        for mid, rows in lists.items():
+            prop = pcres.get(mid) or []
+            lib_max = diag.get(mid, {}).get("lib_max", 0.0)
+            if not prop or lib_max >= PC_LIB_TAU:
+                continue
+            # ゲート量は 0.479 版の生ロジット尺度（1.5 × モデル平均）に合わせて 1.5 倍する（近似: fold-0 単独）
+            best_pool = max((r[0] for r in score_window(pool.window(targets[mid]), pool, zf[mid].astype(np.float32), fpc)
+                             if pool.key[r[1]] not in hidden), default=None) if "prior" in stages else (rows[0][0] if rows else None)
+            rel = 1e9 if best_pool is None else 1.5 * (prop[0][1] - best_pool)
+            slots = SLOTS_AGG if rel > REL_TH else SLOTS_GENTLE
+            base = preds[mid]; bk = [pool.key[i] for _, i in rows[:K]]
+            merged = merge_slots(base, bk, [p[0] for p in prop], [p[2] for p in prop], slots)
+            if rel > PROMOTE_REL:   # 文献 prior の昇格条件（S, pop）はローカルに無いので Δ だけ
+                merged = ([prop[0][0]] + [x for x in merged if x != prop[0][0]])[:K]; n_prom += 1
+            preds[mid] = merged; n_ins += 1
+        diag_pc = dict(pubchem_inserted=n_ins, pubchem_promoted=n_prom)
+    else:
+        diag_pc = {}
     tag = "+".join(stages)
     out_dir = ROOT / f"outputs/local_eval/{holdout}"
     out_dir.mkdir(parents=True, exist_ok=True)
@@ -179,6 +267,11 @@ def run(holdout: str, stages: list[str], logits_run: str | None = None) -> dict:
             w.writerow([mid, ";".join(c)])
     res = dict(holdout=holdout, stages=stages, logits=run_name, n=len(truth),
                mrr25=round(calculate_mrr25(truth, preds), 4), secs=round(time.time() - t0, 1))
+    if diag:
+        lm = np.array([d["lib_max"] for d in diag.values()])
+        res["lib_max_ge_tau"] = round(float((lm >= LIB_TAU).mean()), 3)
+        res["lib_max_median"] = round(float(np.median(lm)), 3)
+    res.update(diag_pc)
     (out_dir / f"result_{tag}.json").write_text(json.dumps(res, indent=2))
     return res
 
@@ -186,7 +279,7 @@ def run(holdout: str, stages: list[str], logits_run: str | None = None) -> dict:
 def main() -> None:
     ap = argparse.ArgumentParser()
     ap.add_argument("--holdout", required=True)
-    ap.add_argument("--stages", default="score,prior", help="カンマ区切り: score[,prior][,frag]")
+    ap.add_argument("--stages", default="score,prior", help="カンマ区切り: score[,prior][,frag][,lib][,reflast][,pubchem]")
     ap.add_argument("--logits-run", default=None, help="outputs/holdout_eval/<run>/pc_logits.npz（既定 <holdout>_fold0）")
     args = ap.parse_args()
     print(json.dumps(run(args.holdout, args.stages.split(","), args.logits_run), indent=2))
