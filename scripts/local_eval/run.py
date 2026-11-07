@@ -217,6 +217,24 @@ def run(holdout: str, stages: list[str], logits_run: str | None = None) -> dict:
                 rows = [r for r in rows if pool.key[r[1]] not in refs] + [r for r in rows if pool.key[r[1]] in refs]
             lists[mid] = rows
     preds = {mid: [pool.smiles[i] for _, i in lists[mid][:K]] if mid in lists else [] for mid in truth}
+    if "joint" in stages:   # 構造案: プール候補と PubChem 候補を同じ f·z の尺度で一列に並べる（差し込み枠を使わない）
+        import pubchem as PC
+        pool_keys = set(pool.key) - hidden
+        pcres = PC.run_holdout(holdout, {m: targets[m] for m in lists}, zf, fpc.bits, pool_keys)
+        for mid in lists:
+            idx = pool.window(targets[mid])
+            if hidden:
+                idx = idx[~np.isin(pool.key[idx], list(hidden))]
+            prow = [(fz, pool.smiles[i], pool.key[i]) for fz, i in dedup(score_window(idx, pool, zf[mid].astype(np.float32), fpc), pool, TOPN)]
+            allr = sorted(prow + [(fz, s_, k) for s_, fz, k in (pcres.get(mid) or [])], key=lambda r: -r[0])
+            out, seen = [], set()
+            for fz, s_, k in allr:
+                if k in seen:
+                    continue
+                seen.add(k); out.append(s_)
+                if len(out) >= K:
+                    break
+            preds[mid] = out
     if "pubchem" in stages:   # 0.479 版の merge / promote（cell 33）と同じ規則で PubChem 提案を差し込む
         import pubchem as PC
         pool_keys = set(pool.key) - hidden
