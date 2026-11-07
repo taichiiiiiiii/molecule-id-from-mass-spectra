@@ -12,6 +12,14 @@
 
     python scripts/ranker/build_groups.py --n 125 --seed 20261108
 
+C2p 型（Issue #32、--c2p）: 正解はプールに残し参照は全部隠す第 3 の型。COCONUT に載る構造（pool_meta.src in {2,3}。
+  src 2/3 は pool_popularity.csv の np_coconut が全行 1、src 1 は 248,431/248,440 が 0 と実測）から各 fold 125（seed 20261108 + 300 + k）、
+  既存の rk_f{k}_c{1,2} の構造は除く。問い合わせは enveda 系 timsTOF があればそれ、無ければ公開ライブラリの行（テストに出る付加イオンのみ）。
+  出力 rk_f{k}_c2p（hide_rule = all、pool = keep）。クラス比 C1 : C2 : C2p = 1 : 1 : 1（#32 で事前に固定）。
+  同時に評価用 v3_c2n（fold 0 の hold から同じ規則で 200、seed 20261108、v3_c1 / v3_c2 / enveda_v1 の構造は除く）も書く。
+
+    python scripts/ranker/build_groups.py --c2p
+
 np の起点は train.parquet の ingest_lib == 'enveda-np-examples'（250 キー）。structures.parquet の libs を起点にすると split とずれる
 （計画改訂 2 のレビューでの実測: np 265 / hold 55,102 で一致 vs np 255 / hold 55,105）。
 """
@@ -64,6 +72,8 @@ def main() -> None:
     ap.add_argument("--seed", type=int, default=20261108)
     ap.add_argument("--folds", default="1,2,3,4")
     ap.add_argument("--check-only", action="store_true", help="fold 0 の split 再現だけ確かめる")
+    ap.add_argument("--c2p", action="store_true", help="C2p 型の学習グループ rk_f{k}_c2p と評価用 v3_c2n だけを作る（#32）")
+    ap.add_argument("--n-c2n", type=int, default=200)
     args = ap.parse_args()
     train = ROOT / "data/train.parquet"
     meta = pq.read_table(train, columns=["inchikey14", "ingest_lib", "instrument_type", "precursor_mz", "adduct"],
@@ -92,6 +102,8 @@ def main() -> None:
     for h in ("v3_c1", "v3_c2"):
         v3 |= set(pd.read_csv(ROOT / f"outputs/holdouts/{h}/truth.csv").inchikey14)
     split_keys = split_hold | split_np
+    if args.c2p:
+        return build_c2p(args, meta, train, train_keys, st, npk, split_keys, split_hold, v3, check)
     summary = dict(seed=args.seed, n_per_class=args.n, fold0_check=check, folds={})
     for k in map(int, args.folds.split(",")):
         allowed = training_pool(train_keys, st, npk, split_keys, v3, k)
@@ -111,6 +123,52 @@ def main() -> None:
     out.mkdir(parents=True, exist_ok=True)
     (out / "GROUPS.json").write_text(json.dumps(summary, indent=2, default=str))
     print(f"wrote {out}/GROUPS.json")
+
+
+def coconut_keys() -> set:
+    """COCONUT に載る構造（pool_meta.src in {2,3}）の inchikey14 先頭 14 文字。"""
+    pm = pd.read_parquet(ROOT / "data/ext/v4g/casmi26-v2-pool/pool_meta.parquet", columns=["key", "src"])
+    return set(pm.key[pm.src.isin([2, 3])].astype(str).str[:14])
+
+
+def existing_truth_keys(names: list[str]) -> set:
+    out = set()
+    for h in names:
+        f = ROOT / f"outputs/holdouts/{h}/truth.csv"
+        if f.is_file():
+            out |= set(pd.read_csv(f).inchikey14)
+    return out
+
+
+def enveda_v1_keys() -> set:
+    f = ROOT / "data/holdouts/enveda_v1/drop_keys.txt"
+    return set(f.read_text().split()) if f.is_file() else set()
+
+
+def build_c2p(args, meta, train, train_keys, st, npk, split_keys, split_hold, v3, check) -> None:
+    import build_holdout_v3 as V3
+    coco = coconut_keys()
+    test_adducts = set(pd.read_parquet(ROOT / "data/test.parquet", columns=["adduct"]).adduct.astype(str))
+    summary = dict(seed=args.seed, n_per_class=args.n, coconut_keys=len(coco), test_adducts=sorted(test_adducts), fold0_check=check, folds={})
+    for k in map(int, args.folds.split(",")):
+        allowed = training_pool(train_keys, st, npk, split_keys, v3, k)
+        used = existing_truth_keys([f"rk_f{k}_c1", f"rk_f{k}_c2", "enveda_v1"]) | enveda_v1_keys()
+        keys, n_elig = V3.select_c2p(meta, allowed, coco, args.n, args.seed + 300 + k, exclude=used)
+        info = dict(allowed=len(allowed), eligible_c2p=n_elig, picked=len(keys))
+        info[f"rk_f{k}_c2p"] = V3.write_holdout(f"rk_f{k}_c2p", keys, "all", meta, np.random.default_rng(args.seed + 400 + k), args.seed + k,
+                                               train, pool="keep", query="prefer_enveda", test_adducts=test_adducts)
+        summary["folds"][k] = info
+        print(json.dumps({k: {a: b for a, b in info.items() if not a.startswith("rk_")}}), flush=True)
+    ex = existing_truth_keys(["v3_c1", "v3_c2", "enveda_v1"]) | enveda_v1_keys()
+    keys, n_elig = V3.select_c2p(meta, split_hold, coco, args.n_c2n, args.seed, exclude=ex)
+    summary["v3_c2n"] = dict(eligible=n_elig, picked=len(keys))
+    summary["v3_c2n"]["holdout"] = V3.write_holdout("v3_c2n", keys, "all", meta, np.random.default_rng(args.seed + 1), args.seed, train,
+                                                    pool="keep", query="prefer_enveda", test_adducts=test_adducts)
+    print(json.dumps({"v3_c2n": {a: b for a, b in summary["v3_c2n"].items() if a != "holdout"}}), flush=True)
+    out = ROOT / "outputs/ranker"
+    out.mkdir(parents=True, exist_ok=True)
+    (out / "GROUPS_C2P.json").write_text(json.dumps(summary, indent=2, default=str))
+    print(f"wrote {out}/GROUPS_C2P.json")
 
 
 if __name__ == "__main__":

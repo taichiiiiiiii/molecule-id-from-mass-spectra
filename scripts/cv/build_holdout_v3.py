@@ -53,11 +53,37 @@ def select(meta: pd.DataFrame, hold: set, n: int, seed: int):
     return pick(c1), pick(c2), len(c1), len(c2)
 
 
-def write_holdout(name: str, keys: list, rule: str, meta: pd.DataFrame, rng, seed: int, train: Path, out_root: Path = ROOT) -> dict:
-    """keys の構造から擬似ホールドアウトを書き出す（問い合わせ = enveda 系の timsTOF、最大 MAX_SPECTRA 本）。HOLDOUT.json の中身を返す。"""
+def select_c2p(meta: pd.DataFrame, allowed: set, coconut: set, n: int, seed: int, exclude: set = frozenset()):
+    """C2p 型（Issue #32）: 正解はプールに残し、参照は全部隠す。対象は COCONUT に載る構造（pool_meta.src in {2,3}）のうち
+    allowed に入り、質量 MASS_LO〜MASS_HI のもの（exclude は除く）。sorted で返す。"""
+    mass = meta.groupby("inchikey14", observed=True).neutral_mass.median()
+    ok = set(mass[(mass >= MASS_LO) & (mass <= MASS_HI)].index.astype(str))
+    cand = sorted((ok & set(allowed) & set(coconut)) - set(exclude))
+    rng = np.random.default_rng(seed)
+    return sorted(rng.choice(cand, size=min(n, len(cand)), replace=False).tolist()), len(cand)
+
+
+def pick_queries(t: pd.DataFrame, query: str, test_adducts: set) -> pd.DataFrame:
+    """問い合わせ行の選び方。enveda = enveda 系の timsTOF だけ。prefer_enveda = 構造ごとに enveda 系の timsTOF があればそれ、
+    無ければ公開ライブラリの行のうちテストに出る付加イオン（test_adducts）のもの（装置はテストとずれる）。"""
+    env = (t.instrument_type == "timsTOF") & t.ingest_lib.isin(ENVEDA)
+    if query == "enveda":
+        return t[env].copy()
+    if query != "prefer_enveda":
+        raise ValueError(query)
+    has_env = set(t.inchikey14[env])
+    pub = t.ingest_lib.isin(PUBLIC) & t.adduct.isin(test_adducts) & ~t.inchikey14.isin(has_env)
+    return t[env | pub].copy()
+
+
+def write_holdout(name: str, keys: list, rule: str, meta: pd.DataFrame, rng, seed: int, train: Path, out_root: Path = ROOT,
+                  pool: str | None = None, query: str = "enveda", test_adducts: set = frozenset()) -> dict:
+    """keys の構造から擬似ホールドアウトを書き出す（問い合わせは pick_queries、最大 MAX_SPECTRA 本）。HOLDOUT.json の中身を返す。
+    pool の既定は rule == all なら remove、それ以外は keep（v3 と同じ）。C2p 型は rule=all, pool=keep。"""
     keyset = set(keys)
+    pool = pool or ("remove" if rule == "all" else "keep")
     t = pq.read_table(train, filters=pc.field("inchikey14").isin(keys)).to_pandas()
-    q = t[(t.instrument_type == "timsTOF") & t.ingest_lib.isin(ENVEDA)].copy()
+    q = pick_queries(t, query, test_adducts)
     q = q.iloc[rng.permutation(len(q))].groupby("inchikey14", sort=False).head(MAX_SPECTRA).sort_values(["inchikey14"], kind="stable")
     ids = {k: f"m_{i:05d}" for i, k in enumerate(sorted(q.inchikey14.unique()))}
     q["molecule_id"] = q.inchikey14.map(ids)
@@ -68,7 +94,7 @@ def write_holdout(name: str, keys: list, rule: str, meta: pd.DataFrame, rng, see
     pd.DataFrame({"molecule_id": sorted(ids.values()), "smiles": "CCO"}).to_csv(out / "sample_submission.csv", index=False)
     (out / "drop_keys.txt").write_text("\n".join(sorted(keyset)) + "\n")
     (out / "hide_rule.json").write_text(json.dumps(dict(rule=rule, enveda_libs=sorted(ENVEDA),
-                                                        pool="remove" if rule == "all" else "keep"), indent=2))
+                                                        pool=pool, query=query), indent=2))
     truth = t.drop_duplicates("inchikey14")[["inchikey14", "normalized_smiles"]].rename(columns={"normalized_smiles": "smiles"})
     truth["molecule_id"] = truth.inchikey14.map(ids)
     truth = truth.dropna(subset=["molecule_id"]).sort_values("molecule_id")
@@ -76,7 +102,8 @@ def write_holdout(name: str, keys: list, rule: str, meta: pd.DataFrame, rng, see
     tdir.mkdir(parents=True, exist_ok=True)
     truth[["molecule_id", "inchikey14", "smiles"]].to_csv(tdir / "truth.csv", index=False)
     hid = hidden_mask(meta.ingest_lib, meta.inchikey14, keyset, rule)
-    info = dict(name=name, seed=seed, rule=rule, n_molecules=len(ids), n_spectra=len(q),
+    info = dict(name=name, seed=seed, rule=rule, pool=pool, query=query, n_molecules=len(ids), n_spectra=len(q),
+                instruments_of_queries=q.instrument_type.astype(str).value_counts().to_dict(),
                 spectra_per_molecule=q.groupby("molecule_id").size().describe().round(2).to_dict(),
                 hidden_train_rows=int(hid.sum()),
                 remaining_ref_rows_of_truth=int((meta.inchikey14.isin(keyset).values & ~hid).sum()),

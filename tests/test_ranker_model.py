@@ -66,3 +66,15 @@ def test_params_fixed_as_in_issue():
         dict(num_leaves=31, learning_rate=0.05, min_data_in_leaf=20, feature_fraction=0.8, bagging_fraction=0.8, bagging_freq=1,
              seed=0, lambdarank_truncation_level=25)
     assert not set(TE.TRAIN) & set(TE.EVAL)
+
+
+def test_adopt_rule_32():
+    from train_eval import adopt
+    ok = dict(lo=-0.01, hi=0.05, diff=0.02)
+    win = dict(lo=0.01, hi=0.05, diff=0.03)
+    bad = dict(lo=-0.03, hi=0.01, diff=-0.01)
+    assert adopt({"a": {"ranker_minus_rule479": ok}, "b": {"ranker_minus_rule479": win}})["adopt"] is True
+    assert adopt({"a": {"ranker_minus_rule479": ok}, "b": {"ranker_minus_rule479": ok}})["adopt"] is False   # 有意な改善なし
+    r = adopt({"a": {"ranker_minus_rule479": bad}, "b": {"ranker_minus_rule479": win}})
+    assert r["adopt"] is False and r["failing"] == ["a"]
+    assert adopt({"a": {"ranker_minus_rule479": win}, "b": {}})["adopt"] is False                            # 比較できない評価がある
