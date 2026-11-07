@@ -35,6 +35,29 @@ ENVEDA = ["enveda-180", "enveda-np-examples"]
 FALLBACK = "CCO"
 
 
+def clear_caches(name: str) -> None:
+    """同じ名前で別の test を流したときに古いキャッシュ（参照・PubChem 窓・ロジット・特徴量）を使わないよう消す。"""
+    for d in (ROOT / f"outputs/local_eval/{name}", ROOT / f"outputs/holdout_eval/{name}_fold0"):
+        if d.exists():
+            shutil.rmtree(d)
+    f = ROOT / f"outputs/ranker/features/{name}.parquet"
+    if f.exists():
+        f.unlink()
+
+
+def fill_and_validate(path: Path, ids: list[str]) -> dict:
+    """予備の提出ファイル用: 空の行を CCO で埋め、id を揃え、形式を確かめて上書きする。"""
+    from mrr25 import validate_submission
+    with open(path, newline="") as f:
+        rows = list(csv.reader(f))
+    got = {r[0]: r[1] for r in rows[1:] if len(r) == 2}
+    lists = {m: [x for x in got.get(m, "").split(";") if x] for m in ids}
+    counts = write_submission(path, ids, {}, lists)
+    with open(path, newline="") as f:
+        validate_submission(list(csv.reader(f)), expected_ids=set(ids))
+    return counts
+
+
 def prepare(name: str, test: Path | None, sample: Path | None, like: str | None) -> None:
     hd, td = ROOT / f"data/holdouts/{name}", ROOT / f"outputs/holdouts/{name}"
     hd.mkdir(parents=True, exist_ok=True); td.mkdir(parents=True, exist_ok=True)
@@ -107,6 +130,8 @@ def main() -> None:
     ap.add_argument("--out", type=Path, default=ROOT / "outputs/submit/submission.csv")
     ap.add_argument("--skip-steps", action="store_true", help="1〜4 を飛ばす（キャッシュ済みのとき）")
     args = ap.parse_args()
+    if not args.skip_steps:
+        clear_caches(args.name)
     prepare(args.name, args.test, args.sample, args.like)
     if not args.skip_steps:
         step(["scripts/cv/local_fold0_logits.py", "--holdout", args.name])
@@ -119,7 +144,11 @@ def main() -> None:
     counts = write_submission(args.out, ids, lists, fb)
     with open(args.out, newline="") as f:
         validate_submission(list(csv.reader(f)), expected_ids=set(ids))
-    rep = dict(name=args.name, out=str(args.out), counts=counts, diagnostics=diagnostics(ft))
+    rep = dict(name=args.name, out=str(args.out), counts=counts)
+    try:   # 診断は判断に使わない。失敗しても検証済みの提出ファイルを壊さない
+        rep["diagnostics"] = diagnostics(ft)
+    except Exception as e:  # noqa: BLE001
+        rep["diagnostics_error"] = repr(e)
     if args.like:
         from mrr25 import calculate_mrr25, read_truth
         rep["mrr25"] = round(calculate_mrr25(read_truth(ROOT / f"outputs/holdouts/{args.name}/truth.csv"), read_submission(args.out)), 4)

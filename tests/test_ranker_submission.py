@@ -48,3 +48,21 @@ def test_prepare_like_copies_holdout(tmp_path, monkeypatch):
     rs.prepare("h2", None, None, "h")
     assert (tmp_path / "data/holdouts/h2/hide_rule.json").read_text() == "hide_rule.json"
     assert (tmp_path / "outputs/holdouts/h2/truth.csv").is_file()
+
+
+def test_fill_and_validate_fills_empty_and_missing(tmp_path):
+    p = tmp_path / "fb.csv"
+    p.write_text("molecule_id,smiles\na,\nb,N;O\n")
+    c = rs.fill_and_validate(p, ["a", "b", "c"])
+    got = validate_submission(list(csv.reader(open(p))), expected_ids={"a", "b", "c"})
+    assert got["a"] == ["CCO"] and got["b"] == ["N", "O"] and got["c"] == ["CCO"] and c["fallback_cco"] == 2
+
+
+def test_clear_caches(tmp_path, monkeypatch):
+    monkeypatch.setattr(rs, "ROOT", tmp_path)
+    for d in ("outputs/local_eval/x", "outputs/holdout_eval/x_fold0", "outputs/ranker/features"):
+        (tmp_path / d).mkdir(parents=True)
+    (tmp_path / "outputs/local_eval/x/pubchem_fold0.json").write_text("{}")
+    (tmp_path / "outputs/ranker/features/x.parquet").write_text("")
+    rs.clear_caches("x")
+    assert not (tmp_path / "outputs/local_eval/x").exists() and not (tmp_path / "outputs/ranker/features/x.parquet").exists()

@@ -47,11 +47,23 @@ def find(pattern):
     hits = sorted(glob.glob(f"/kaggle/input/**/{pattern}", recursive=True))
     if not hits:
         raise FileNotFoundError(pattern)
+    if len(hits) > 1:
+        print("WARNING: 複数見つかった", pattern, hits[:5])
     return Path(hits[0])
+def find_comp():
+    """train / test / sample_submission の 3 つが揃うディレクトリ（コンペの入力）。competitions/ を優先。"""
+    dirs = sorted({Path(p).parent for p in glob.glob("/kaggle/input/**/train.parquet", recursive=True)
+                   if (Path(p).parent / "test.parquet").is_file() and (Path(p).parent / "sample_submission.csv").is_file()},
+                  key=lambda d: ("competitions" not in str(d) and "enveda" not in str(d).lower(), str(d)))
+    if not dirs:
+        raise FileNotFoundError("competition dir")
+    if len(dirs) > 1:
+        print("WARNING: コンペ入力の候補が複数", dirs)
+    return dirs[0]
 R = Path("/kaggle/working/repo")
 code = find("scripts/submit/ranker_submission.py").parents[2]
 shutil.copytree(code, R, dirs_exist_ok=True)
-comp = find("train.parquet").parent
+comp = find_comp()
 v4g = find("casmi26-v2-pool/pool_meta.parquet").parents[1]
 links = {"data/train.parquet": comp / "train.parquet",
          "data/ext/v4g": v4g,
@@ -77,13 +89,21 @@ print("lightgbm", lightgbm.__version__, "rdkit", rdkit.__version__, "torch", tor
 
 SUBMIT = r'''
 # 提出ファイル（評価と同じ経路: logits → run.py → ranker_features → model_c2p）
-r = subprocess.run([sys.executable, "scripts/submit/ranker_submission.py", "--test", str(TEST), "--sample", str(SAMPLE),
-                    "--name", "sub_test", "--out", "/kaggle/working/submission.csv"], cwd=R)
-if r.returncode != 0:
-    # 予備: ランカー経路が落ちたら score+prior の並び、それも無ければ sample_submission
+try:
+    r = subprocess.run([sys.executable, "scripts/submit/ranker_submission.py", "--test", str(TEST), "--sample", str(SAMPLE),
+                        "--name", "sub_test", "--out", "/kaggle/working/submission.csv"], cwd=R, timeout=7 * 3600)
+    rc = r.returncode
+except subprocess.TimeoutExpired:
+    rc = "timeout"
+if rc != 0:
+    # 予備: ランカー経路が落ちたら score+prior の並び、それも無ければ sample_submission。空の行は CCO で埋め、形式を確かめる
+    import pandas as pd
+    sys.path.insert(0, str(R / "scripts/submit")); sys.path.insert(0, str(R / "scripts/validate"))
+    import ranker_submission as RS
     fb = R / "outputs/local_eval/sub_test/submission_score+prior.csv"
     shutil.copy(fb if fb.is_file() else SAMPLE, "/kaggle/working/submission.csv")
-    print("FALLBACK used:", fb if fb.is_file() else SAMPLE)
+    print("FALLBACK used:", rc, fb if fb.is_file() else SAMPLE,
+          RS.fill_and_validate(Path("/kaggle/working/submission.csv"), list(pd.read_csv(SAMPLE).molecule_id)))
 print(open("/kaggle/working/submission.json").read() if os.path.exists("/kaggle/working/submission.json") else "no report")
 print(f"elapsed {time.time() - T0:.0f}s")
 '''
@@ -91,12 +111,16 @@ print(f"elapsed {time.time() - T0:.0f}s")
 REHEARSAL = r'''
 # リハーサル: v3_c1 の写しを同じ経路に通し、MRR が train_eval の値（EXPECTED）と合うか記録する（提出は止めない）
 EXPECTED = {expected}
-try:
+# 隠れテストの再実行では誰も結果を見ないので飛ばす。時間が掛かっていても飛ばす（9 時間上限を守る）
+if os.environ.get("KAGGLE_IS_COMPETITION_RERUN") or time.time() - T0 > 3 * 3600:
+    print("rehearsal skipped", bool(os.environ.get("KAGGLE_IS_COMPETITION_RERUN")), f"{{time.time() - T0:.0f}}s")
+else:
+  try:
     subprocess.run([sys.executable, "scripts/submit/ranker_submission.py", "--like", "v3_c1", "--name", "chk_v3_c1",
-                    "--out", "/kaggle/working/rehearsal/chk_v3_c1.csv"], cwd=R, check=True, timeout=3 * 3600)
+                    "--out", "/kaggle/working/rehearsal/chk_v3_c1.csv"], cwd=R, check=True, timeout=int(8 * 3600 - (time.time() - T0)))
     rep = json.load(open("/kaggle/working/rehearsal/chk_v3_c1.json"))
     print("rehearsal mrr25", rep.get("mrr25"), "expected", EXPECTED, "diag", rep.get("diagnostics"))
-except Exception as e:
+  except Exception as e:
     print("rehearsal failed:", repr(e))
 print(f"elapsed {{time.time() - T0:.0f}}s")
 '''
