@@ -43,3 +43,12 @@ def test_prior_reorders_by_standardised_score_plus_pop():
     out = le.rerank_with_prior(rows, p, mu=0.15)
     assert [p.key[i] for _, i in out] == ["K3", "K2"]
     assert [p.key[i] for _, i in le.rerank_with_prior(rows, p, mu=0.0)] == ["K2", "K3"]
+
+
+def test_holdout_v3_hide_rules():
+    spec = importlib.util.spec_from_file_location("build_holdout_v3", ROOT / "scripts/cv/build_holdout_v3.py")
+    hv = importlib.util.module_from_spec(spec); spec.loader.exec_module(hv)
+    libs = pd.Series(["enveda-180", "gnps", "enveda-180", "massbank"])
+    keys = pd.Series(["A", "A", "B", "C"])
+    assert hv.hidden_mask(libs, keys, {"A"}, "all").tolist() == [True, True, False, False]
+    assert hv.hidden_mask(libs, keys, {"A"}, "enveda_libs").tolist() == [True, False, False, False]

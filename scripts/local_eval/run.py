@@ -30,11 +30,13 @@ import pandas as pd
 ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT / "data/ext/v4g/casmi26-v3-models/code"))
 sys.path.insert(0, str(ROOT / "scripts/validate"))
+sys.path.insert(0, str(ROOT / "scripts/local_eval"))
 
 PPM = 10.0          # 0.479 版の PubChem チャネルと同じ
 TOPN = 60           # 0.479 版の base リスト長
 POOLPOP_MU = 0.15   # 0.479 版 v19
 FRAG_LAM = 0.5      # 0.479 版 v7c（frag_gap の λ）
+LIB_TAU = 0.7       # 0.479 版のライブラリ一致の既存しきい値
 K = 25
 
 
@@ -159,17 +161,41 @@ def run(holdout: str, stages: list[str], logits_run: str | None = None) -> dict:
         meta = pd.read_parquet(ROOT / "data/ext/v4g/casmi26-v2-pool/pool_meta.parquet", columns=["mass", "formula"])
         formula_of = meta["formula"].values[np.argsort(meta["mass"].values, kind="stable")]
         spectra, fcache = query_spectra(holdout), {}
-    preds = {}
+    import library as L
+    rule = L.hide_rule(holdout)
+    hidden = L.drop_keys(holdout) if rule.get("pool") == "remove" else set()   # クラス 2 型: 正解はプールに居ない
+    need_lib = "lib" in stages or "reflast" in stages
+    if need_lib and "frag" not in stages:
+        spectra = query_spectra(holdout)
+    lists = {}
     for mid in truth:
         if mid not in targets:
-            preds[mid] = []
             continue
-        rows = score_window(pool.window(targets[mid]), pool, zf[mid].astype(np.float32), fpc)
+        idx = pool.window(targets[mid])
+        if hidden:
+            idx = idx[~np.isin(pool.key[idx], list(hidden))]
+        rows = score_window(idx, pool, zf[mid].astype(np.float32), fpc)
         if "prior" in stages:
             rows = rerank_with_prior(rows, pool)
         if "frag" in stages:
             rows = frag_rerank(rows, pool, spectra.get(mid, []), frag, fuse, fcache, formula_of)
-        preds[mid] = [pool.smiles[i] for _, i in dedup(rows, pool, K)]
+        lists[mid] = dedup(rows, pool, TOPN)
+    diag = {}
+    if need_lib:
+        keys = {pool.key[i] for rows in lists.values() for _, i in rows}
+        refs = L.load_refs(holdout, keys, ROOT / f"outputs/local_eval/{holdout}/refs_top{TOPN}.parquet")
+        for mid, rows in lists.items():
+            ks = [pool.key[i] for _, i in rows]
+            sim = L.lib_scores(spectra.get(mid, []), ks, refs)
+            lib_max = max(sim.values(), default=0.0)
+            diag[mid] = dict(lib_max=lib_max, n_ref=len(sim))
+            if "lib" in stages and lib_max >= LIB_TAU:   # クラス 1: 一致の強い候補を類似度順に先頭へ
+                hit = sorted([r for r, k in zip(rows, ks) if sim.get(k, 0) >= LIB_TAU], key=lambda r: -sim[pool.key[r[1]]])
+                rows = hit + [r for r, k in zip(rows, ks) if sim.get(k, 0) < LIB_TAU]
+            if "reflast" in stages and lib_max < LIB_TAU:   # #22 の ref_last と同じ規則
+                rows = [r for r in rows if pool.key[r[1]] not in refs] + [r for r in rows if pool.key[r[1]] in refs]
+            lists[mid] = rows
+    preds = {mid: [pool.smiles[i] for _, i in lists[mid][:K]] if mid in lists else [] for mid in truth}
     tag = "+".join(stages)
     out_dir = ROOT / f"outputs/local_eval/{holdout}"
     out_dir.mkdir(parents=True, exist_ok=True)
@@ -179,6 +205,10 @@ def run(holdout: str, stages: list[str], logits_run: str | None = None) -> dict:
             w.writerow([mid, ";".join(c)])
     res = dict(holdout=holdout, stages=stages, logits=run_name, n=len(truth),
                mrr25=round(calculate_mrr25(truth, preds), 4), secs=round(time.time() - t0, 1))
+    if diag:
+        lm = np.array([d["lib_max"] for d in diag.values()])
+        res["lib_max_ge_tau"] = round(float((lm >= LIB_TAU).mean()), 3)
+        res["lib_max_median"] = round(float(np.median(lm)), 3)
     (out_dir / f"result_{tag}.json").write_text(json.dumps(res, indent=2))
     return res
 
@@ -186,7 +216,7 @@ def run(holdout: str, stages: list[str], logits_run: str | None = None) -> dict:
 def main() -> None:
     ap = argparse.ArgumentParser()
     ap.add_argument("--holdout", required=True)
-    ap.add_argument("--stages", default="score,prior", help="カンマ区切り: score[,prior][,frag]")
+    ap.add_argument("--stages", default="score,prior", help="カンマ区切り: score[,prior][,frag][,lib][,reflast]")
     ap.add_argument("--logits-run", default=None, help="outputs/holdout_eval/<run>/pc_logits.npz（既定 <holdout>_fold0）")
     args = ap.parse_args()
     print(json.dumps(run(args.holdout, args.stages.split(","), args.logits_run), indent=2))
