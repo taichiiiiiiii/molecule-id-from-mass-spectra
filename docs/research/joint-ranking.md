@@ -8,7 +8,8 @@
 2. GitHub リポジトリ https://github.com/Majyles/kaggle-casmi-2026 （2026-11-08 に shallow clone して README・`casmi/ranking.py`・`scripts/train_ranker.py`・`scripts/build_ranker_set.py` を読んだ。ライセンス MIT）
 3. Kaggle ディスカッション 748524「Validation stragegy」Bull, 2026-10-12。
    `kaggle competitions topics show enveda-CASMI26-molecule-id-mass-spectra/748524`
-4. MassSpecGym の retrieval 設定: 今回は時間が無く未調査（次回以降）。
+4. MassSpecGym: Bushuiev et al., "MassSpecGym: A benchmark for the discovery and identification of molecules", NeurIPS 2024, arXiv:2410.23326, DOI 10.48550/arXiv.2410.23326（arXiv HTML 版の検索要約で確認。本文全体は未読）
+5. Kaggle ディスカッション 754292（主催者 David Healey の回答 2026-11-05）、755039（k256.dev、private 側のクラス比についての推測）
 
 ## 要点（出典に書かれていること。こちらで再現していないものは「主張」と書く）
 ### 756504 / Majyles リポジトリ（公開 LB 0.313）
@@ -27,6 +28,16 @@
 - 主張: クラス比を LB から推定して class 1 ≈28%、class 2 ≈20%、class 3 ≈52%。
 - 主張: **PubChem 候補を固定順位（5 位、10 位…）に差し込むと、ローカル +0.01〜0.02 だったが LB は 0.295 → 0.288。「PubChem にしか無いテスト分子はほとんど無いようだ」**。
 - 比較は同じ検証分子での差を構造単位のブートストラップで見る。再学習を伴う変更は seed を変えて複数回学習し平均で比べる（seed だけで class 2 MRR が ~0.02 動いた、という主張）。
+
+### MassSpecGym の retrieval 設定（4）
+- 候補は同じ質量の分子を最大 256 件（多ければ無作為抽出）。分子集合 3 種から順に詰める。bonus 版は同じ組成式で絞る。
+- 基準法の 1 つは Fingerprint FFN（指紋を予測し候補をコサイン類似度で並べる）。こちらの f·z と同じ系統。
+- この競技との違い: 候補数 256 固定・無作為抽出なので、「プールか PubChem か」の出所の区別は扱っていない。設定値として持ち込めるものは無い。
+
+### 754292 / 755039（再現性とクラス比）
+- 主催者の回答（754292）: 「解は再現可能でなければならない。再現できない中間物やモデルを使う解は違反で、取り除く権利を留保する」。
+  → 自前データから生成コードつきで学習するランカー（本 Issue）はこの要件に合う方向。公開系統の共有ランカー特徴量（生成コード無し）への依存を減らせる。
+- 755039 は「private 側に class 3 が多いのでは」という推測で、根拠となるデータは無いと本人が書いている。計画には使わない。
 
 ## この競技で使えるか
 - コード: MIT なので、著作権表示を残せば部品の流用は可。ただし今回の計画（項目 4）は自前実装で足り、外部コードは取り込まない。設計上の知見（class 1x、reachable_only、模擬条件に沿った参照特徴）だけ使う。
