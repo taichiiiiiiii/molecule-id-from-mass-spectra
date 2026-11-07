@@ -1,0 +1,28 @@
+{
+  "id": "taichiiiii/casmi26-ranker-submit",
+  "title": "casmi26 ranker submit",
+  "code_file": "notebook.ipynb",
+  "language": "python",
+  "kernel_type": "notebook",
+  "is_private": true,
+  "enable_gpu": false,
+  "enable_tpu": false,
+  "enable_internet": false,
+  "keywords": [
+    "chemistry"
+  ],
+  "dataset_sources": [
+    "dmitriigluzdov/casmi26-attributed-v4g-reproduction-assets",
+    "dmitriigluzdov/casmi26-pubchem-popularity-prior",
+    "ahmedberatozer/casmi26-pubchem-tier",
+    "dmitriigluzdov/casmi26-fold-safe-fpnet",
+    "metric/rdkit-2026-3-3-wheel",
+    "taichiiiii/casmi26-ranker-code"
+  ],
+  "kernel_sources": [],
+  "competition_sources": [
+    "enveda-CASMI26-molecule-id-mass-spectra"
+  ],
+  "model_sources": [],
+  "docker_image": "gcr.io/kaggle-private-byod/python@sha256:37c64f7dd9c54116ecd1bcc88817c5469b88387388fade02bfa8bf3fc647d461"
+}
