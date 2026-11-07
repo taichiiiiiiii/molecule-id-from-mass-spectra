@@ -73,8 +73,10 @@ def test_adopt_rule_32():
     ok = dict(lo=-0.01, hi=0.05, diff=0.02)
     win = dict(lo=0.01, hi=0.05, diff=0.03)
     bad = dict(lo=-0.03, hi=0.01, diff=-0.01)
-    assert adopt({"a": {"ranker_minus_rule479": ok}, "b": {"ranker_minus_rule479": win}})["adopt"] is True
-    assert adopt({"a": {"ranker_minus_rule479": ok}, "b": {"ranker_minus_rule479": ok}})["adopt"] is False   # 有意な改善なし
+    full = lambda **kw: {h: {"ranker_minus_rule479": kw.get(h, ok)} for h in ("v3_c1", "v3_c2", "enveda_v1", "v3_c2n")}
+    assert adopt(full(v3_c2=win))["adopt"] is True
+    assert adopt({"v3_c2": {"ranker_minus_rule479": win}})["adopt"] is False                                 # 必須の評価が欠けている
+    assert adopt(full())["adopt"] is False
     r = adopt({"a": {"ranker_minus_rule479": bad}, "b": {"ranker_minus_rule479": win}})
     assert r["adopt"] is False and r["failing"] == ["a"]
     assert adopt({"a": {"ranker_minus_rule479": win}, "b": {}})["adopt"] is False                            # 比較できない評価がある

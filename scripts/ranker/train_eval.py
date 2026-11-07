@@ -36,6 +36,7 @@ TRAIN = [f"rk_f{k}_c{c}" for k in range(1, 5) for c in (1, 2)]
 EVAL = ["v3_c1", "v3_c2"]
 BASELINES = {"rule479": "score+prior+lib+pubchem", "joint": "score+joint", "score_prior": "score+prior"}
 NONINF = -0.02
+REQUIRED_32 = ("v3_c1", "v3_c2", "enveda_v1", "v3_c2n")   # #32 の採否に必須の評価
 K, N_BOOT = 25, 2000
 
 
@@ -82,10 +83,11 @@ def read_sub(path: Path) -> dict[str, list[str]]:
 def adopt(evals: dict) -> dict:
     """#32 の採否: 全ホールドアウトで rule479 との差の下限 ≥ NONINF、かつどれか 1 つで下限 > 0。"""
     d = {h: r["ranker_minus_rule479"] for h, r in evals.items() if "ranker_minus_rule479" in r}
-    ok_all = bool(d) and len(d) == len(evals) and all(x["lo"] >= NONINF for x in d.values())
+    absent = [h for h in REQUIRED_32 if h not in d]
+    ok_all = not absent and len(d) == len(evals) and all(x["lo"] >= NONINF for x in d.values())
     any_win = any(x["lo"] > 0 for x in d.values())
     return dict(noninferior_all=ok_all, significant_win_any=any_win, adopt=bool(ok_all and any_win),
-                failing=[h for h, x in d.items() if x["lo"] < NONINF], missing=[h for h in evals if h not in d])
+                failing=[h for h, x in d.items() if x["lo"] < NONINF], missing=sorted(set(absent) | {h for h in evals if h not in d}))
 
 
 def main() -> None:
