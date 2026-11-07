@@ -91,21 +91,27 @@ print("lightgbm", lightgbm.__version__, "rdkit", rdkit.__version__, "torch", tor
 
 SUBMIT = r'''
 # 提出ファイル（評価と同じ経路: logits → run.py → ranker_features → model_c2p）
+import signal
+p = subprocess.Popen([sys.executable, "scripts/submit/ranker_submission.py", "--test", str(TEST), "--sample", str(SAMPLE),
+                      "--name", "sub_test", "--out", "/kaggle/working/submission.csv"], cwd=R, start_new_session=True)
 try:
-    r = subprocess.run([sys.executable, "scripts/submit/ranker_submission.py", "--test", str(TEST), "--sample", str(SAMPLE),
-                        "--name", "sub_test", "--out", "/kaggle/working/submission.csv"], cwd=R, timeout=7 * 3600)
-    rc = r.returncode
+    rc = p.wait(timeout=7 * 3600)
 except subprocess.TimeoutExpired:
+    os.killpg(p.pid, signal.SIGKILL)   # 孫プロセス（run.py など）もまとめて止める
     rc = "timeout"
 if rc != 0:
-    # 予備: ランカー経路が落ちたら score+prior の並び、それも無ければ sample_submission。空の行は CCO で埋め、形式を確かめる
-    import pandas as pd
-    sys.path.insert(0, str(R / "scripts/submit")); sys.path.insert(0, str(R / "scripts/validate"))
-    import ranker_submission as RS
+    # 予備: ランカー経路が落ちたら score+prior の並び、それも無ければ sample_submission。先にコピーしてから、空の行を CCO で埋めて形式を確かめる
     fb = R / "outputs/local_eval/sub_test/submission_score+prior.csv"
     shutil.copy(fb if fb.is_file() else SAMPLE, "/kaggle/working/submission.csv")
-    print("FALLBACK used:", rc, fb if fb.is_file() else SAMPLE,
-          RS.fill_and_validate(Path("/kaggle/working/submission.csv"), list(pd.read_csv(SAMPLE).molecule_id)))
+    try:
+        import pandas as pd
+        sys.path.insert(0, str(R / "scripts/submit")); sys.path.insert(0, str(R / "scripts/validate"))
+        import ranker_submission as RS
+        print("FALLBACK used:", rc, fb if fb.is_file() else SAMPLE,
+              RS.fill_and_validate(Path("/kaggle/working/submission.csv"), list(pd.read_csv(SAMPLE).molecule_id)))
+    except Exception as e:
+        shutil.copy(SAMPLE, "/kaggle/working/submission.csv")
+        print("FALLBACK to sample_submission:", rc, repr(e))
 print(open("/kaggle/working/submission.json").read() if os.path.exists("/kaggle/working/submission.json") else "no report")
 print(f"elapsed {time.time() - T0:.0f}s")
 '''
