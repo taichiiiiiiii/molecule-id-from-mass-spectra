@@ -53,10 +53,43 @@ def select(meta: pd.DataFrame, hold: set, n: int, seed: int):
     return pick(c1), pick(c2), len(c1), len(c2)
 
 
+def write_holdout(name: str, keys: list, rule: str, meta: pd.DataFrame, rng, seed: int, train: Path, out_root: Path = ROOT) -> dict:
+    """keys の構造から擬似ホールドアウトを書き出す（問い合わせ = enveda 系の timsTOF、最大 MAX_SPECTRA 本）。HOLDOUT.json の中身を返す。"""
+    keyset = set(keys)
+    t = pq.read_table(train, filters=pc.field("inchikey14").isin(keys)).to_pandas()
+    q = t[(t.instrument_type == "timsTOF") & t.ingest_lib.isin(ENVEDA)].copy()
+    q = q.iloc[rng.permutation(len(q))].groupby("inchikey14", sort=False).head(MAX_SPECTRA).sort_values(["inchikey14"], kind="stable")
+    ids = {k: f"m_{i:05d}" for i, k in enumerate(sorted(q.inchikey14.unique()))}
+    q["molecule_id"] = q.inchikey14.map(ids)
+    q["spectrum_id"] = [f"s_{i:06d}" for i in range(len(q))]
+    out = out_root / "data/holdouts" / name
+    out.mkdir(parents=True, exist_ok=True)
+    q[["molecule_id", "spectrum_id"] + TEST_COLS].to_parquet(out / "test.parquet", index=False)
+    pd.DataFrame({"molecule_id": sorted(ids.values()), "smiles": "CCO"}).to_csv(out / "sample_submission.csv", index=False)
+    (out / "drop_keys.txt").write_text("\n".join(sorted(keyset)) + "\n")
+    (out / "hide_rule.json").write_text(json.dumps(dict(rule=rule, enveda_libs=sorted(ENVEDA),
+                                                        pool="remove" if rule == "all" else "keep"), indent=2))
+    truth = t.drop_duplicates("inchikey14")[["inchikey14", "normalized_smiles"]].rename(columns={"normalized_smiles": "smiles"})
+    truth["molecule_id"] = truth.inchikey14.map(ids)
+    truth = truth.dropna(subset=["molecule_id"]).sort_values("molecule_id")
+    tdir = out_root / "outputs/holdouts" / name
+    tdir.mkdir(parents=True, exist_ok=True)
+    truth[["molecule_id", "inchikey14", "smiles"]].to_csv(tdir / "truth.csv", index=False)
+    hid = hidden_mask(meta.ingest_lib, meta.inchikey14, keyset, rule)
+    info = dict(name=name, seed=seed, rule=rule, n_molecules=len(ids), n_spectra=len(q),
+                spectra_per_molecule=q.groupby("molecule_id").size().describe().round(2).to_dict(),
+                hidden_train_rows=int(hid.sum()),
+                remaining_ref_rows_of_truth=int((meta.inchikey14.isin(keyset).values & ~hid).sum()),
+                libs_of_queries=q.ingest_lib.value_counts().to_dict())
+    (out / "HOLDOUT.json").write_text(json.dumps(info, indent=2))
+    return info
+
+
 def main() -> None:
     ap = argparse.ArgumentParser()
     ap.add_argument("--n", type=int, default=200)
     ap.add_argument("--seed", type=int, default=20261107)
+    ap.add_argument("--out-root", default=str(ROOT), help="出力先の根（再現確認用）")
     args = ap.parse_args()
     train = ROOT / "data/train.parquet"
     meta = pq.read_table(train, columns=["inchikey14", "ingest_lib", "instrument_type", "precursor_mz", "adduct"],
@@ -71,35 +104,7 @@ def main() -> None:
     print(f"eligible C1 {n1}, C2 {n2}; picked {len(c1)}, {len(c2)}")
     rng = np.random.default_rng(args.seed + 1)
     for name, keys, rule in (("v3_c1", c1, "enveda_libs"), ("v3_c2", c2, "all")):
-        keyset = set(keys)
-        t = pq.read_table(train, filters=pc.field("inchikey14").isin(keys)).to_pandas()
-        q = t[(t.instrument_type == "timsTOF") & t.ingest_lib.isin(ENVEDA)].copy()
-        q = q.iloc[rng.permutation(len(q))].groupby("inchikey14", sort=False).head(MAX_SPECTRA).sort_values(["inchikey14"], kind="stable")
-        ids = {k: f"m_{i:05d}" for i, k in enumerate(sorted(q.inchikey14.unique()))}
-        q["molecule_id"] = q.inchikey14.map(ids)
-        q["spectrum_id"] = [f"s_{i:06d}" for i in range(len(q))]
-        out = ROOT / "data/holdouts" / name
-        out.mkdir(parents=True, exist_ok=True)
-        q[["molecule_id", "spectrum_id"] + TEST_COLS].to_parquet(out / "test.parquet", index=False)
-        pd.DataFrame({"molecule_id": sorted(ids.values()), "smiles": "CCO"}).to_csv(out / "sample_submission.csv", index=False)
-        (out / "drop_keys.txt").write_text("\n".join(sorted(keyset)) + "\n")
-        (out / "hide_rule.json").write_text(json.dumps(dict(rule=rule, enveda_libs=sorted(ENVEDA),
-                                                            pool="remove" if rule == "all" else "keep"), indent=2))
-        truth = t.drop_duplicates("inchikey14")[["inchikey14", "normalized_smiles"]].rename(columns={"normalized_smiles": "smiles"})
-        truth["molecule_id"] = truth.inchikey14.map(ids)
-        truth = truth.dropna(subset=["molecule_id"]).sort_values("molecule_id")
-        tdir = ROOT / "outputs/holdouts" / name
-        tdir.mkdir(parents=True, exist_ok=True)
-        truth[["molecule_id", "inchikey14", "smiles"]].to_csv(tdir / "truth.csv", index=False)
-        hid = hidden_mask(meta.ingest_lib, meta.inchikey14, keyset, rule)
-        info = dict(name=name, seed=args.seed, rule=rule, n_molecules=len(ids), n_spectra=len(q),
-                    spectra_per_molecule=q.groupby("molecule_id").size().describe().round(2).to_dict(),
-                    hidden_train_rows=int(hid.sum()),
-                    remaining_ref_rows_of_truth=int((meta.inchikey14.isin(keyset).values & ~hid).sum()),
-                    libs_of_queries=q.ingest_lib.value_counts().to_dict())
-        (out / "HOLDOUT.json").write_text(json.dumps(info, indent=2))
-        print(json.dumps(info))
-
+        print(json.dumps(write_holdout(name, keys, rule, meta, rng, args.seed, train, Path(args.out_root))))
 
 if __name__ == "__main__":
     main()
