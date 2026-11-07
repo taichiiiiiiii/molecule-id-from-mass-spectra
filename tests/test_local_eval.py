@@ -52,3 +52,10 @@ def test_holdout_v3_hide_rules():
     keys = pd.Series(["A", "A", "B", "C"])
     assert hv.hidden_mask(libs, keys, {"A"}, "all").tolist() == [True, True, False, False]
     assert hv.hidden_mask(libs, keys, {"A"}, "enveda_libs").tolist() == [True, False, False, False]
+
+
+def test_merge_slots_matches_pipeline_selftest():
+    # 0.479 版 cell 33 の自己テストと同じ入出力
+    assert le.merge_slots(["A", "B", "C"], ["ka", "kb", "kc"], ["X", "Y"], ["kx", "ky"], [2, 4]) == ["A", "X", "B", "Y", "C"]
+    assert le.merge_slots(["A", "B", "C"], ["ka", "kb", "kc"], [], [], [2, 4]) == ["A", "B", "C"]
+    assert le.merge_slots(["A"], ["ka"], ["A2"], ["ka"], [2]) == ["A"]   # 同じキーの提案は飛ばす

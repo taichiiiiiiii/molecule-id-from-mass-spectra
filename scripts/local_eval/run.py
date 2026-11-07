@@ -68,6 +68,7 @@ def load_pool(root: Path = ROOT) -> Pool:
 # ---------------------------------------------------------------- 段 2: 採点
 class FPCache:
     """SMILES -> 選択ビットの指紋。同じ構造を何度も計算しない。"""
+    bits: np.ndarray
 
     def __init__(self, bits: np.ndarray):
         from casmi import chem
@@ -143,6 +144,26 @@ def frag_rerank(rows, pool: Pool, spectra, frag, fuse, cache, formula_of, topn: 
     return [head[o] for o in order]
 
 
+# ---------------------------------------------------------------- 段: PubChem 提案の差し込み（0.479 版 cell 33 の merge と同じ）
+PC_LIB_TAU, REL_TH, PROMOTE_REL = 0.9, 600.0, 150.0
+SLOTS_AGG, SLOTS_GENTLE = [2, 4, 6, 8, 10], [4, 8, 12, 16, 20]
+
+
+def merge_slots(base, base_keys, pc, pc_keys, slots, n=K):
+    """PubChem 提案を指定の順位（1 始まり）に差し込む。base と同じキーの提案は飛ばす。"""
+    seen = set(base_keys)
+    props = [(s, k) for s, k in zip(pc, pc_keys) if k not in seen]
+    out, bi, pi = [], 0, 0
+    while len(out) < n and (bi < len(base) or pi < len(props)):
+        if (len(out) + 1) in slots and pi < len(props):
+            out.append(props[pi][0]); pi += 1
+        elif bi < len(base):
+            out.append(base[bi]); bi += 1
+        else:
+            out.append(props[pi][0]); pi += 1
+    return out
+
+
 # ---------------------------------------------------------------- 実行
 def run(holdout: str, stages: list[str], logits_run: str | None = None) -> dict:
     from mrr25 import calculate_mrr25, read_truth
@@ -196,6 +217,29 @@ def run(holdout: str, stages: list[str], logits_run: str | None = None) -> dict:
                 rows = [r for r in rows if pool.key[r[1]] not in refs] + [r for r in rows if pool.key[r[1]] in refs]
             lists[mid] = rows
     preds = {mid: [pool.smiles[i] for _, i in lists[mid][:K]] if mid in lists else [] for mid in truth}
+    if "pubchem" in stages:   # 0.479 版の merge / promote（cell 33）と同じ規則で PubChem 提案を差し込む
+        import pubchem as PC
+        pool_keys = set(pool.key) - hidden
+        pcres = PC.run_holdout(holdout, {m: targets[m] for m in lists}, zf, fpc.bits, pool_keys)
+        n_ins = n_prom = 0
+        for mid, rows in lists.items():
+            prop = pcres.get(mid) or []
+            lib_max = diag.get(mid, {}).get("lib_max", 0.0)
+            if not prop or lib_max >= PC_LIB_TAU:
+                continue
+            # ゲート量は 0.479 版の生ロジット尺度（1.5 × モデル平均）に合わせて 1.5 倍する（近似: fold-0 単独）
+            best_pool = max((r[0] for r in score_window(pool.window(targets[mid]), pool, zf[mid].astype(np.float32), fpc)
+                             if pool.key[r[1]] not in hidden), default=None) if "prior" in stages else (rows[0][0] if rows else None)
+            rel = 1e9 if best_pool is None else 1.5 * (prop[0][1] - best_pool)
+            slots = SLOTS_AGG if rel > REL_TH else SLOTS_GENTLE
+            base = preds[mid]; bk = [pool.key[i] for _, i in rows[:K]]
+            merged = merge_slots(base, bk, [p[0] for p in prop], [p[2] for p in prop], slots)
+            if rel > PROMOTE_REL:   # 文献 prior の昇格条件（S, pop）はローカルに無いので Δ だけ
+                merged = ([prop[0][0]] + [x for x in merged if x != prop[0][0]])[:K]; n_prom += 1
+            preds[mid] = merged; n_ins += 1
+        diag_pc = dict(pubchem_inserted=n_ins, pubchem_promoted=n_prom)
+    else:
+        diag_pc = {}
     tag = "+".join(stages)
     out_dir = ROOT / f"outputs/local_eval/{holdout}"
     out_dir.mkdir(parents=True, exist_ok=True)
@@ -209,6 +253,7 @@ def run(holdout: str, stages: list[str], logits_run: str | None = None) -> dict:
         lm = np.array([d["lib_max"] for d in diag.values()])
         res["lib_max_ge_tau"] = round(float((lm >= LIB_TAU).mean()), 3)
         res["lib_max_median"] = round(float(np.median(lm)), 3)
+    res.update(diag_pc)
     (out_dir / f"result_{tag}.json").write_text(json.dumps(res, indent=2))
     return res
 
@@ -216,7 +261,7 @@ def run(holdout: str, stages: list[str], logits_run: str | None = None) -> dict:
 def main() -> None:
     ap = argparse.ArgumentParser()
     ap.add_argument("--holdout", required=True)
-    ap.add_argument("--stages", default="score,prior", help="カンマ区切り: score[,prior][,frag][,lib][,reflast]")
+    ap.add_argument("--stages", default="score,prior", help="カンマ区切り: score[,prior][,frag][,lib][,reflast][,pubchem]")
     ap.add_argument("--logits-run", default=None, help="outputs/holdout_eval/<run>/pc_logits.npz（既定 <holdout>_fold0）")
     args = ap.parse_args()
     print(json.dumps(run(args.holdout, args.stages.split(","), args.logits_run), indent=2))
