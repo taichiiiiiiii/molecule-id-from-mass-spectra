@@ -129,6 +129,8 @@ def main() -> None:
     ap.add_argument("--model", type=Path, default=ROOT / "outputs/ranker/model_c2p.txt")
     ap.add_argument("--out", type=Path, default=ROOT / "outputs/submit/submission.csv")
     ap.add_argument("--skip-steps", action="store_true", help="1〜4 を飛ばす（キャッシュ済みのとき）")
+    ap.add_argument("--emit", choices=["ranker", "score_prior"], default="ranker",
+                    help="score_prior = ランカーを使わず score+prior の並びを出す（#37 の切り分け用）")
     args = ap.parse_args()
     if not args.skip_steps:
         clear_caches(args.name)
@@ -141,10 +143,10 @@ def main() -> None:
     lists, ft = build_lists(args.name, args.model)
     fb = read_submission(ROOT / f"outputs/local_eval/{args.name}/submission_score+prior.csv")
     ids = list(pd.read_csv(ROOT / f"data/holdouts/{args.name}/sample_submission.csv").molecule_id)
-    counts = write_submission(args.out, ids, lists, fb)
+    counts = write_submission(args.out, ids, {} if args.emit == "score_prior" else lists, fb)
     with open(args.out, newline="") as f:
         validate_submission(list(csv.reader(f)), expected_ids=set(ids))
-    rep = dict(name=args.name, out=str(args.out), counts=counts)
+    rep = dict(name=args.name, out=str(args.out), emit=args.emit, counts=counts)
     try:   # 診断は判断に使わない。失敗しても検証済みの提出ファイルを壊さない
         rep["diagnostics"] = diagnostics(ft)
     except Exception as e:  # noqa: BLE001
