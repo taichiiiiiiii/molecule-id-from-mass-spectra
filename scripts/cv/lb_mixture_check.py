@@ -14,6 +14,7 @@ LB 2 点と検証区分の混合比の整合性点検（Issue #42、分析のみ
   C2p_n    v3_c2n       同上（プール内・参照なし、COCONUT 構造）
   strong   見える test  outputs/submit/submission_score_prior.csv / submission.csv。lib_sim ≥ 0.99 のプール候補を正解とみなす推定
   unreach  未到達       両方 0
+格子の値は 0.05 刻みの上での範囲（解像度 ±0.05）。連続の比での最小・最大も線形計画で併記する（k*_continuous、scipy があるときだけ）。
 格子は 3 通り: (a) C2p_env と C2p_n を別の区分として両方、(b) C2p_env だけ、(c) C2p_n だけ。
 
     python scripts/cv/lb_mixture_check.py
@@ -74,6 +75,27 @@ def summarize(grid: np.ndarray, ok: np.ndarray, segs: list[str]) -> dict:
     return out
 
 
+def lp_bounds(mrr_by_sub: dict, lb: dict, tol: float, segs: list[str]) -> dict | None:
+    """格子の解像度（±0.05）を除いた連続の比での各区分の最小・最大（線形計画、scipy があるときだけ）。"""
+    try:
+        from scipy.optimize import linprog
+    except ImportError:
+        return None
+    n = len(segs)
+    A_ub, b_ub = [], []
+    for name, m in mrr_by_sub.items():
+        A_ub += [m, -m]; b_ub += [lb[name] + tol, -(lb[name] - tol)]
+    out = {}
+    for i, s in enumerate(segs):
+        lo_hi = []
+        for sign in (1, -1):
+            c = np.zeros(n); c[i] = sign
+            r = linprog(c, A_ub=np.array(A_ub), b_ub=np.array(b_ub), A_eq=np.ones((1, n)), b_eq=[1.0], bounds=[(0, 1)] * n)
+            lo_hi.append(round(float(sign * r.fun), 3) if r.status == 0 else None)
+        out[s] = lo_hi
+    return out
+
+
 def strong_mrr(sub_path: Path, feat_path: Path) -> tuple[float, int]:
     """見える test で lib_sim ≥ STRONG_SIM のプール候補（キーの集合）を正解とみなした MRR@25（推定）と対象分子数。"""
     import pandas as pd
@@ -109,7 +131,8 @@ def main() -> None:
     for vname, segs in VARIANTS.items():
         grid = simplex_grid(len(segs))
         m = {n: np.array([seg_mrr[n][s] for s in segs]) for n in seg_mrr}
-        res["variants"][vname] = dict(segments=segs, **{f"k{k}": summarize(grid, consistent(grid, m, LB, k * SE), segs) for k in KS})
+        res["variants"][vname] = dict(segments=segs, **{f"k{k}": summarize(grid, consistent(grid, m, LB, k * SE), segs) for k in KS},
+                                      **{f"k{k}_continuous": lp_bounds(m, LB, k * SE, segs) for k in KS})
     out = ROOT / "outputs/lb_mixture/result.json"
     out.parent.mkdir(parents=True, exist_ok=True)
     out.write_text(json.dumps(res, indent=2, ensure_ascii=False))
