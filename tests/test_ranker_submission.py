@@ -66,3 +66,9 @@ def test_clear_caches(tmp_path, monkeypatch):
     (tmp_path / "outputs/ranker/features/x.parquet").write_text("")
     rs.clear_caches("x")
     assert not (tmp_path / "outputs/local_eval/x").exists() and not (tmp_path / "outputs/ranker/features/x.parquet").exists()
+
+
+def test_emit_score_prior_ignores_ranker_lists(tmp_path):
+    out = tmp_path / "s.csv"
+    c = rs.write_submission(out, ["a"], {}, {"a": ["N"]})   # --emit score_prior は lists を空で渡す
+    assert c["fallback_score_prior"] == 1 and validate_submission(list(csv.reader(open(out))))["a"] == ["N"]

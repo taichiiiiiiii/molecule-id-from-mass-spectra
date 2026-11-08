@@ -36,6 +36,7 @@ CODE_FILES = ["scripts/local_eval/run.py", "scripts/local_eval/pubchem.py", "scr
               "outputs/ranker/model_c2p.txt",
               "data/holdouts/v3_c1/test.parquet", "data/holdouts/v3_c1/drop_keys.txt", "data/holdouts/v3_c1/hide_rule.json",
               "data/holdouts/v3_c1/sample_submission.csv", "outputs/holdouts/v3_c1/truth.csv"]
+EMIT = "ranker"   # #37: score_prior にするとランカー無しの並びを出す（--emit で切り替える）
 REHEARSAL_EXPECTED = 0.869   # train_eval（result_c2p.json）の v3_c1。ずれは記録するだけで、提出は止めない
 
 SETUP = r'''
@@ -93,7 +94,7 @@ SUBMIT = r'''
 # 提出ファイル（評価と同じ経路: logits → run.py → ranker_features → model_c2p）
 import signal
 p = subprocess.Popen([sys.executable, "scripts/submit/ranker_submission.py", "--test", str(TEST), "--sample", str(SAMPLE),
-                      "--name", "sub_test", "--out", "/kaggle/working/submission.csv"], cwd=R, start_new_session=True)
+                      "--name", "sub_test", "--out", "/kaggle/working/submission.csv", "--emit", "{emit}"], cwd=R, start_new_session=True)
 try:
     rc = p.wait(timeout=7 * 3600)
 except subprocess.TimeoutExpired:
@@ -139,6 +140,10 @@ def cell(src: str) -> dict:
 
 
 def main() -> None:
+    import argparse
+    ap = argparse.ArgumentParser()
+    ap.add_argument("--emit", choices=["ranker", "score_prior"], default=EMIT)
+    args = ap.parse_args()
     ds = ROOT / "kernels/casmi26_ranker_code"
     if ds.exists():
         shutil.rmtree(ds)
@@ -149,7 +154,8 @@ def main() -> None:
     kd = ROOT / "kernels/casmi26_ranker"
     kd.mkdir(parents=True, exist_ok=True)
     nb = dict(nbformat=4, nbformat_minor=5, metadata=dict(kernelspec=dict(name="python3", display_name="Python 3", language="python")),
-              cells=[cell(SETUP), cell(SUBMIT), cell(REHEARSAL.format(expected=REHEARSAL_EXPECTED))])
+              cells=[cell(SETUP), cell(SUBMIT.replace("{emit}", args.emit)),
+                                                                                                cell(REHEARSAL.format(expected=REHEARSAL_EXPECTED)) if args.emit == "ranker" else cell("print('rehearsal: ranker 以外では飛ばす')")])
     (kd / "notebook.ipynb").write_text(json.dumps(nb, indent=1, ensure_ascii=False))
     meta = json.loads((ROOT / "kernels/lb479/kernel-metadata.json").read_text())
     meta.update(id=KERNEL_ID, title="casmi26 ranker submit", enable_gpu=False, enable_internet=False, dataset_sources=SOURCES,
