@@ -47,3 +47,6 @@ secrets.toml
 # 生成物（make_ranker_kernel.py が作る。コードは scripts/ にあるので二重管理しない）
 kernels/casmi26_ranker_code/
 .agent.lock
+
+# 実行ログ（ローカルの記録。追跡しない）
+logs/
