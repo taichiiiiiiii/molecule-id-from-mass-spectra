@@ -145,7 +145,7 @@ EOF
 - fe_v4 `prior_tables.pkl` が学習ラベルを使うか。
 
 ## 7. 以前の記録の訂正
-11/8 の日報（Issue #3 のコメント）とスキルの参照メモには、2 点が事実と違う形で書かれていた。
+11/8 の日報（Issue #3 のコメント）とスキルの参照メモには、以下の点が事実と違う、または裏づけの無い形で書かれていた。
 - 「`fp_bits.npy` には選び方のコードが無い」
   - 正しくは、`ahmedberatozer/casmi26-training-code` の `scripts/04_make_split.py` に、`structs.select_bits(fp, lo=0.005, hi=0.995, sample=200000)` → `work/fp_bits.npy` がある（11/9 にファイルを読んで確認）
   - v2-pool データセットの中に無い、という点だけは正しい
