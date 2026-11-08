@@ -43,8 +43,8 @@ def test_consistent_requires_both_submissions():
 
 
 def test_lp_bounds_matches_simple_case():
+    import pytest
+    pytest.importorskip("scipy")                               # CI に scipy が無ければ skip
     mrr = {"a": np.array([1.0, 0.0]), "b": np.array([0.0, 1.0])}
     r = LM.lp_bounds(mrr, {"a": 0.3, "b": 0.7}, 0.05, ["x", "y"])
-    if r is None:                                              # CI に scipy が無ければ飛ばす
-        return
     assert r["x"] == [0.25, 0.35] and r["y"] == [0.65, 0.75]
