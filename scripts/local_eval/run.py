@@ -6,6 +6,8 @@
   1. candidates : 候補プール（pool_meta）の ±PPM 窓
   2. score      : fold-0 FPNet ロジット z で fp[bits] @ z（ホールドアウト分子を学習で見ていないモデル）
   3. prior      : 上位 TOPN を z 標準化 + POOLPOP_MU * (log1p 物質数 + log1p PubMed)（0.479 版 v19 と同じ定数）
+  2b. sanpier   : （#60、指定時だけ）fold-safe sanpier の点 n と s を分子ごとに z 化し、s' = μ_s + σ_s·(z_s+z_n)/2（等重み）。
+                  点は scripts/local_eval/sanpier.py が outputs/local_eval/<h>/sanpier_scores.npz に作る
   4. frag       : 上位 TOPN の同一組成式グループを MetFrag-lite 断片説明率で並べ替え（0.479 版 v7c と同じ:
                   gl_fuse.rerank_multi、λ=0.5、学習なしなのでリーク無し）
   5. output     : InChIKey14 で重複除去した上位 25 → submission 形式 → MRR@25
@@ -89,6 +91,27 @@ def score_window(idx: np.ndarray, pool: Pool, z: np.ndarray, fpc: FPCache):
             rows.append((float(fp @ z), int(i)))
     rows.sort(key=lambda r: -r[0])
     return rows
+
+
+# ---------------------------------------------------------------- 段 2b: sanpier（#60、等重み）
+def sanpier_mix(rows, nmap: dict):
+    """rows=(s, pool 行) の全候補について s と n を z 化し、s' = μ_s + σ_s·(z_s+z_n)/2 で並べ直す。
+    n が無い（NaN・欠け）候補は z_n = 0。点のある候補が 2 未満、または σ_s / σ_n = 0 の分子は rows をそのまま返す。"""
+    if len(rows) < 2:
+        return rows
+    s = np.array([r[0] for r in rows], np.float64)
+    n = np.array([nmap.get(i, np.nan) for _, i in rows], np.float64)
+    ok = np.isfinite(n)
+    mu, sd = s.mean(), s.std()
+    if ok.sum() < 2 or sd == 0:
+        return rows
+    nm, ns = n[ok].mean(), n[ok].std()
+    if ns == 0:
+        return rows
+    zn = np.zeros(len(s)); zn[ok] = (n[ok] - nm) / ns
+    s2 = mu + sd * ((s - mu) / sd + zn) / 2
+    order = np.argsort(-s2, kind="stable")
+    return [(float(s2[o]), rows[o][1]) for o in order]
 
 
 # ---------------------------------------------------------------- 段 3: 文献 prior（v19 と同じ形）
@@ -188,6 +211,9 @@ def run(holdout: str, stages: list[str], logits_run: str | None = None) -> dict:
     need_lib = "lib" in stages or "reflast" in stages
     if need_lib and "frag" not in stages:
         spectra = query_spectra(holdout)
+    if "sanpier" in stages:
+        import sanpier as SP
+        nscores = SP.load_scores(ROOT / f"outputs/local_eval/{holdout}/sanpier_scores.npz")
     lists = {}
     for mid in truth:
         if mid not in targets:
@@ -196,6 +222,8 @@ def run(holdout: str, stages: list[str], logits_run: str | None = None) -> dict:
         if hidden:
             idx = idx[~np.isin(pool.key[idx], list(hidden))]
         rows = score_window(idx, pool, zf[mid].astype(np.float32), fpc)
+        if "sanpier" in stages:
+            rows = sanpier_mix(rows, nscores[mid])
         if "prior" in stages:
             rows = rerank_with_prior(rows, pool)
         if "frag" in stages:
@@ -279,7 +307,7 @@ def run(holdout: str, stages: list[str], logits_run: str | None = None) -> dict:
 def main() -> None:
     ap = argparse.ArgumentParser()
     ap.add_argument("--holdout", required=True)
-    ap.add_argument("--stages", default="score,prior", help="カンマ区切り: score[,prior][,frag][,lib][,reflast][,pubchem]")
+    ap.add_argument("--stages", default="score,prior", help="カンマ区切り: score[,sanpier][,prior][,frag][,lib][,reflast][,pubchem]")
     ap.add_argument("--logits-run", default=None, help="outputs/holdout_eval/<run>/pc_logits.npz（既定 <holdout>_fold0）")
     args = ap.parse_args()
     print(json.dumps(run(args.holdout, args.stages.split(","), args.logits_run), indent=2))
