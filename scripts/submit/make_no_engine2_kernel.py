@@ -7,6 +7,7 @@ lb479 cell 10 の FROZEN_B64（0.465 ノートブック）を復号し、2 か�
   - F セル 32: Engine 2 のサブプロセスを起動しない。パイプライン自身の失敗時の分岐（`ENGINE FAILED -> v4g lists kept`）に入れ、
     そのあと ENG を「test の全分子が空リスト」で埋める（後段の assert「Engine 2 が全分子を覆う」を満たすため）
   - F セル 50（postflight）: コミット実行で「Engine 2 のリストが空でない」を要求する条件だけを外す
+  - F セル 41: N1 の失敗をコミット実行でも再実行と同じく続行にする（Engine 2 が空だと GLACIER の入力が 0 分子になるため。v1 はここで止まった）
 置き換え対象の文字列はそれぞれ 1 回だけ現れることを assert する。
 
     python scripts/submit/make_no_engine2_kernel.py [--slug casmi26-lb479-noeng2]
@@ -29,6 +30,11 @@ EXC_NEW = (EXC_OLD + "\nif _SKIP_ENGINE2:   # Issue #62: every molecule gets an 
            "    ENG = {str(_m): dict(smiles=[], keys=[]) for _m in\n"
            "           pd.read_parquet(os.path.join(COMP, 'test.parquet'), columns=['molecule_id']).molecule_id.unique()}\n"
            "    print('Engine 2 disabled (Issue #62): empty lists for', len(ENG), 'molecules', flush=True)")
+# F セル 41: Engine 2 が空だと ICEBERG/GLACIER の入力が 0 分子になり、N1 が「H1 GLACIER の点が無い」で例外を出す。
+# 隠れテストの再実行では元から H1 の動作に落ちて続行する（IS_RERUN のとき raise しない）。コミット実行でも同じく続行させる
+N1_OLD = "    if not IS_RERUN:\n        raise\nprint(f'[N1] GL-scored N1 molecules"
+N1_NEW = ("    if not IS_RERUN and not globals().get('_SKIP_ENGINE2'):   # Issue #62: with Engine 2 off GL has no input; continue as the rerun does\n"
+          "        raise\nprint(f'[N1] GL-scored N1 molecules")
 POST_OLD = "assert all(eng[mid]['smiles'] and pc.get(mid, {}).get('pc') for mid in processed)"
 POST_NEW = "assert all(pc.get(mid, {}).get('pc') for mid in processed)   # Issue #62: Engine 2 lists are empty by design"
 
@@ -37,7 +43,9 @@ def patch_frozen(frozen: dict) -> dict:
     cells = frozen["cells"]
     run = [i for i, c in enumerate(cells) if RUN_OLD in "".join(c["source"])]
     post = [i for i, c in enumerate(cells) if POST_OLD in "".join(c["source"])]
-    assert len(run) == 1 and len(post) == 1, (run, post)
+    n1 = [i for i, c in enumerate(cells) if N1_OLD in "".join(c["source"])]
+    assert len(run) == 1 and len(post) == 1 and len(n1) == 1, (run, post, n1)
+    cells[n1[0]]["source"] = replace_once("".join(cells[n1[0]]["source"]), N1_OLD, N1_NEW, "n1 raise")
     s = "".join(cells[run[0]]["source"])
     s = replace_once(s, RUN_OLD, RUN_NEW, "engine 2 run")
     s = replace_once(s, EXC_OLD, EXC_NEW, "engine 2 except")
