@@ -27,6 +27,8 @@ def _group_cols(rng, n, cmap):
     X = rng.random((n, len(cmap))).astype(np.float32) + 0.1   # 式の無い列は乱数（0 にならない）
     idx = {name: i for i, _, name, _ in cmap}
     X[:, [i for i, _, _, c in cmap if c == "fp"]] = 0
+    for name in ("top_sim", "anapol_top_w"):   # 分子ごとの定数の列
+        if name in idx: X[:, idx[name]] = X[0, idx[name]]
     for base in ("lib", "ap", "frag", "lib_mean", "libsh", "anapol_ap", "frag_ad", "frag_mean"):
         if base not in idx: continue
         v = rng.random(n).astype(np.float32); v[rng.random(n) < 0.3] = 0
@@ -70,7 +72,7 @@ def test_describe_synthetic(tmp_path):
     ids = d["identities"]
     for name, v in ids.items():
         if v.get("status") == "all_zero":
-            assert name.startswith("fp_"); continue
+            assert name.startswith(("fp_", "x_")); continue
         assert v["frac"] == 1.0, (name, v)
     assert ids["log_nc"]["frac"] == 1.0
     json.dumps(d)  # JSON に書ける

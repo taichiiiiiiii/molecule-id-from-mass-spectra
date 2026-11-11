@@ -55,6 +55,9 @@ IDENTITIES = [
     ("ap_rank", "rank", "ap"), ("ap_max", "max", "ap"), ("ap_minus_max", "minus_max", "ap"),
     ("log_nc", "log_nc", None),
     ("fp_raw_rank", "rank", "fp_raw_z"), ("fp_raw_minus_max", "minus_max_scaled", "fp_raw_z"),
+    ("fp_nrm_rank", "rank", "fp_nrm_z"), ("fp_raw_is_max", "is_max", "fp_raw_z"),
+    ("top_sim", "const", None), ("x_agree_lib", "const", None), ("x_agree_ap", "const", None),
+    ("x_agree_lib_lvmax", "const", None), ("x_corr_lib_mr", "const", None), ("anapol_top_w", "const", None),
     ("frag_rank", "rank", "frag"), ("frag_minus_max", "minus_max", "frag"), ("frag_z", "z", "frag"),
     ("lib_mean_rank", "rank", "lib_mean"), ("lib_mean_minus_max", "minus_max", "lib_mean"),
     ("libsh_rank", "rank", "libsh"), ("libsh_minus_max", "minus_max", "libsh"),
@@ -104,6 +107,10 @@ def check_identity(kind, col, src, tol=1e-4):
         d = col.astype(np.float64)
         return bool(np.all(d <= tol) and np.isclose(d.max(), 0.0, atol=tol)
                     and _rank_consistent(src.astype(np.float64), _rank_norm(d)))
+    if kind == "is_max":    # raw == max(raw) は z の最大と同じ位置（z は raw の単調変換）
+        return bool(np.array_equal(col > 0.5, np.isclose(src, src.max(), atol=1e-6)))
+    if kind == "const":     # グループ内で一定（分子ごとの値）
+        return bool(np.allclose(col, col[0], atol=tol))
     if kind == "pos":
         return bool(np.array_equal(col > 0.5, src > 0))
     if kind == "log_nc":
@@ -176,6 +183,11 @@ def describe(path, blocks=None):
         sub = z["M"] if "M" in z.files else (z["S"] if "S" in z.files else np.zeros(len(G)))
         key = G.astype(np.int64) * 2 + np.asarray(sub).astype(np.int64)
         d["identities"] = identity_report(X, key, cmap)
+        # 恒等式で確かめていない（式の無い元の値の）列。全 0 の列は除く
+        checked = {name for name, v in d["identities"].items()}
+        d["unchecked_cols"] = [dict(i=i, name=n) for i, b, n, c in cmap
+                               if n not in checked and i not in d["all_zero_cols"]]
+        d["categories_source"] = "BLOCK_COLS（推論コード pv.rank_features / casmi_engine.BLOCKS を読んで手で付けた区分。データからは導いていない）"
     return d
 
 
