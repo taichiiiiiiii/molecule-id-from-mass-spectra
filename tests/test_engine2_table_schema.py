@@ -102,3 +102,14 @@ def test_main_writes_json(tmp_path):
     assert d["rank_train"]["n_feat"] == 31 and d["rank_train"]["blocks"] == ["base"]
     assert d["shape_matches_registered"] == {"rank_train": False, "sim_rank_rows": False}
     del rng
+
+
+def test_multi_formulas():
+    lib = np.array([0.0, 0.9, 0.3]); mr = np.array([0.5, 1.0, 0.0]); ap = np.array([0.2, 0.0, 0.1])
+    c = dict(lib=lib, fp_raw_rank=mr, ap=ap, lib_max=np.full(3, 0.9))
+    assert np.allclose(S.MULTI["x_lib_mr"][1](c), lib * (1 - mr))
+    assert np.allclose(S.MULTI["x_agree_lib"][1](c), 0.0)        # argmax lib = 1 → 1 − mr[1] = 0
+    assert np.allclose(S.MULTI["x_agree_ap"][1](c), 0.5)         # argmax ap = 0 → 1 − 0.5
+    c["x_agree_lib"] = np.full(3, 0.25)
+    assert np.allclose(S.MULTI["x_agree_lib_lvmax"][1](c), 0.225)
+    assert np.allclose(S.MULTI["fp_raw_is_max"][1](dict(fp_raw_minus_max=np.array([0.0, -1.0]))), [1.0, 0.0])

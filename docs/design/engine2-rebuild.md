@@ -57,12 +57,16 @@
 - `sim_rank_rows`（51 列）: own 39、fp 12、unknown 0。ただし fp の 12 列は表でも推論でも常に 0 なので、作り直しに FP ロジットは要らない
 
 恒等式による定義の確認（グループ × M/S ごとに表の値から再計算。成り立つグループの割合。`schema.json` の `identities`）:
-- `rank_train`: 19 列が全グループで成立（1.0）: lib_rank / lib_max / lib_minus_max / lib_pos / ap_rank / ap_max / ap_minus_max / top_sim（グループ内で一定）/ log_nc / fp_raw_rank / fp_raw_minus_max / fp_nrm_rank / frag_rank / frag_minus_max / frag_z / x_agree_lib / x_agree_ap / x_agree_lib_lvmax / x_corr_lib_mr（以上 4 列はグループ内で一定）。fp_raw_is_max（= fp_raw_z の最大の位置）は 0.9976（1,638 中 1,634。外れる 4 グループ = 2 分子 × M では、float32 の z が最大と同じ値に丸められた候補が 1 件多い）
-- `sim_rank_rows`: 24 列が全グループで成立（1.0）: 上の FP 以外の 9 列（lib 系 4、ap 系 3、top_sim、log_nc）、frag 系 3、libx の 5（lib_mean_rank / lib_mean_minus_max / libsh_rank / libsh_minus_max / log_cnt_minus_max）、anapol の 3（anapol_ap_rank / anapol_ap_minus_max / anapol_top_w）、fragx の 4（frag_ad_rank / frag_ad_minus_max / frag_mean_rank / frag_mean_minus_max）。FP の 8 つの式は列が全 0 なので対象外
+- `rank_train`: **22 列が全グループ（1,638 = 819 分子 × M）で成立（1.0）**
+  - 1 列から: lib_rank / lib_max / lib_minus_max / lib_pos / ap_rank / ap_max / ap_minus_max / log_nc / fp_raw_rank / fp_raw_minus_max / fp_nrm_rank / frag_rank / frag_minus_max / frag_z
+  - グループ内で一定であることだけ: top_sim（値そのものはアナログの最上位の類似度で、表からは出せない）
+  - 複数の列から（`pv.py` 234–243 行、mr = fp_raw_rank）: fp_raw_is_max = (fp_raw_minus_max == 0)、x_lib_mr = lib·(1 − mr)、x_ap_mr = ap·(1 − mr)、x_agree_lib = 1 − mr[argmax lib]、x_agree_ap = 1 − mr[argmax ap]、x_agree_lib_lvmax = x_agree_lib·lib_max、x_corr_lib_mr = corr(lib, −mr)
+- `sim_rank_rows`: **24 列が全グループ（4,500）で成立（1.0）**: 上の FP 以外の 1 列の式 10（lib 系 4、ap 系 3、log_nc、frag_rank、frag_minus_max）と frag_z、一定の 2（top_sim、anapol_top_w）、libx の 5（lib_mean_rank / lib_mean_minus_max / libsh_rank / libsh_minus_max / log_cnt_minus_max）、anapol の 2（anapol_ap_rank / anapol_ap_minus_max）、fragx の 4（frag_ad_rank / frag_ad_minus_max / frag_mean_rank / frag_mean_minus_max）。FP の 10 個の式は列が全 0 なので対象外
 - `log_nc` が全グループで log(グループの行数) と一致 → 表の行は `rank_features` に渡された候補そのもの（特徴を計算する前に間引いたかどうかは、この式では分からない）
+- 式を壊すと検出できること: 単体テスト（`test_identity_detects_break`）。1 回目のレビューで列を行の間で入れ替えると成立の割合が 0.0002–0.0122 に落ちることも確認済み
 
 式で確かめていない「元の値」の列（定義は推論コードで決まるが、表を作ったときの条件は表から分からない。`schema.json` の `unchecked_cols`）:
-- `rank_train`（11 列）: 0 lib、5 ap、9 a1、10 best_tan、11 top_tan、12 mean_tan、15 fp_raw_z、18 fp_nrm_z、21 frag、25 x_lib_mr、26 x_ap_mr
+- `rank_train`（9 列）: 0 lib、5 ap、9 a1、10 best_tan、11 top_tan、12 mean_tan、15 fp_raw_z、18 fp_nrm_z、21 frag
 - `sim_rank_rows`（15 列）: 0 lib、5 ap、9 a1、10 best_tan、11 top_tan、12 mean_tan、21 frag、31 lib_mean、34 libsh、37 log_cnt、39 anapol_ap、42 anapol_ap6、44 frag_ad、47 frag_mean、50 frag_pol
 - これらの条件で分かっている違い:
   - アナログ数: 表を作った側は 80（作者 README「reference cache has 80」、`pv.N_ANALOG = 80`）。推論は `eng_runner.py` で `E.CFG.N_ANALOG = 200`。ただし `pv.rank_features` は渡されたアナログを全部使い、`top_analogs` が `CFG.N_ANALOG` で切る
@@ -81,7 +85,7 @@
 ### 4.1 方針: 1 つの模擬で 2 表を同時に作る
 - 2 表とも「1 分子 × {class-1 模擬, class-2 模擬} × 候補」の行で、行の形は同じ（§2）。ただし元の 2 表が同じ模擬から作られたわけではない: `rank_train` は作者 README によると `c2_np_recs2.pkl`・`feat2_c1.pkl`・`feat_c2.pkl`・`hard_feats.pkl`（NP 型のレコードと「hard」クエリ、計 819 分子、集合の内訳は**未確認**）、`sim_rank_rows` は 7 集合 2,250 分子
 - **元からの違い（事前に記録する）**: 自前の `own_rank_train.npz` は §4.2 の 2,000 分子から作る。prvsiyan ランカーの学習データのクエリの分布は元と変わる（元の内訳が分からないので合わせられない）
-- 生成コードは 1 本（`scripts/engine2/build_tables.py`、未実装）。各分子・各模擬で `casmi_engine` の推論コード（`molecule_channels`・`compute_frag`・`BLOCKS`）を**そのまま呼ぶ**。列の定義が推論とずれる余地を無くすため
+- 生成コードは 1 本（`scripts/engine2/build_tables.py`、未実装）。各分子・各模擬で `casmi_engine` の推論コード（`molecule_channels`・`compute_frag`・`BLOCKS`）を呼ぶ。列の定義が推論とずれる余地を無くすため。例外は prvsiyan ランカーの base で、学習と推論の両方を §4.4 の `blk_base_fs` に替える
 - 出力: `own_sim_rank_rows.npz`（キー・dtype・`blocks`・`sets` は megayak 版と同じ形）と `own_rank_train.npz`（X/Y/M/G、M は 0 = class-1、1 = class-2）
 
 ### 4.2 模擬クエリ
@@ -93,7 +97,7 @@
 - アナログ数は推論の 200 に合わせる（`eng_runner.py` と同じ `E.CFG.N_ANALOG = 200`）。元の表（80）との違いは推論と揃えるためで、値を比べて選んだものではない。これ以外の定数は推論コードのまま変えない
 
 ### 4.3 リーク除外（生成コードで assert）
-- クエリから除く構造: v3 の 4 集合（`data/holdouts/{v3_c1,v3_c2,enveda_v1,v3_c2n}/drop_keys.txt`）の正解、`data/ext/foldsafe/split.parquet` の hold（55,102 行）と np（265 行）、identity-disjoint folds の `fold_identity == 0` の構造。hold の inchikey14 は 55,102 件すべて `fold_identity == 0` に入り、`fold_identity == 0` で hold に無いのは 59 件だけ（inchikey14 どうしで比較）。fold-safe の 5 分割と揃えるため、inchikey14 と split の `key` の両方で除く
+- クエリから除く構造: v3 の 4 集合（`data/holdouts/{v3_c1,v3_c2,enveda_v1,v3_c2n}/drop_keys.txt`）の正解、`data/ext/foldsafe/split.parquet` の hold（55,102 行）と np（265 行）、identity-disjoint folds の `fold_identity == 0` の構造。hold の inchikey14 は 55,102 件すべて `fold_identity == 0` に入り、`fold_identity == 0` で hold に無いのは 59 件だけ（inchikey14 どうしで比較。2 回目のレビューによると 59 件はすべて split の np 行で、`make_split.py` が NP パネルの identity group を hold より先に np に入れるため）。fold-safe の 5 分割と揃えるため、inchikey14 と split の `key` の両方で除く
 - 生成コードは「クエリの inchikey14 と上の除外集合の積が空」を assert し、件数を出力の json に書く
 - v3 の正解が負例の候補として窓に入ることは許す（負例のラベルしか持たない）。その行数を記録する
 - この表で学習したランカーを v3 で測ることはしない（§5）。除外は将来の測定と、hold を使う他の部品との混線を避けるため
@@ -120,7 +124,7 @@
 事前登録: **案 A を使う**。案 A の単体テスト（§4.5 の 1）が通らない場合は、案 C に切り替えるのではなく、生成と提出を止めて Issue に記録する（結果を見て案を選び直さない）。
 
 ### 4.5 実装時の受け入れ条件（別 Issue で使う）
-1. 列の一致: 生成コードで作った 1 分子分の行が、同じ入力で `casmi_engine.BLOCKS`（base は §4.4 の `blk_base_fs`）を直接呼んだ結果と完全一致（単体テスト）。恒等式チェック（`engine2_table_schema.py`）が自前表でも 1.0（fp_raw_is_max は float の丸めで元の表も 0.9976 なので、0.99 以上）
+1. 列の一致: 生成コードで作った 1 分子分の行が、同じ入力で `casmi_engine.BLOCKS`（base は §4.4 の `blk_base_fs`）を直接呼んだ結果と完全一致（単体テスト）。恒等式チェック（`engine2_table_schema.py`）が自前表でも全式 1.0
 2. 形: `own_sim_rank_rows.npz` は 51 列・`blocks` が同じ順、`own_rank_train.npz` は 31 列。グループ数・正例数（グループあたり 1）を記録。分子数は 2,000 から窓外で捨てた数を引いたもの
 3. リーク: §4.3 と §4.4 の assert が通り、除外の件数が json にある
 4. 縮小版の対照は変わらない: `scripts/local_eval/run.py --holdout v3_c1|v3_c2|enveda_v1|v3_c2n` の結果ファイルが変更前と `cmp` で同一

@@ -55,9 +55,8 @@ IDENTITIES = [
     ("ap_rank", "rank", "ap"), ("ap_max", "max", "ap"), ("ap_minus_max", "minus_max", "ap"),
     ("log_nc", "log_nc", None),
     ("fp_raw_rank", "rank", "fp_raw_z"), ("fp_raw_minus_max", "minus_max_scaled", "fp_raw_z"),
-    ("fp_nrm_rank", "rank", "fp_nrm_z"), ("fp_raw_is_max", "is_max", "fp_raw_z"),
-    ("top_sim", "const", None), ("x_agree_lib", "const", None), ("x_agree_ap", "const", None),
-    ("x_agree_lib_lvmax", "const", None), ("x_corr_lib_mr", "const", None), ("anapol_top_w", "const", None),
+    ("fp_nrm_rank", "rank", "fp_nrm_z"),
+    ("top_sim", "const", None), ("anapol_top_w", "const", None),
     ("frag_rank", "rank", "frag"), ("frag_minus_max", "minus_max", "frag"), ("frag_z", "z", "frag"),
     ("lib_mean_rank", "rank", "lib_mean"), ("lib_mean_minus_max", "minus_max", "lib_mean"),
     ("libsh_rank", "rank", "libsh"), ("libsh_minus_max", "minus_max", "libsh"),
@@ -66,6 +65,25 @@ IDENTITIES = [
     ("frag_ad_rank", "rank", "frag_ad"), ("frag_ad_minus_max", "minus_max", "frag_ad"),
     ("frag_mean_rank", "rank", "frag_mean"), ("frag_mean_minus_max", "minus_max", "frag_mean"),
 ]
+
+
+def _argmax_or(v):
+    return int(np.argmax(v)) if v.max() > 0 else -1
+
+
+# 複数の列から作る列の式（pv.py 234-243 行。mr = _rank_norm(raw) = fp_raw_rank）
+MULTI = {
+    "fp_raw_is_max": (("fp_raw_minus_max",), lambda c: (c["fp_raw_minus_max"] == 0).astype(np.float64)),
+    "x_lib_mr": (("lib", "fp_raw_rank"), lambda c: c["lib"] * (1.0 - c["fp_raw_rank"])),
+    "x_ap_mr": (("ap", "fp_raw_rank"), lambda c: c["ap"] * (1.0 - c["fp_raw_rank"])),
+    "x_agree_lib": (("lib", "fp_raw_rank"), lambda c: np.full(len(c["lib"]),
+                    (1.0 - c["fp_raw_rank"][_argmax_or(c["lib"])]) if _argmax_or(c["lib"]) >= 0 else 0.0)),
+    "x_agree_ap": (("ap", "fp_raw_rank"), lambda c: np.full(len(c["ap"]),
+                   (1.0 - c["fp_raw_rank"][_argmax_or(c["ap"])]) if _argmax_or(c["ap"]) >= 0 else 0.0)),
+    "x_agree_lib_lvmax": (("x_agree_lib", "lib_max"), lambda c: c["x_agree_lib"] * c["lib_max"]),
+    "x_corr_lib_mr": (("lib", "fp_raw_rank"), lambda c: np.full(len(c["lib"]),
+                      float(np.corrcoef(c["lib"], -c["fp_raw_rank"])[0, 1]) if c["lib"].std() > 1e-9 else 0.0)),
+}
 
 
 def column_map(blocks):
@@ -139,6 +157,17 @@ def identity_report(X, G, cmap):
             src = X[rows, name2i[srcname]] if srcname else None
             ok += check_identity(kind, X[rows, ci], src)
         res[name] = dict(kind=kind, src=srcname, groups=int(ng), holds=int(ok), frac=round(ok / ng, 4))
+    for name, (srcs, fn) in MULTI.items():
+        if name not in name2i or any(c not in name2i for c in srcs): continue
+        ci = name2i[name]
+        if np.all(X[:, ci] == 0):
+            res[name] = dict(kind="formula", src=list(srcs), status="all_zero"); continue
+        ok = 0; ng = len(cuts) - 1
+        for a, b in zip(cuts[:-1], cuts[1:]):
+            rows = order[a:b]
+            c = {k: X[rows, name2i[k]].astype(np.float64) for k in srcs}
+            ok += bool(np.allclose(X[rows, ci], fn(c), atol=1e-4))
+        res[name] = dict(kind="formula", src=list(srcs), groups=int(ng), holds=int(ok), frac=round(ok / ng, 4))
     return res
 
 
