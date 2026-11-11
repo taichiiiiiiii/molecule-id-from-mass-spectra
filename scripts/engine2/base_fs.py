@@ -110,15 +110,16 @@ class FsFpCache:
         self.smiles_of = smiles_of; self.bits = np.asarray(bits); self.c = {}; self.failed = 0
 
     def get(self, idx):
-        out = np.zeros((len(idx), len(self.bits)), np.uint8)
+        nb = len(self.bits)
+        out = np.zeros((len(idx), nb), np.uint8)
         for j, i in enumerate(np.asarray(idx, np.int64).tolist()):
             v = self.c.get(i)
             if v is None:
-                v = fs_fp(self.smiles_of(i), self.bits)
-                if v is None:
-                    self.failed += 1; v = np.zeros(len(self.bits), np.uint8)
-                self.c[i] = v
-            out[j] = v
+                f = fs_fp(self.smiles_of(i), self.bits)
+                if f is None:
+                    self.failed += 1; f = np.zeros(nb, np.uint8)
+                v = np.packbits(f); self.c[i] = v          # packbits で持つ（メモリ 1/8）
+            out[j] = np.unpackbits(v)[:nb]
         return out
 
 

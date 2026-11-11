@@ -210,6 +210,8 @@ def test_d_exclusion_assert_and_selection():
     # 同じ入力なら同じ選び方（seed 0）、N_MOL を減らすと同じ並びの先頭
     q2, _ = BT.select_queries(lib_set, np.array(keys, dtype=object), excl, fold, 2000)
     assert q2 == q
+    q3, _ = BT.select_queries(lib_set, np.array(keys, dtype=object), excl, fold, 50)   # gnps 10
+    assert len(q3["gnps"]) == 10 and q3["gnps"] == q["gnps"][:10]
 
 
 def test_d_allocate_50():
@@ -247,7 +249,12 @@ def test_e_build_end_to_end_identities(tmp_path, monkeypatch):
     fold = pd.DataFrame(dict(scorer_key=P["keys"], fold_identity=[1 + i % 4 for i in range(len(P["keys"]))]), index=P["keys"])
     queries = {"gnps": list(P["keys"][[3, 10, 25]]), "riken": list(P["keys"][[4, 30]])}
     zr = np.random.default_rng(5)
-    monkeypatch.setattr(base_fs, "fs_logits", lambda bank, sp: zr.normal(size=64).astype(np.float32))
+    used = []
+
+    def fake_logits(bank, sp):
+        used.append(bank)
+        return zr.normal(size=64).astype(np.float32)
+    monkeypatch.setattr(base_fs, "fs_logits", fake_logits)
     monkeypatch.setattr(base_fs, "fs_fp", lambda smi, bits: (np.random.default_rng(len(smi)).random(64) < 0.3).astype(np.uint8))
 
     def fake_frag(recs, workers):
@@ -256,9 +263,12 @@ def test_e_build_end_to_end_identities(tmp_path, monkeypatch):
             r.pop("specs")
             _frag(r, fr)
     monkeypatch.setattr(E, "compute_frag", fake_frag)
-    sim, rt, rep = BT.build(E, L, meta, I, queries, fold, {1: None, 2: None, 3: None, 4: None}, np.arange(64), 1,
+    sim, rt, rep = BT.build(E, L, meta, I, queries, fold, {1: "bank1", 2: "bank2", 3: "bank3", 4: "bank4"}, np.arange(64), 1,
                             log=lambda *a: None, v3keys={P["keys"][4]})
     assert rep["molecules"] == 5 and rep["dropped_out_of_window"] == 0
+    # fold k のクエリには fold k のモデル（bank k）だけ
+    assert used == [f"bank{int(fold.loc[q['ik'], 'fold_identity'])}" for q in rep["queries"]]
+    assert all(q["fold"] == int(fold.loc[q["ik"], "fold_identity"]) for q in rep["queries"])
     assert sim["X"].shape[1] == 51 and rt["X"].shape[1] == 31
     assert [str(b) for b in sim["blocks"]] == ["base", "libx", "anapol", "fragx"]
     st = BT.table_stats(sim, rt)

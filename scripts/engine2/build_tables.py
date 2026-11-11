@@ -451,6 +451,11 @@ def main(argv=None):
         return explicit[n]
     E.find = find
     log = E.log
+    for n_, f_ in explicit.items():
+        assert os.path.exists(f_), f"missing asset {n_}: {f_}"
+    assert len(np.load(explicit["fp_bits.npy"])) == 6930, "Engine 2 の候補指紋は 6,930 ビット"
+    for f_ in (args.train, A["split"], A["structures"]):
+        OPENED.append(f_)                      # pyarrow で読むファイルも記録
     excl, counts, fold = load_exclusions(A["split"], A["structures"], A["drop_keys_dir"])
     log(f"exclusions {counts}")
     import pyarrow.parquet as pq
@@ -464,7 +469,16 @@ def main(argv=None):
     queries, qinfo = select_queries(meta["ingest_lib"], meta["ik"], excl, fold, args.n_mol)
     assert_disjoint(queries, excl, fold)
     log(f"queries {qinfo}")
-    E.POOL = E.build_pool(L, args.workers)
+    msgs, _log = [], E.log
+    E.log = lambda m: (msgs.append(str(m)), _log(m))
+    try:
+        E.POOL = E.build_pool(L, args.workers)
+    finally:
+        E.log = _log
+    assert any(m.startswith("+ PubChemLite CC0") for m in msgs) and not any("PubChemLite CC0 skipped" in m for m in msgs), \
+        f"PubChemLite CC0 がプールに入っていない（build_pool の try/except）: {msgs}"
+    pool_info = dict(pool_size=int(len(E.POOL["keys"])), build_pool_log=msgs)
+    log(f"pool {pool_info}")
     L["row_p"] = E.POOL["k2i"].reindex(L["ik"]).fillna(-1).values.astype(np.int64)
     del L["ik"], L["smi"]
     I = E.build_index(L)
@@ -476,7 +490,7 @@ def main(argv=None):
     for h in HOLDOUTS:
         v3keys.update(x.strip() for x in builtins.open(os.path.join(A["drop_keys_dir"], h, "drop_keys.txt")) if x.strip())
     report = dict(rdkit=rd, n_mol=args.n_mol, alloc=allocate(args.n_mol), exclusions=counts, query_info=qinfo,
-                  query_exclusion_overlap=0, fixed_secs=round(t_fixed, 1), runs=[])
+                  query_exclusion_overlap=0, fixed_secs=round(t_fixed, 1), pool=pool_info, runs=[])
     qrows = [r for s_, ks in queries.items() for r in np.flatnonzero(pd.Series(meta["ingest_lib"]).eq(s_).values & pd.Series(meta["ik"]).isin(set(ks)).values)]
     raw = read_rows_f64(args.train, qrows)
     log(f"query rows {len(raw):,}")
