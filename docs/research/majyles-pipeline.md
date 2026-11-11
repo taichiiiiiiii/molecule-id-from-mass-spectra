@@ -9,8 +9,8 @@
 
 ## ライセンス
 - リポジトリ: **MIT**（`LICENSE`、Copyright (c) 2026 Majyles）
-- 依存（`pyproject.toml`）: rdkit 2026.3.3、lightgbm ≥ 4.7.0、ms_entropy 1.5.2（FlashEntropy）、pebble 5.2.2。依存それぞれのライセンスは**未確認**
-- COCONUT: 作者のコード（`casmi/data.py` の docstring）は「CC0」と書く。COCONUT 側の表示は**未確認**。入力は COCONUT の CSV（`coconut_csv_lite-09-2026.zip`、`casmi/paths.py`）を手で取得する前提で、リポジトリには入っていない
+- 依存（`pyproject.toml`）: 本体は rdkit==2026.3.3、ms-entropy>=1.5.2（FlashEntropy）、pebble>=5.2.2 など。lightgbm>=4.7.0 は本体の dependencies ではなく dependency-groups の experiments に入っている。Kaggle 用のオフライン wheel は rdkit 2026.3.3・ms_entropy 1.5.2・pebble 5.2.2 に固定（`kaggle/dataset-metadata.json`）。依存それぞれのライセンスは**未確認**
+- COCONUT: 作者のコード（`casmi/data.py` の docstring）は「CC0」と書く。一方、こちらの部品表（`lineage-reproducibility.md` 6 行、v2-pool）は「COCONUT CC BY 4.0 由来とカード」と書いていて食い違う。COCONUT 側の表示は**未確認**。入力は COCONUT の CSV（`coconut_csv_lite-09-2026.zip`、`casmi/paths.py`）を手で取得する前提で、リポジトリには入っていない
 - Kaggle の資産 dataset の雛形（`kaggle/dataset-metadata.json`）は CC0-1.0 と宣言している（作者が上げたかどうか、その slug はリポジトリからは分からない。`<kaggle-username>/casmi26-assets` のまま）
 
 ## 要点（README・コードから）
@@ -35,11 +35,12 @@
 | 部品 | 生成コード | 備考 |
 |---|---|---|
 | 候補プール（train ∪ COCONUT、正規化、metric key） | あり: `scripts/build_structures.py`・`casmi/candidates.py` | 入力の COCONUT CSV は手で取得（リポジトリに無い） |
+| 検証部分集合 A・B（val_structures / val_queries） | あり: `notebooks/02_validation.ipynb`（スクリプトではなくノートブック、README の手順 2） | ランカーの学習集合（`build_ranker_set.py`）が `casmi.load_validation()` で除外に使うので、作り直すにはこのノートブックも回す |
 | Morgan 指紋・NP-likeness | あり: `casmi/candidates.py`（`pool_np_likeness`、COCONUT の列と RDKit の NP スコア） | |
 | 識別・ハイブリッド検索 | あり: `casmi/spectra.py`（ms_entropy に依存） | 検索結果はキャッシュ（`scripts/cache_validation_hits.py`） |
 | ランカーの学習集合と特徴表 | あり: `scripts/build_ranker_set.py`・`scripts/build_feature_tables.py` | 「数時間」（README） |
 | LightGBM ランカー | あり: `scripts/train_ranker.py --final` | |
-| 推論 | あり: `kaggle/inference.py`、資産は `kaggle/build_assets.py` で組む | Kaggle で約 28–30 分（作者の記録） |
+| 推論 | あり: `kaggle/inference.py`、資産は `kaggle/build_assets.py` で組む | Kaggle で約 28–30 分（作者の記録）。`build_assets.py` は Linux 用の third-party wheel（rdkit・ms_entropy・pebble）を手で `pip download` しておく前提で、無いと「missing third-party wheels」で止まる |
 | 学習済みの重み・資産 | リポジトリには無い（探した場所: リポジトリ全体、`kaggle/` の metadata） | 自前で作り直す必要がある |
 
 すべての部品に生成コードがあり、外部の学習済みモデル（FPNet や ICEBERG）を使わない。最終提出の「端から端まで再現できること」（主催者回答 754610）を満たしやすい系統である（ライセンスの未確認分を除く）。
@@ -61,7 +62,11 @@
    - 作者の提出モデルは np パネルを含み、学習集合も fold で分けていないので、**そのままでは v3 を測れない**（v3 の正解を学習で見ている可能性を消せない）
    - 作者のコードのまま、学習集合の選び方の除外に v3 の 4 集合の drop_keys・split の hold/np・`fold_identity == 0` を足してランカーを学習し直す（`--final` は使わない＝部分集合 A を入れない）。学習集合の key と除外集合の積が 0 であることを assert する
    - 識別・類縁検索のライブラリからは、各 v3 集合の条件どおりに正解の参照を隠す（v3 の `drop_keys` の行を落とした train）
-2. 足し方: 分子ごとに Majyles の点を z 化し、縮小版の score+prior+frag の点の z と等重みで足す（重みは変えて試さない）
+   - v3 の hide_rule のうちプールとクエリの規則も同じに当てる: v3_c2 は `pool: remove`（`scripts/local_eval/run.py` 210 行付近で正解を候補窓から消す）なので、Majyles 側でも正解を COCONUT プールと「強い識別一致でプールの外から足す候補」の両方から消す。v3_c2n は `query: prefer_enveda`。確かめること: v3_c2 で正解が Majyles 側の候補にも特徴にも戻らないこと（`has_visible_spectra`・`id_max` は隠したあとの train で計算する）
+2. 足し方（事前に 1 つに決める。重みや入れ方は変えて試さない）:
+   - 候補は縮小版の窓（pool_meta ±10 ppm）のまま。Majyles 側にしか無い候補は足さない（点の追加だけの変更にする）
+   - 縮小版の prior の段の後・frag の段の前で、分子ごとに Majyles のランカーの点を z 化し、prior 後の点の z と等重みで足す。frag は組成式グループの中での並べ替えなので、そのまま後に置く
+   - Majyles の点が無い候補（Majyles の候補外）は、その分子で Majyles の点がある候補の z の最小値にする
 3. 採否の規則（設計 §5、#48 と同じ）: v3_c1・v3_c2・enveda_v1・v3_c2n の 4 集合すべてで「(新 − 対照) の 95% CI 下限 ≥ −0.02」、かつ 1 つ以上で「下限 > 0」。1 集合でも欠ければ採用しない。v3_c1 と v3_c2 は必ず報告する
 4. 先に数えること: v3_c2 の正解のうち COCONUT にある割合（Majyles の候補は COCONUT 中心なので、COCONUT に無い正解には届かない）
 5. 費用の見積もり（作者の README）: 構造表 約 3 時間（8 コア）、ランカーの学習集合の検索「数時間」。ローカル CPU の重いジョブになるので、メモリと他のジョブを確かめてから 1 本だけ
