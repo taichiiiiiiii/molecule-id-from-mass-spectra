@@ -3,3 +3,4 @@ rdkit>=2024.3
 numpy
 pandas
 pyarrow
+numba
