@@ -117,6 +117,17 @@ def test_a_hidden_rows_absent_and_equal_to_removed_library(mode):
         _same_channels(got, ref)
 
 
+def test_a_channels_pair_equals_two_hidden_calls():
+    P, L, add, I, rng = _setup()
+    for p in (3, 7, 25, 31):
+        rows, modes, target = _query(L, add, p)
+        truth_rows = np.flatnonzero(L["row_p"] == p)
+        specs = BT.query_specs(L, rows)
+        c1, c2 = BT.channels_pair(E, L, I, specs, L["prec"][rows], modes, target, rows, truth_rows, p, truth_rows)
+        _same_channels(c1, BT.channels_hidden(E, L, I, specs, L["prec"][rows], modes, target, rows, p, truth_rows, "c1"))
+        _same_channels(c2, BT.channels_hidden(E, L, I, specs, L["prec"][rows], modes, target, truth_rows, p, truth_rows, "c2"))
+
+
 def test_a_mode_none_equals_engine():
     P, L, add, I, rng = _setup()
     rows, modes, target = _query(L, add, 7)
