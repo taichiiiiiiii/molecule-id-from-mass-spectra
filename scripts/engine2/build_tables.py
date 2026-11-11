@@ -157,12 +157,13 @@ def _rep_order_pick(L, rows):
     return int(df.row.values[0])
 
 
-def analog_search_hidden(E, L, R, Q, target, hide_rows, truth_p, truth_rows_sub, mode, debug=None, tag=""):
-    """E.analog_search と同じ（p, sim）を返す。mode='c1': 代表がクエリ行なら次の代表に替える、'c2': 正解構造を落とす。"""
+def analog_search_hidden(E, L, R, Q, target, hide_rows, truth_p, truth_rows_sub, mode, debug=None, tag="", pre=None):
+    """E.analog_search と同じ（p, sim）を返す。mode='c1': 代表がクエリ行なら次の代表に替える、'c2': 正解構造を落とす。
+    pre に E.analog_search(R, Q, target) の結果を渡すと検索を省く（同じ入力なら同じ値）。"""
     CFG, pv = E.CFG, E.pv
     lo = np.searchsorted(R["rep_nm"], target - CFG.ANALOG_WIN, "left")
     hi = np.searchsorted(R["rep_nm"], target + CFG.ANALOG_WIN, "right")
-    p, s = E.analog_search(R, Q, target)
+    p, s = E.analog_search(R, Q, target) if pre is None else pre
     reps = R["rep"][lo:hi]
     if mode == "c2":
         keep = p != truth_p
@@ -244,6 +245,58 @@ def channels_hidden(E, L, I, specs, precs, pols, target, hide_rows, truth_p, tru
     return lib, ana, anapol
 
 
+def channels_pair(E, L, I, specs, precs, pols, target, hide_c1, hide_c2, truth_p, truth_rows):
+    """channels_hidden(..., hide_c1, ..., 'c1') と channels_hidden(..., hide_c2, ..., 'c2') を、検索を 1 回だけにして返す。
+    lib の窓の pv.search / search_shift_rows は行ごとに独立、E.analog_search は隠す前の値なので、結果は 2 回呼ぶのと完全一致
+    （tests/test_engine2_build_tables.py で確認）。"""
+    CFG, pv = E.CFG, E.pv
+    Q = [E.clean(a, b) for a, b in specs]
+    keep = [i for i, (a, _) in enumerate(Q) if len(a)]
+    Q = [Q[i] for i in keep]; precs = np.asarray(precs)[keep]; pols = np.asarray(pols)[keep]
+    tol = target * CFG.PPM_WIN / 1e6
+    lo = np.searchsorted(I["lib_nm"], target - tol, "left"); hi = np.searchsorted(I["lib_nm"], target + tol, "right")
+    crow_all = I["lib_rows"][lo:hi]
+    S1, S2 = [], []
+    for j, (qm, qp) in enumerate(Q):
+        if len(crow_all) == 0: break
+        S1.append(pv.search(qm, qp, crow_all, L["off"], L["mz"], L["it"], CFG.MZ_TOL, CFG.INT_FLOOR, CFG.MAX_PEAKS,
+                            CFG.INT_POWER, CFG.ENT_WEIGHT))
+        sh = (precs[j] - L["prec"][crow_all]).astype(np.float32)
+        S2.append(pv.search_shift_rows(qm, qp, crow_all, L["off"], L["mz"], L["it"], CFG.MZ_TOL, CFG.INT_FLOOR, CFG.MAX_PEAKS,
+                                       CFG.INT_POWER, CFG.ENT_WEIGHT, sh))
+    ok = np.isfinite(L["nm"]) & (L["row_p"] >= 0)
+    tr = truth_rows[ok[truth_rows]]
+    pre = {"all": E.analog_search(I["all"], Q, target)}
+    QQs = {}
+    for sign, name in ((1, "pos"), (-1, "neg")):
+        QQ = [q for q, pl in zip(Q, pols) if pl == sign]
+        if QQ:
+            QQs[name] = (sign, QQ); pre[name] = E.analog_search(I[name], QQ, target)
+    out = []
+    for hide, mode in ((np.asarray(hide_c1, np.int64), "c1"), (np.asarray(hide_c2, np.int64), "c2")):
+        m = ~np.isin(crow_all, hide)
+        crow = crow_all[m]
+        u, inv = np.unique(L["row_p"][crow], return_inverse=True)
+        M = np.zeros((max(len(Q), 1), len(u)), np.float32); MS = np.zeros_like(M)
+        if len(crow):
+            for j in range(len(Q)):
+                np.maximum.at(M[j], inv, S1[j][m]); np.maximum.at(MS[j], inv, S2[j][m])
+        cnt = np.bincount(inv, minlength=len(u)).astype(np.float32)
+        z = np.zeros(0, np.float32)
+        lib = (u, M.max(0) if len(u) else z, M.mean(0) if len(u) else z, MS.max(0) if len(u) else z, cnt)
+        p, s = analog_search_hidden(E, L, I["all"], Q, target, hide, truth_p, tr, mode, pre=pre["all"])
+        ana = E.top_analogs(p, s)
+        ps, ss = [], []
+        for name in ("pos", "neg"):
+            if name in QQs:
+                sign, QQ = QQs[name]
+                p, s = analog_search_hidden(E, L, I[name], QQ, target, hide, truth_p, tr[L["pol"][tr] == sign], mode, pre=pre[name])
+                ps.append(p); ss.append(s)
+        anapol = E.top_analogs(np.concatenate(ps), np.concatenate(ss)) if ps else []
+        out.append((lib, ana, anapol))
+    return out[0], out[1]
+
+
 # ------------------------------------------------------------------------------------------------
 # 1 分子の記録と行
 # ------------------------------------------------------------------------------------------------
@@ -258,10 +311,12 @@ def query_specs(L, rows):
     return specs
 
 
-def make_rec(E, L, I, rows, adducts, modes, target, cand, hide_rows, truth_p, truth_rows, mode, debug=None):
+def make_rec(E, L, I, rows, adducts, modes, target, cand, hide_rows, truth_p, truth_rows, mode, debug=None, channels=None):
     specs = query_specs(L, rows)
-    lib, ana, anapol = channels_hidden(E, L, I, specs, L["prec"][rows].astype(np.float64), modes, target,
-                                       hide_rows, truth_p, truth_rows, mode, debug)
+    if channels is None:
+        channels = channels_hidden(E, L, I, specs, L["prec"][rows].astype(np.float64), modes, target,
+                                   hide_rows, truth_p, truth_rows, mode, debug)
+    lib, ana, anapol = channels
     u, lmax, lmean, lsh, lcnt = lib
     pos = {int(x): i for i, x in enumerate(u)}
     ci = np.array([pos.get(int(c), -1) for c in cand], np.int64); has = ci >= 0
@@ -355,8 +410,10 @@ def build(E, L, meta, I, queries, fold, banks, bits, workers, log=print, raw=Non
         z = base_fs.fs_logits(banks[k], base_fs.spectra_from_rows(sub.itertuples()))
         if z is None:
             rep["dropped_no_logits"] += 1; continue
-        r1 = make_rec(E, L, I, rows, add, modes, target, cand, rows, p, truth_rows, "c1")
-        r2 = make_rec(E, L, I, rows, add, modes, target, cand, truth_rows, p, truth_rows, "c2")
+        ch1, ch2 = channels_pair(E, L, I, query_specs(L, rows), L["prec"][rows].astype(np.float64), modes, target,
+                                 rows, truth_rows, p, truth_rows)
+        r1 = make_rec(E, L, I, rows, add, modes, target, cand, rows, p, truth_rows, "c1", channels=ch1)
+        r2 = make_rec(E, L, I, rows, add, modes, target, cand, truth_rows, p, truth_rows, "c2", channels=ch2)
         recs.append(dict(set=s, ik=ik, fold=k, p=p, cand=cand, r1=r1, r2=r2, z=z))
         if mi % 100 == 0:
             log(f"  channels {mi}/{len(mols)} {time.time() - t0:.0f}s")
