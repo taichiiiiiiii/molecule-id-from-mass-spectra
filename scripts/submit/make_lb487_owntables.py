@@ -72,6 +72,12 @@ def verify_own_tables(own):
     return sha
 
 
+def aux_sha256(own, here):
+    """Record-only sha256 of the other inputs the runner reads (base_fs.py copy, fold-safe FPNets, fp_bits.npy)."""
+    paths = [os.path.join(here, 'base_fs.py')] + list(own['fs_models']) + [own['fs_bits']]
+    return {p: hashlib.sha256(open(p, 'rb').read()).hexdigest() for p in paths}
+
+
 if __name__ == '__main__':
     here = os.path.dirname(os.path.abspath(__file__)); sys.path.insert(0, here)
     test, train, sample, out = sys.argv[1:5]
@@ -92,7 +98,7 @@ if __name__ == '__main__':
     fp_models = sorted(p for p in glob.glob('/kaggle/input/**/fp_*.pt', recursive=True) if 'casmi26-fp-models-v2' in p)
     print('engine fp models', fp_models, flush=True)
     sha = verify_own_tables(OWN)
-    REP.update(tables_read={k: OWN[k] for k in ('sim', 'rt')}, tables_sha256=sha)
+    REP.update(tables_read={k: OWN[k] for k in ('sim', 'rt')}, tables_sha256=sha, aux_sha256=aux_sha256(OWN, here))
     base_fs.set_casmi_code_dir(OWN['casmi_code'])
     import pandas as pd
     T0 = time.time()
