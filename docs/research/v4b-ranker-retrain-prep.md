@@ -87,8 +87,8 @@ sha256 の出どころ:
 ### 段 3 `train_v4_ranker.py`
 
 - `FE_SIM` の rows・meta（段 1）、`FE_FEATS/<fam>/*.npz`（段 2、ids と 5 族）、`fe_v4/v4b_only.txt`（TC 同梱、66 特徴の名前）。sha256 は記録なし（作る物、または TC 同梱）
-- コード: `fe_v4/train_v4_ranker.py`・`fe_v4/evalfe.py`（`load_family`）・`fe_v4/ctxlib.py`・`fe_v4/fams/__init__.py`、`work/analysis/engine_v6/code/casmi/ranker.py`（`RankerBag`）。TC 同梱。`evalfe.py`・`train_v4_ranker.py`・engine_v6 は v4b に無いので sha256 は記録なし。`ctxlib.py`・`fams/__init__.py` は v4b と一致
-- 今回の起動では読まないもの（確認）: `--train_w wtemp` のときだけ読む `work/analysis/diag_fpnet/class2_truth_g.csv`、`FE_EXTRA` を設定したときだけ読む `ctx_extra/`
+- コード: `fe_v4/train_v4_ranker.py`・`fe_v4/evalfe.py`（`load_family`）・`fe_v4/ctxlib.py`・`fe_v4/fams/__init__.py`、`work/analysis/engine_v6/code/casmi/ranker.py`（`RankerBag`）。TC 同梱。`evalfe.py`・`train_v4_ranker.py`・engine_v6 は v4b に無いので sha256 は記録なし。`ctxlib.py`・`fams/__init__.py` は v4b と一致。v4b の `code/casmi/ranker.py`（a7ee491b…）は v1 側の別ファイルで、engine_v6 の `ranker.py` とは中身が違う
+- 今回の起動では読まないもの（確認）: `--train_w wtemp` のときだけ読む `work/analysis/diag_fpnet/class2_truth_g.csv`。段 2 の `ctxlib.iter_views` が `FE_EXTRA` を設定したときだけ読む `ctx_extra/` も、今回の起動では読まない
 - 出力の比べ先: `fe_v4/ranker_v4b.json`（TC 同梱。n_groups 11,086、n_rows 1,204,705、160 特徴の名前と params）、`ranker_v4b.pkl` 6172e926…（v4b）
 
 段 1 から 3 の入力（段の出力を除く）の合計は 4,161,058,302 B（約 4.2 GB）。内訳は spec 1.15 GB、v2-pool 1.68 GB、モデル 3 本 0.88 GB、res 26 本 0.44 GB。
