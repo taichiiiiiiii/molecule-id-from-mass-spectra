@@ -87,6 +87,8 @@ sha256 の出どころ:
 ### 段 3 `train_v4_ranker.py`
 
 - `FE_SIM` の rows・meta（段 1）、`FE_FEATS/<fam>/*.npz`（段 2、ids と 5 族）、`fe_v4/v4b_only.txt`（TC 同梱、66 特徴の名前）。sha256 は記録なし（作る物、または TC 同梱）
+- コード: `fe_v4/train_v4_ranker.py`・`fe_v4/evalfe.py`（`load_family`）・`fe_v4/ctxlib.py`・`fe_v4/fams/__init__.py`、`work/analysis/engine_v6/code/casmi/ranker.py`（`RankerBag`）。TC 同梱。`evalfe.py`・`train_v4_ranker.py`・engine_v6 は v4b に無いので sha256 は記録なし。`ctxlib.py`・`fams/__init__.py` は v4b と一致
+- 今回の起動では読まないもの（確認）: `--train_w wtemp` のときだけ読む `work/analysis/diag_fpnet/class2_truth_g.csv`、`FE_EXTRA` を設定したときだけ読む `ctx_extra/`
 - 出力の比べ先: `fe_v4/ranker_v4b.json`（TC 同梱。n_groups 11,086、n_rows 1,204,705、160 特徴の名前と params）、`ranker_v4b.pkl` 6172e926…（v4b）
 
 段 1 から 3 の入力（段の出力を除く）の合計は 4,161,058,302 B（約 4.2 GB）。内訳は spec 1.15 GB、v2-pool 1.68 GB、モデル 3 本 0.88 GB、res 26 本 0.44 GB。
@@ -126,10 +128,11 @@ sha256 の出どころ:
 - **段 1（GPU 必須）**
   - Kaggle T4・vCPU 4 なら、スレッド 2 のシャードを 2 本並べる
   - CPU が作者と同じ速さなら 10.0 / 2 = 5.0 h。Kaggle の CPU の遅さを 1.5〜2 倍と見ると 7.5〜10 h
+  - この換算は CPU の遅さだけを見ている。T4 と RTX 5090 Laptop の GPU の速さの差や、Kaggle の vCPU 4 が実質 2 物理コアであることは入れていないので、楽観寄りの可能性がある
   - 1 セッション 12 h に収まる見込みだが、余裕は小さい。part ごとに再開できるので、12 h で切れたら、出力を次のカーネルの `kernel_sources` に入れて続きを回せる
   - GPU の消費は 7.5〜10 h（週 30 h の 1/4〜1/3）
   - GPU のメモリ: 1 プロセスがモデル 4 本（A がバンクと見方の 2 回、B、D）を持つので、重みだけで約 1.1 GB。2 本で 3 GB 弱になり、T4 の 15 GB に収まる
-  - RAM: v1 の `Library` は spec を mmap せずに全部読む（1.07 GB）。ほかに pool_fp 0.91 GB、train_fp_sel 0.35 GB、frag 0.36 GB、meta 類があり、1 プロセス 3〜4 GB。2 本で 7〜8 GB、Kaggle のセッションの RAM（約 29〜30 GB）に収まる
+  - RAM: v1 の `Library` は spec を mmap せずに全部読む（spec_off＋mz＋it で 1,086,142,120 B ≈ 1.09 GB）。ほかに pool_fp 0.91 GB、train_fp_sel 0.35 GB、frag 0.36 GB、meta 類があり、1 プロセス 3〜4 GB。2 本で 7〜8 GB、Kaggle のセッションの RAM（約 29〜30 GB）に収まる
 - **段 2（CPU）**
   - TC の別の ctx 集合での実測（`build_*.log` の ms/q。確認）: fragnet 223、derivation 101、analog_struct 66、frag2 29〜31 ms/q。model_views と ids はログなし（軽い）。合わせて約 0.42 s/q/プロセス
   - 15,701 件で 1.8 プロセス時間。`--procs 3` なら作者の機械で約 40 分、Kaggle で 1.0〜1.5 h
@@ -149,7 +152,7 @@ sha256 の出どころ:
 ## 5. 事前登録の下書き（実行の約束ではない。次の計画でレビューを通してから採る）
 
 - レシピ: TC の既定のまま。段 1 は `launch_sim1x.sh` の引数（seed 21、folds np,nplib,syn,plusk、regimes c1,c2,c3、nshard 6、エンジンのバンク `work/fpnet_a.pt`）。段 2 は `build_sim1x_loop.sh` の族 6 つ（最終パス `--procs 3`）。段 3 は README §2.3 の再構成コマンド（`--rounds 500 --lr 0.03 --seeds 0,1,2,3 --threads 12`、`--only v4b_only.txt`）
-- 変えるのは次の 3 つだけ
+- 変えるのは次の 3 つだけ。Issue #88 と計画の文言は「変えるのはパスだけ」なので、残りの 2 つ（起動の包み、シャードを 2 本ずつ回すこと）は、次の計画のレビューで明示的に承認をとる
   - パス: `/c/Users/omen/Desktop/envedaCasmi` を Kaggle の作業場所に置き換え、README §4 の配置にする
   - 起動の包み: `nohup … &` と `powershell` の待ちを、Python の `subprocess` の待ちに置き換える
   - 6 シャードを vCPU 4 に合わせて 2 本ずつ順に回す（シャードの分け方は引き方に影響しない）
