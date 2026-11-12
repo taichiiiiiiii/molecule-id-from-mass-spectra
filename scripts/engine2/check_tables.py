@@ -66,7 +66,7 @@ def check_run(d):
     out["content_sha256"] = dict(sim=content_sha256(sim), rank_train=content_sha256(rt))
     out["file_sha256"] = {f: hashlib.sha256(open(os.path.join(d, "own", f), "rb").read()).hexdigest()
                           for f in ("own_sim_rank_rows.npz", "own_rank_train.npz")}
-    if len(rep["runs"]) > 1:
+    if len(rep["runs"]) > 1 and not rep.get("ab_check_mode"):     # ab モードの 2 つは (ii)・(i)。ab_check を見る
         out["in_kernel_repeat_sha"] = [r["sha256"] for r in rep["runs"]]
     if "cpu_info" in rep:
         out["cpu_info"] = {k: v for k, v in rep["cpu_info"].items() if k != "torch_config"}
