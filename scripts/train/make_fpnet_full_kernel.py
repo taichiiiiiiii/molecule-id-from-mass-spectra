@@ -20,7 +20,7 @@ ROOT = Path(__file__).resolve().parents[2]
 SLUG = "taichiiiii/casmi26-fpnet-full-train"
 SMOKE_STEPS = 2000
 PROD_STEPS = 82855
-GUARD_SECONDS = 28 * 60
+GUARD_SECONDS = 25 * 60   # Issue #82 comment: lowered from 28 min so the whole session stays within 30 min
 DATASETS = [
     "dmitriigluzdov/casmi26-fold-safe-fpnet",
     "ahmedberatozer/casmi26-v4b-models",
