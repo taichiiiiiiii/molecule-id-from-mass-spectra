@@ -556,6 +556,8 @@ def main(argv=None):
     ap.add_argument("--workers", type=int, default=os.cpu_count())
     ap.add_argument("--rdkit", default=base_fs.RDKIT_VERSION)
     args = ap.parse_args(argv)
+    if args.ab_check and args.repeat != 1:
+        ap.error("--ab-check は --repeat 1 だけ（2 経路を 1 回ずつ作る）")
     import multiprocessing as mp
     mp.set_start_method("fork", force=True)   # 推論（Kaggle の Linux）と同じ fork。差し替えた E.find をワーカーに引き継ぐ
     install_guard()
