@@ -195,6 +195,8 @@ def test_d_loader_accepts_matching_tables(tmp_path, monkeypatch):
     rg = {"__name__": "eng_runner_test"}
     exec(compile(M.OWN_RUNNER, "eng_runner_own", "exec"), rg)
     assert rg["verify_own_tables"](own) == {"sim": own["sim_sha"], "rt": own["rt_sha"]}
+    aux = rg["aux_sha256"](own, str(eng))          # 記録だけ（base_fs.py の写し、FPNet 5 本、fp_bits.npy）
+    assert len(aux) == 7 and set(aux.values()) == {hashlib.sha256(b"# fake\n").hexdigest()}
 
 
 @pytest.mark.parametrize("which", ["sim", "rt"])
