@@ -91,7 +91,7 @@
 ## v3 で測る案（書くだけ、実行しない）
 
 - 形: 縮小版 `scripts/local_eval/run.py --stages score,prior,frag` の出力リストの上に、「同じ組成式の候補の並べ替え」の段を 1 つ足す。中身は 0.487 系統の F セル 41 と同じ: 上位 60 位（`TOPN = 60`、F セル 26）の中の同じ組成式のまとまりごとに `z(score) + ICE_LAM·z(ICEBERG) + GL_LAM·z(GLACIER)` で並べ替え、元の席に戻す（`gl_fuse.rerank_multi`、slot-preserving）。定数は 0.487 系統のまま `ICE_LAM = GL_LAM = 1.0`（F セル 26・41、確認）。**定数は動かさない**（ハイパラ調整の禁止）。案は 1 つだけで、ICE だけ・GL だけなどの別案は立てない
-- 点の定義は Kaggle のランナーと同じ（`ice_ex_mean`／`gl_ex_mean`: 被覆されたスペクトルごとの予測と問い合わせのエントロピー類似度の平均。装置の印は Orbitrap 系なら `Orbitrap`、それ以外〈timsTOF を含む〉は `QTOF`）。被覆は F セル 41 と同じにする: ICEBERG は正イオンの [M+H]+ と [M+Na]+、GLACIER は [M+H]+ だけ＋N1 arm A の代理スペクトル（[M+H]+ を持たない分子の [M+NH4]+・[M-H2O+H]+ を [M+H]+ に付け替えたもの）。GLACIER の RDKit の扱い（`--any-rdkit`）も F セル 41 に合わせる
+- 点の定義は Kaggle のランナーと同じ（`ice_ex_mean`／`gl_ex_mean`: 被覆されたスペクトルごとの予測と問い合わせのエントロピー類似度の平均。装置の印は Orbitrap 系なら `Orbitrap`、それ以外〈timsTOF を含む〉は `QTOF`）。被覆は F セル 41 と同じにする: ICEBERG は正イオンの [M+H]+ と [M+Na]+、GLACIER は [M+H]+ だけ＋N1 arm A の代理スペクトル（[M+H]+ を持たない分子の [M+NH4]+・[M-H2O+H]+ を [M+H]+ に付け替えたもの）。RDKit の扱いも F セル 41 に合わせる（ICEBERG・GLACIER とも `--any-rdkit` で起動）
 - リークの規則（#66 と同じものを先に書く）: 学習側 = MassSpecGym の train ∪ val（1.0 と 1.5 の和集合）。各 v3 集合から学習側と重なる正解構造を除いた部分集合で測る。残りが 100 分子未満の集合は「測定不能」。理由: GLACIER も ICEBERG も val でチェックポイントを選ぶので val は学習側。配布チェックポイントの学習範囲（GLACIER が 119,029 行の部分集合だけか）は未確認なので、MSG 全体の fold で数える
 - 残りの数（`outputs/research/msg_overlap.json` の `remaining_rule` と `remaining_conservative`、確認）:
   - train ∪ val の規則: **v3_c1 199**（重なり 1）、**v3_c2 200**（0）、**enveda_v1 202**（0）、**v3_c2n 94**（重なり 106、測定不能）
@@ -99,12 +99,12 @@
 - 採否の規則（設計 §5、#48 と同じ）: (答えの出所 × 参照の有無) の 4 集合 v3_c1・v3_c2・enveda_v1・v3_c2n のすべてで (新 − 対照) の 95% CI 下限 ≥ −0.02、かつ 1 つ以上で下限 > 0。1 集合でも欠ければ不採用
 - 帰結: **v3_c2n が 94（保守的に 83）で測定不能なので、今の v3 では規則上この段を採用できない**。進めるには、MSG と重ならない NP の集合を v3_c2n と同じ作り方で作り直すことが先に要る（別 Issue で、作り方を事前に決めてから）。#66（MIST）と同じ結論
 - 参考（規則は変えない）: commit 708148c2 の `msg/labels.tsv`（119,029 行）の構造だけを学習側とみなすと、v3_c2n の重なりは train 46・val 4・test 2 で、train ∪ val の残りは 150 になる（こちらの集計）。しかし (1) 配布 GLACIER がこの部分集合で学習されたかは未確認、(2) ICEBERG `msg_all` は MSG 全体を使う、(3) 規則は数を見る前に決めたもの、の 3 点から、この数で規則を緩めない。GLACIER だけの段を測るなら、別の Issue でこの数を見たことを書いたうえで規則を事前登録し直す必要がある
-- 費用の見込み（未測定）: 重みのダウンロード（Kaggle 版なら約 89 MB）、ms-pred の推論環境と RDKit 2025.3.6 の固定（ランナーは他の版を拒む）、CPU 推論の時間（上流 README は CPU 推論も可と書く。Kaggle の README の T4 の目安は 400 分子・上位 60 で 25〜30 分）。Kaggle GPU で回すなら 1 本。今日は実行しない
+- 費用の見込み（未測定）: 重みのダウンロード（Kaggle 版なら約 89 MB）、ms-pred の推論環境と RDKit（ランナーは既定では 2025.3.6 以外を拒むが、0.487 系統は `--any-rdkit` で外している）、CPU 推論の時間（上流 README は CPU 推論も可と書く。Kaggle の README の T4 の目安は 400 分子・上位 60 で 25〜30 分）。Kaggle GPU で回すなら 1 本。今日は実行しない
 
 ## 補足の発見
 
 - 対応範囲の宣言（commit 8dfe2d3、確認）: 上流は今、学習 yaml ごとに対応する付加イオンと装置を宣言し、宣言外の入力では推論でエラーを出す。GLACIER の MSG 版は `supported-adducts: [[M+H]+]`、ICEBERG `msg_all` は `[[M+H]+, [M+Na]+]`、どちらも装置は `[Orbitrap, QTOF]`。Kaggle のコードは宣言の前の commit 708148c2 なのでエラーにならない
-- 0.487 系統での GLACIER の入力（確認、出典 6）: `gl_runner.py` 単体は [M+Na]+ も被覆として受け付ける（52 行目 `COV = ('[M+H]+', '[M+Na]+')`）が、F セル 41 は GLACIER に渡す前に [M+H]+ のスペクトルだけに絞る（`gl_items = [dict(it, spectra=[s for s in it['spectra'] if s.get('adduct') == '[M+H]+']) …]  # v29: GLACIER on [M+H]+ only`）。部品表の「GL ランナー、[M+H]+ だけ」はこの点で正しい。ただし同じ F セル 41 の「N1 arm A」（`N1_ARM = 'N1A_D'`）は、本物の [M+H]+ スペクトルを持たない分子について [M+NH4]+ と [M-H2O+H]+ のスペクトルを [M+H]+ に付け替えた代理スペクトルを GLACIER で採点し、`GL_SCORES.update(_n1_real)` で本番の点に入れる。上流の宣言（GLACIER は [M+H]+ だけ）から実質的に外れるのはこの代理スペクトルの部分。また F セル 41 は GLACIER を `--any-rdkit`（ランナーの説明では「NOT exact」）で起動する
+- 0.487 系統での GLACIER の入力（確認、出典 6）: `gl_runner.py` 単体は [M+Na]+ も被覆として受け付ける（52 行目 `COV = ('[M+H]+', '[M+Na]+')`）が、F セル 41 は GLACIER に渡す前に [M+H]+ のスペクトルだけに絞る（`gl_items = [dict(it, spectra=[s for s in it['spectra'] if s.get('adduct') == '[M+H]+']) …]  # v29: GLACIER on [M+H]+ only`）。部品表の「GL ランナー、[M+H]+ だけ」はこの点で正しい。ただし同じ F セル 41 の「N1 arm A」（`N1_ARM = 'N1A_D'`）は、本物の [M+H]+ スペクトルを持たない分子について [M+NH4]+ と [M-H2O+H]+ のスペクトルを [M+H]+ に付け替えた代理スペクトルを GLACIER で採点し、`GL_SCORES.update(_n1_real)` で本番の点に入れる。上流の宣言（GLACIER は [M+H]+ だけ）から実質的に外れるのはこの代理スペクトルの部分。また F セル 41 は ICEBERG・GLACIER の両方を `--any-rdkit`（ランナーの説明では「allow an RDKit other than 2025.03 (NOT panel-exact)」）で起動する
 - 上流の宣言は「model-author support declarations, not automatically measured counts of what training encountered」（README、8dfe2d3）で、宣言外の入力が必ず悪いという意味ではない。0.487 系統の点が宣言の外の入力を含むことだけを記録する
 - `ms_pred` の推論部分のコード（joint_model.py ほか 5 ファイル）は commit 708148c2 と改行コードを除いて一致した（確認）。改変は shim（DGL・torch_scatter・LinSATNet の代替、作者の自作）とランナー側にある
 - 上流の GLACIER の公開版は 11/3 に `glacier_msg_simulation` へ差し替わった。Kaggle 版（旧リンク）を最終に使うなら、参照先は commit 708148c2 の README と旧リンクになる。旧リンクがいつまで開けるかは分からない
