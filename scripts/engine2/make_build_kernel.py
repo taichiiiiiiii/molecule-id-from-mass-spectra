@@ -6,6 +6,8 @@
   dataset-metadata.json（taichiiiii/casmi26-engine2-build-code）
 - kernels/engine2_build/{trial,run1,run2}/: notebook.ipynb + kernel-metadata.json（CPU、private）。中身はセル 1 の
   N_MOL・REPEAT だけが違う（trial 50・2、run1/run2 2000・1）。run1 と run2 は notebook が同一
+- kernels/engine2_build/abcheck/: 試走と同じ 50 分子で、同じセッションの中で高速化前（channels_hidden 2 回）と
+  channels_pair の 2 表を作り比べる（build_tables.py --ab-check）。trial/run1/run2 のノートブックは変えない
 """
 import argparse
 import json
@@ -19,6 +21,7 @@ SOURCES = ["dmitriigluzdov/casmi26-attributed-v4g-reproduction-assets", "dmitrii
            "dmitriigluzdov/casmi26-identity-disjoint-validation-folds", "metric/rdkit-2026-3-3-wheel", CODE_SLUG]
 HOLDOUTS = ["v3_c1", "v3_c2", "enveda_v1", "v3_c2n"]
 KERNELS = {"trial": (50, 2), "run1": (2000, 1), "run2": (2000, 1)}
+AB_KERNELS = {"abcheck": (50, 1)}          # --ab-check を付ける（高速化の前後の比較、#74 項目 2）
 
 CELL_SETUP = r'''# 入力の場所（明示パス）と RDKit 2026.03.3
 import os, sys, json, glob, subprocess, time, resource
@@ -98,7 +101,19 @@ for r in rep['runs']:
 '''
 
 
-def nb(n_mol, repeat):
+CELL_AB = r'''# 高速化の前後の比較（(i) channels_hidden 2 回 対 (ii) channels_pair、z は共有）と z の 2 回、CPU 情報
+ab = rep['ab_check']
+chk['ab_check'] = ab
+chk['cpu_info'] = {k: rep['cpu_info'][k] for k in rep['cpu_info'] if k != 'torch_config'}
+json.dump(chk, open('/kaggle/working/check.json', 'w'), indent=1)
+print(json.dumps(ab, indent=1))
+print(rep['cpu_info']['lscpu'])
+print(rep['cpu_info']['torch_config'])
+print('torch threads', rep['cpu_info']['torch_num_threads'], 'os.cpu_count', rep['cpu_info']['os_cpu_count'])
+'''
+
+
+def nb(n_mol, repeat, ab=False):
     def code(src):
         return dict(cell_type="code", metadata={}, execution_count=None, outputs=[], source=src)
     md = dict(cell_type="markdown", metadata={}, source=(
@@ -106,7 +121,13 @@ def nb(n_mol, repeat):
         "生成コードは `taichiiiii/casmi26-engine2-build-code`（リポジトリの `scripts/engine2/`、#72）。"
         "v4g の中の元の 2 表は読まない（明示パス、ファイル名ガード、読んだファイルの一覧）。"))
     params = f"N_MOL = {n_mol}\nREPEAT = {repeat}\n"
-    return dict(cells=[md, code(params), code(CELL_SETUP), code(CELL_RUN), code(CELL_CHECK)],
+    cells = [md, code(params), code(CELL_SETUP), code(CELL_RUN), code(CELL_CHECK)]
+    if ab:
+        a = "'--repeat', str(REPEAT)]"
+        assert CELL_RUN.count(a) == 1
+        cells[3] = code(CELL_RUN.replace(a, "'--repeat', str(REPEAT), '--ab-check']"))
+        cells.append(code(CELL_AB))
+    return dict(cells=cells,
                 metadata=dict(kernelspec=dict(display_name="Python 3", language="python", name="python3"),
                               language_info=dict(name="python")), nbformat=4, nbformat_minor=5)
 
@@ -129,10 +150,10 @@ def main():
         shutil.copy2(os.path.join(ROOT, "data", "holdouts", h, "drop_keys.txt"), os.path.join(cd, "drop_keys", h))
     json.dump(dict(title="casmi26 engine2 build code", id=CODE_SLUG, licenses=[dict(name="other")]),
               open(os.path.join(cd, "dataset-metadata.json"), "w"), indent=1)
-    for name, (n_mol, rep) in KERNELS.items():
+    for name, (n_mol, rep, ab) in [(k, (*v, False)) for k, v in KERNELS.items()] + [(k, (*v, True)) for k, v in AB_KERNELS.items()]:
         kd = os.path.join(ROOT, "kernels", "engine2_build", name)
         os.makedirs(kd, exist_ok=True)
-        json.dump(nb(n_mol, rep), open(os.path.join(kd, "notebook.ipynb"), "w"), indent=1, ensure_ascii=False)
+        json.dump(nb(n_mol, rep, ab), open(os.path.join(kd, "notebook.ipynb"), "w"), indent=1, ensure_ascii=False)
         slug = f"casmi26-engine2-build-{name}"
         meta = dict(id=f"taichiiiii/{slug}", title=f"casmi26 engine2 build {name}", code_file="notebook.ipynb",
                     language="python", kernel_type="notebook", is_private=True, enable_gpu=False, enable_tpu=False,
