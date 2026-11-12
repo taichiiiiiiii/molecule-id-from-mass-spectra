@@ -9,6 +9,12 @@
 - 分子数 = n_mol − 捨てた数、除外とクエリの積 0（report の値）、読んだファイルに元の 2 表の名前が 0 件
 - 複数の run があれば 2 表の中身の sha256 が一致
 - 表の統計（正例率・候補数）を元の 2 表と並べる（見て条件を変えない）
+- --ab-check の出力なら: (i) 高速化前（own_*_hidden.npz）と (ii) channels_pair（own_*.npz）の配列ごとの一致、
+  z の 2 回（own_fp_logits.npz 対 own_fp_logits_zrep1.npz）の差、CPU 情報
+- --compare-to <試走の dir ...>: 2 表を以前の試走と比べる（sim は配列ごとの一致、rank_train は FP 由来の列 15〜20・25〜30
+  の差の最大とずれた行数、それ以外の列と Y・G・M の一致）。記録だけで、見て条件を変えない
+
+    .venv/bin/python scripts/engine2/check_tables.py --runs <scratch>/ab --compare-to <scratch>/tr_v1 <scratch>/tr_v2 --out <scratch>/ab/check_local.json
 """
 import argparse
 import hashlib
@@ -62,6 +68,59 @@ def check_run(d):
                           for f in ("own_sim_rank_rows.npz", "own_rank_train.npz")}
     if len(rep["runs"]) > 1:
         out["in_kernel_repeat_sha"] = [r["sha256"] for r in rep["runs"]]
+    if "cpu_info" in rep:
+        out["cpu_info"] = {k: v for k, v in rep["cpu_info"].items() if k != "torch_config"}
+    if rep.get("ab_check_mode"):
+        out["ab_check"] = ab_check(d, rep)
+    return out
+
+
+def _arrays_equal(a, b):
+    return sorted(a) == sorted(b) and all(a[k].shape == b[k].shape and a[k].dtype == b[k].dtype and np.array_equal(a[k], b[k])
+                                          for k in a)
+
+
+def ab_check(d, rep):
+    """カーネルの中の (i) 対 (ii) を取得したファイルから計算し直し、report の値と並べる。"""
+    o = os.path.join(d, "own")
+    res = dict(report=rep["ab_check"])
+    for name in ("own_sim_rank_rows", "own_rank_train"):
+        a = load(os.path.join(o, f"{name}_hidden.npz")); b = load(os.path.join(o, f"{name}.npz"))
+        res[name] = dict(arrays_equal=_arrays_equal(a, b), content_sha256_hidden=content_sha256(a), content_sha256_pair=content_sha256(b))
+    z1 = load(os.path.join(o, "own_fp_logits.npz")); zh = load(os.path.join(o, "own_fp_logits_hidden.npz"))
+    z2 = load(os.path.join(o, "own_fp_logits_zrep1.npz"))
+    res["z_shared_equal"] = _arrays_equal(z1, zh)
+    same_keys = all(np.array_equal(z1[k], z2[k]) for k in ("set", "ik", "fold"))
+    dz = np.abs(z1["Z"].astype(np.float64) - z2["Z"].astype(np.float64))
+    res["z_recompute"] = dict(same_molecules=bool(same_keys), shape=list(z1["Z"].shape), array_equal=bool(np.array_equal(z1["Z"], z2["Z"])),
+                              max_abs_diff=float(dz.max()) if dz.size else 0.0, n_elem_diff=int((z1["Z"] != z2["Z"]).sum()),
+                              n_mol_diff=int((z1["Z"] != z2["Z"]).any(1).sum()) if dz.size else 0)
+    return res
+
+
+def compare_to(d, refs):
+    """d の 2 表（(ii)、あれば (i) も）を以前の試走 refs と比べる（記録だけ）。"""
+    o = os.path.join(d, "own")
+    tags = [""] + (["_hidden"] if os.path.exists(os.path.join(o, "own_rank_train_hidden.npz")) else [])
+    non_fp = [j for j in range(31) if j not in FP_COLS]
+    out = {}
+    for ref in refs:
+        rs = load(os.path.join(ref, "own", "own_sim_rank_rows.npz")); rr = load(os.path.join(ref, "own", "own_rank_train.npz"))
+        for tag in tags:
+            s = load(os.path.join(o, f"own_sim_rank_rows{tag}.npz")); r = load(os.path.join(o, f"own_rank_train{tag}.npz"))
+            c = dict(sim_arrays_equal=_arrays_equal(s, rs), rank_train_arrays_equal=_arrays_equal(r, rr))
+            if r["X"].shape == rr["X"].shape:
+                c["rank_train_YGM_equal"] = all(np.array_equal(r[k], rr[k]) for k in ("Y", "G", "M"))
+                c["rank_train_nonfp_cols_equal"] = bool(np.array_equal(r["X"][:, non_fp], rr["X"][:, non_fp]))
+                cols = {}
+                for j in FP_COLS:
+                    x, y = r["X"][:, j], rr["X"][:, j]
+                    dd = np.abs(x.astype(np.float64) - y.astype(np.float64))
+                    cols[str(j)] = dict(max_abs_diff=float(dd.max()), rows_diff=int((x != y).sum()))
+                c["rank_train_fp_cols"] = cols
+            else:
+                c["shape_mismatch"] = [list(r["X"].shape), list(rr["X"].shape)]
+            out[f"{os.path.basename(os.path.normpath(ref))}{' vs (i)' if tag else ' vs (ii)'}"] = c
     return out
 
 
@@ -75,8 +134,11 @@ def main():
     ap.add_argument("--runs", nargs="+", required=True)
     ap.add_argument("--ref-dir", default="data/ext/engine2_ref")
     ap.add_argument("--out", required=True)
+    ap.add_argument("--compare-to", nargs="*", default=[], help="以前の試走の取得 dir（own/ を含む）")
     a = ap.parse_args()
     res = dict(runs=[check_run(d) for d in a.runs])
+    if a.compare_to:
+        res["compare_to"] = {d: compare_to(d, a.compare_to) for d in a.runs}
     if len(res["runs"]) > 1:
         c = [r["content_sha256"] for r in res["runs"]]
         res["runs_content_equal"] = all(x == c[0] for x in c)
