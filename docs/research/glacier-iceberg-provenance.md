@@ -43,7 +43,7 @@
 - 分割の中身: 論文 v1 §4.1 は「We adopt the official MassSpecGym data split, which contains 231,104 tandem mass spectra (MS/MS) spanning 31,602 unique molecules」と書く（MCES による分割）。**主張**（出典 7）。現在の上流 README の builder 説明は「The builder preserves the official `fold` assignments」。commit 708148c2 の `create_msg_simulation_dataset.py` も MSG の `fold` 列をそのまま train / val / test に写す（`normalize_fold`）。**確認**（コード。ただし旧 GLACIER チェックポイントの学習に使われた split.tsv そのものは**未確認**）
 - 学習データの範囲の食い違い: 論文は MSG 全 231,104 スペクトルと書くが、commit 708148c2 の `data/spec_datasets/msg/labels.tsv` は **119,029 行・16,974 構造（InChIKey 14 文字）・付加イオンは [M+H]+ だけ・装置は Orbitrap 81,323 / QTOF 37,706・衝突エネルギーの欠けは 0 行**で、MSG の simulation challenge の部分集合の大きさ（上流 README「119,029 unique simulation-challenge spectra」）と一致する。このファイルの spec ID を `data/ext/msg/MassSpecGym.tsv` の `identifier` に当てると 119,029 行すべてが見つかり、fold は train 99,341 / val 9,734 / test 9,954、InChIKey 14 文字は全行一致。**確認**（出典 1、こちらで集計）。配布チェックポイントがこの 119,029 行で学習されたのか、論文の 231,104 行なのかは**未確認**
 - 上流の新しいリンク（commit 8dfe2d3 以降）のフォルダ名は `glacier_msg_simulation` で、上流が今「MassSpecGym 版」として出している GLACIER は simulation 部分集合版と読める（フォルダ名による推測）。Kaggle 版は旧リンクのもの（`LICENSE-NOTICE.txt`: 「GLACIER_checkpoint.zip -> best.ckpt」）。旧と新はサイズが違う（173.19 MB / 173.18 MB）ので別のファイル。**確認**（出典 2、3、4）
-- ICEBERG `msg_all`: `run_scripts/iceberg/msg_all/run_all.sh` は「衝突エネルギーが分かる部分（msg_known_ce）で学習 → その模型で欠けた衝突エネルギーを補う → 全 MSG で学習し直す → test_formula / test_mass で検索評価」の順。各段の yaml は `split-name: split.tsv`。`05_build_msg_all_iceberg_dataset.py` は元の `msg_all` の `splits` をそのまま写す（222 行目）。test で検索評価する作りなので test は学習に使わない設計。**確認**（コード）。ただし commit 708148c2 の時点で元の `data/spec_datasets/msg_all`（split.tsv を含む）を作るコードは無い（`run_all.sh` の冒頭「Assumes data/spec_datasets/msg_all already exists」）。builder が `msg_all` に対応したのは 10-26 の bccbed6。**確認**。配布された msg_all の重みの学習に使われた split.tsv そのものは**未確認**
+- ICEBERG `msg_all`: `run_scripts/iceberg/msg_all/run_all.sh` は「衝突エネルギーが分かる部分（msg_known_ce）で学習 → その模型で欠けた衝突エネルギーを補う → 全 MSG で学習し直す（09 は強度模型の学習の後に対照学習の微調整）」の 01〜09 段を走らせる。test_formula / test_mass での検索評価（段 10）は「Optional」としてコメントアウトされていて既定では走らない。各段の yaml は `split-name: split.tsv`。`05_build_msg_all_iceberg_dataset.py` は元の `msg_all` の `splits` をそのまま写す（222 行目）。学習コードは split.tsv の train で学習・val で選ぶので、test は学習に使わない設計（README も「evaluated on the full MassSpecGym retrieval benchmark」と書く）。**確認**（コード）。ただし commit 708148c2 の時点で元の `data/spec_datasets/msg_all`（split.tsv を含む）を作るコードは無い（`run_all.sh` の冒頭「Assumes data/spec_datasets/msg_all already exists」）。builder が `msg_all` に対応したのは 10-26 の bccbed6。**確認**。配布された msg_all の重みの学習に使われた split.tsv そのものは**未確認**
 - 衝突エネルギーの補完（`04_impute_missing_collision_energies.py`）は msg_known_ce で学習した模型で test の行の衝突エネルギーも補う作りかどうかは読み切れていない（**未確認**。補完は学習ではないが、test のスペクトルを見てラベルを作る可能性がある）
 
 ### (iii) ICEBERG の重みは MassSpecGym `msg_all` 版か
@@ -57,7 +57,7 @@
 
 - ms-pred のコード: **MIT**（`LICENSE`「Copyright (c) 2023 Samuel Goldman」、GitHub API の `license.spdx_id = MIT`）。**確認**（出典 1）。Kaggle の `src/ms_pred/LICENSE`（1,092 バイト）は上流（1,071 バイト）と改行コードを除いて同じ文面。**確認**（出典 4）
 - 上流の重み: Dropbox のフォルダには best.ckpt と hparams.yaml しか無く、重みだけのライセンス表記は無い。README は「open-source MassSpecGym-trained weights」とだけ書く。重みに MIT が及ぶかは書かれていない。**未確認**（作者の LICENSE-NOTICE は「The download carries no separate license file; used under the ms-pred repository's MIT License」＝**主張**）
-- Kaggle データセットのライセンス欄: 2 つとも `other`。**確認**（出典 4）
+- Kaggle データセットのライセンス欄: 2 つとも `other`。**確認**（出典 4）。作者の `MANIFEST.json` の `license` 欄は GLACIER が「ms-pred + GLACIER weights: MIT (src/ms_pred/LICENSE); see LICENSE-NOTICE.txt」、ICEBERG が「ms-pred: MIT (src/ms_pred/LICENSE)」。**主張**
 - 推論の包み（`gl_runner.py`・`ice_runner.py`・`gl_fuse.py`・`fuse.py`）: ahmedberatozer の作。LICENSE-NOTICE は第三者部品（ms-pred、wheel）と `shim/`（「own code」）について書くが、これらの包みのライセンスは書いていない。**未確認**
 - 学習データ MassSpecGym: **MIT**（HF の `cardData.license`、#66 で確認済み、出典 10）
 - 同梱の wheel: rdkit 2025.3.6（BSD-3-Clause）、pytorch_lightning・torchmetrics・lightning_utilities（Apache-2.0）、einops（MIT）。**主張**（LICENSE-NOTICE。各 wheel の中のライセンスは読んでいない）
@@ -81,6 +81,8 @@
   - 許可された学習データ: MassSpecGym（MIT、757307 でも可）→ **充足（確認）**
   - 自前の推論コード: 今の推論の包みは参加者のもので、ライセンス表記が無い → **未充足**（748882 の 10-14 の 4 番「code shared by other competitors … allowed, provided they … comply with applicable licensing requirements」の条件を確かめられない）
 - 748882（Marie Killian、10-14）: 「Third party weights that cannot be reproduced with the original training code and permitted training data are not allowed」。→ 学習コードと MSG はあるので「再現できない重み」には当たらないと読める。ただし配布チェックポイントの学習データの範囲（119,029 行か 231,104 行か）が未確認なので、厳密な再現の手順はまだ書けない
+- 748882（Marie Killian、10-21）: 「If the original training code and permissible training data is available for full reproducibility by the end of the competition, yes, those weights would be allowed.」→ 締切までに学習コードと許可データが揃っていればよい。上の判断と同じ
+- 748882（Marie Killian、10-27）: 「We reserve the right to remove submissions that are not reproducible from the leaderboard, regardless of ranking, which would affect the final leaderboard and medal eligibility.」→ 再現できない部品は賞だけでなく順位表からも外され得る。上の 2 点の穴を残したまま最終に選ぶのは危うい
 - 757307（David Healey、11-11）: 「MassSpecGym and MIST models are fine」。→ MSG を学習データに使うこと自体は可（MSG の作成で NIST を掃除にだけ使った点も含めた質問への答え）
 - 755373（Zhenyu Zhang の投稿とコメント 5 件）: NIST の制限の実効性についての懸念で、ICEBERG・GLACIER の重みにも ms-pred にも触れていない（本文とコメントを読んで確認）。→ 当てはまる文は無い。NIST の禁止（投稿者の言い換え「prohibits NIST and its derivatives, including trained model weights」）に照らしても、使っているのは公開の MSG 版で、NIST 版（申請配布）ではない（(iii)）
 
@@ -89,7 +91,7 @@
 ## v3 で測る案（書くだけ、実行しない）
 
 - 形: 縮小版 `scripts/local_eval/run.py --stages score,prior,frag` の出力リストの上に、「同じ組成式の候補の並べ替え」の段を 1 つ足す。中身は 0.487 系統の F セル 41 と同じ: 上位 60 位（`TOPN = 60`、F セル 26）の中の同じ組成式のまとまりごとに `z(score) + ICE_LAM·z(ICEBERG) + GL_LAM·z(GLACIER)` で並べ替え、元の席に戻す（`gl_fuse.rerank_multi`、slot-preserving）。定数は 0.487 系統のまま `ICE_LAM = GL_LAM = 1.0`（F セル 26・41、確認）。**定数は動かさない**（ハイパラ調整の禁止）。案は 1 つだけで、ICE だけ・GL だけなどの別案は立てない
-- 点の定義は Kaggle のランナーと同じ（`ice_ex_mean`／`gl_ex_mean`: 被覆されたスペクトル〈正イオンで [M+H]+ か [M+Na]+〉ごとの予測と問い合わせのエントロピー類似度の平均。装置の印は Orbitrap 系なら `Orbitrap`、それ以外〈timsTOF を含む〉は `QTOF`）
+- 点の定義は Kaggle のランナーと同じ（`ice_ex_mean`／`gl_ex_mean`: 被覆されたスペクトルごとの予測と問い合わせのエントロピー類似度の平均。装置の印は Orbitrap 系なら `Orbitrap`、それ以外〈timsTOF を含む〉は `QTOF`）。被覆は F セル 41 と同じにする: ICEBERG は正イオンの [M+H]+ と [M+Na]+、GLACIER は [M+H]+ だけ＋N1 arm A の代理スペクトル（[M+H]+ を持たない分子の [M+NH4]+・[M-H2O+H]+ を [M+H]+ に付け替えたもの）。GLACIER の RDKit の扱い（`--any-rdkit`）も F セル 41 に合わせる
 - リークの規則（#66 と同じものを先に書く）: 学習側 = MassSpecGym の train ∪ val（1.0 と 1.5 の和集合）。各 v3 集合から学習側と重なる正解構造を除いた部分集合で測る。残りが 100 分子未満の集合は「測定不能」。理由: GLACIER も ICEBERG も val でチェックポイントを選ぶので val は学習側。配布チェックポイントの学習範囲（GLACIER が 119,029 行の部分集合だけか）は未確認なので、MSG 全体の fold で数える
 - 残りの数（`outputs/research/msg_overlap.json` の `remaining_rule` と `remaining_conservative`、確認）:
   - train ∪ val の規則: **v3_c1 199**（重なり 1）、**v3_c2 200**（0）、**enveda_v1 202**（0）、**v3_c2n 94**（重なり 106、測定不能）
@@ -101,7 +103,9 @@
 
 ## 補足の発見
 
-- 対応範囲の宣言（commit 8dfe2d3、確認）: 上流は今、学習 yaml ごとに対応する付加イオンと装置を宣言し、宣言外の入力では推論でエラーを出す。GLACIER の MSG 版は `supported-adducts: [[M+H]+]`、ICEBERG `msg_all` は `[[M+H]+, [M+Na]+]`、どちらも装置は `[Orbitrap, QTOF]`。一方 Kaggle の `gl_runner.py` は [M+Na]+ も被覆として GLACIER に渡す（52 行目 `COV = ('[M+H]+', '[M+Na]+')`）。Kaggle のコードは宣言の前の commit 708148c2 なのでエラーにならない。GLACIER の [M+Na]+ の予測は、上流の宣言の外で使っていることになる（部品表の「GLACIER は [M+H]+ だけ」は F セル 40 の説明文の記述で、ランナーのコードとは違う）
+- 対応範囲の宣言（commit 8dfe2d3、確認）: 上流は今、学習 yaml ごとに対応する付加イオンと装置を宣言し、宣言外の入力では推論でエラーを出す。GLACIER の MSG 版は `supported-adducts: [[M+H]+]`、ICEBERG `msg_all` は `[[M+H]+, [M+Na]+]`、どちらも装置は `[Orbitrap, QTOF]`。Kaggle のコードは宣言の前の commit 708148c2 なのでエラーにならない
+- 0.487 系統での GLACIER の入力（確認、出典 6）: `gl_runner.py` 単体は [M+Na]+ も被覆として受け付ける（52 行目 `COV = ('[M+H]+', '[M+Na]+')`）が、F セル 41 は GLACIER に渡す前に [M+H]+ のスペクトルだけに絞る（`gl_items = [dict(it, spectra=[s for s in it['spectra'] if s.get('adduct') == '[M+H]+']) …]  # v29: GLACIER on [M+H]+ only`）。部品表の「GL ランナー、[M+H]+ だけ」はこの点で正しい。ただし同じ F セル 41 の「N1 arm A」（`N1_ARM = 'N1A_D'`）は、本物の [M+H]+ スペクトルを持たない分子について [M+NH4]+ と [M-H2O+H]+ のスペクトルを [M+H]+ に付け替えた代理スペクトルを GLACIER で採点し、`GL_SCORES.update(_n1_real)` で本番の点に入れる。上流の宣言（GLACIER は [M+H]+ だけ）から実質的に外れるのはこの代理スペクトルの部分。また F セル 41 は GLACIER を `--any-rdkit`（ランナーの説明では「NOT exact」）で起動する
+- 上流の宣言は「model-author support declarations, not automatically measured counts of what training encountered」（README、8dfe2d3）で、宣言外の入力が必ず悪いという意味ではない。0.487 系統の点が宣言の外の入力を含むことだけを記録する
 - `ms_pred` の推論部分のコード（joint_model.py ほか 5 ファイル）は commit 708148c2 と改行コードを除いて一致した（確認）。改変は shim（DGL・torch_scatter・LinSATNet の代替、作者の自作）とランナー側にある
 - 上流の GLACIER の公開版は 11/3 に `glacier_msg_simulation` へ差し替わった。Kaggle 版（旧リンク）を最終に使うなら、参照先は commit 708148c2 の README と旧リンクになる。旧リンクがいつまで開けるかは分からない
 
