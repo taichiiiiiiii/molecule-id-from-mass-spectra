@@ -4,7 +4,7 @@
 
 ## 取得の条件
 - 一覧: `kaggle kernels list --competition enveda-CASMI26-molecule-id-mass-spectra --sort-by scoreDescending --page-size 30 --csv`（2026-11-12 03:33:51 UTC）。この一覧に点数の列は無い。以下の点数は、断りが無いかぎりノートの題や markdown にある**作者の申告で、こちらでは未確認**
-- 取得: `kaggle kernels pull <ref> -p <scratch>/pull/<owner>__<slug> -m`（03:34 UTC。scratch は `~/.hermes/profiles/massspec/cache/scratch/t4_1112/`、合わせて約 4.4 MB）。版番号は Kaggle API の `get_kernel` の `current_version_number`（03:34:49 UTC 取得）。同じ API の `last_run_time` はどのノートも「2026-11-09 03:34:xx」で、取得時刻からちょうど 3 日前になっていて信用できないので使わず、最終実行は一覧の `lastRunTime` を書く
+- 取得: `kaggle kernels pull <ref> -p <scratch>/pull/<owner>__<slug> -m`（03:34 UTC。scratch は `~/.hermes/profiles/massspec/cache/scratch/t4_1112/`、合わせて約 4.4 MB）。版番号は Kaggle API の `get_kernel` の `current_version_number`（5 本は 03:34:49 UTC に取得して `meta_versions.txt` に保存、romanrozen は別に読み取りで取得）。同じ API の `last_run_time` はどのノートも「2026-11-09 03:34:xx」で、取得時刻からちょうど 3 日前になっていて信用できないので使わず、最終実行は一覧の `lastRunTime` を書く
 - 比べる基準: 0.487 の写し `kernels/lb487/`（`taichiiiii/casmi26-lb487-copy`、ipynb sha256 380e2c82…、31 セル）。**このファイルは main には無く、`feat/77-lb487-owntables` のコミット c3d9992 にだけある**ので、`git show c3d9992:kernels/lb487/...` で取り出して比べた。セルの比較は、セルの本文が一致するかどうか（sha1）と difflib の差分による
 
 ## 出典（ノート 6 本。版は 11/12 03:34 UTC 時点）
@@ -21,15 +21,15 @@
 分類の言葉: **構造的** = 新しい候補源・新しい証拠チャネル・新しい並べ替えの規則・公開コードで学習し直したモデル。**定数** = 既存の重み・しきい値・切り替えを動かしただけ。定数の写しは案にしない（ハイパラ調整の禁止）。
 
 ### 1. ozertuu 版 21（`dataset_sources`・`kernel_sources` は 0.487 写しと**同じ**）
-0.487 写しの 31 セルのうち 22 セルが同一。変わったのはセル 0・1（markdown）、4（設定）、14（スコアラーの差し替え）、20（最終層）、22（v8）、23（外部ライブラリの重ね）、25（最後の確認の print）。
-- スコアラー（セル 14）: 0.487 写しの `0.5·z(sanpier) + 0.5·z(v80)` の平均をやめ、`popwenman/casmi26-scorer-train-v80` の出力（`final_model.pt`＋`config_used.json`）だけで点を付ける → **定数**（混ぜる重み 0.5→0 と同じ）。v80 は全 train で学習（`lineage-reproducibility.md` の 20 行）なので v3 では測れない
+0.487 写しの 31 セルのうち 22 セルが同一（版 21 は 30 セル。0.487 写しのセル 2（markdown「Camouflage Snapshot」）が無い）。変わったのは版 21 の番号でセル 0・1（markdown）、4（設定）、14（スコアラーの差し替え）、20（最終層）、22（v8）、23（外部ライブラリの重ね）、25（最後の確認の print）。
+- スコアラー（セル 14）: 0.487 写しの `0.5·z(sanpier) + 0.5·z(v80)` の平均をやめ、`popwenman/casmi26-scorer-train-v80` の出力（`final_model.pt`＋`config_used.json`）だけで点を付ける → **定数**（混ぜる重み 0.5→0 と同じ）。v80 は全 train で学習（`lineage-reproducibility.md` の部品表の 20 番）なので v3 では測れない
 - `V8 = 'MASS'`→`'BOTH'`（セル 4）: 0.487 写しに入っていて切ってある romanrozen の学習済み同式異性体リランカー（LightGBM、ノートに zlib+base64 で埋め込み、モデル本文の sha256 3b80e1c9…）を有効にする → 0.487 写しから見ると**構造的**（証拠チャネルを 1 本足す）。あわせて `RR8_ALPHA` 1.0→0.20（**定数**）と、`rerank_list` に `frozen[smiles[0]] = True`（1 位を動かさない、**規則の変更**）
   - 生成コード: **見つからない**。探した場所: romanrozen の公開カーネル一覧（17 本、CASMI 関係は 0-482 だけ）、0-482 の版 17（学習の説明だけ: 「LightGBM lambdarank、102 特徴、enveda の天然物 5 個ずつの scaffold 群 OOF で MRR 0.7283」。`lgb.train` などの学習コードは無い）、romanrozen の公開データセット 4 件（CASMI 関係なし）
   - 学習データは説明によると train の同式異性体と enveda の天然物 → v3 の正解を含む可能性が高い（未確認）。v3 では測れない
   - 盤面の手がかり（作者の申告、未確認）: 0.487 写しのセル 1 の表に「romanrozen v9 code, `V8 = 'BOTH'`, bgunshui scorer v2 | 0.481 (page) | 0.461 on our board」。lucifer19 版 18 のセル 0 にも「IonWraith v16 0.461 ← Gold Apex V22 code, V8 = 'BOTH'」。ozertuu 版 21 の BOTH は土台が違うので、これで良し悪しは言えない
 - 最終層（セル 20）に規則を 2 つ追加: (a) ライブラリで 1 位を差し替え（ライブラリ一致がある分子で、いまの 1 位に `spec_map` の印が無く 2 位にあり、2 位の候補の `cinfo` の 2 つの順位がどちらも 3 以内なら入れ替え）、(b) 天然物の昇格（(a) が起きず lib_max < 0.80 のとき、2 位が天然物で 1 位は天然物でなく、2 位の `cinfo` の 2 つ目の順位が 1 位より上で、点差が `NP_PROMO_MARGIN = 0.040` を超えれば入れ替え）。`cinfo` の 2 つの順位の意味はコードを追っていない（未確認）→ **構造的な規則**（既存の証拠で 1 位を動かす）。定数 0.80・0.040 は作者の値
 - 外部ライブラリの重ね（セル 23）: (1) 付加イオンごとの質量差の表で中性質量をそろえて照合、付加イオンの組が合うものだけ比べる、候補の精密質量が 15 ppm を超えてずれたら捨てる（**構造的**: 既存チャネルの照合の直し）、(2) cos ≥ 0.80 で 1 位へ（従来どおり、旧 1 位は 2 位へ）、0.72 ≤ cos < 0.80 なら 2 位へ差し込み（1 位は動かさない）、0.65 ≤ cos < 0.72 で 3〜25 位にある候補なら 2 位へ（**構造的な規則**「2 位への差し込み」。heliosli の考えとセルに書いてある。しきい値は作者の値）
-  - 使うデータは ExtLib（生成コードは見つからない、CC0）と MassBank harmonized（作り方の説明だけ、CC-BY-NC-SA-4.0）で、0.487 写しと同じ（`lineage-reproducibility.md` の 21・22 行）。timsTOF の条件では v3 で測れない（`docs/research/extlib-holdout.md`）
+  - 使うデータは ExtLib（生成コードは見つからない、CC0）と MassBank harmonized（作り方の説明だけ、CC-BY-NC-SA-4.0）で、0.487 写しと同じ（`lineage-reproducibility.md` の部品表の 21・22 番）。timsTOF の条件では v3 で測れない（`docs/research/extlib-holdout.md`）
 - markdown（セル 0）は「Clean LOTUS-free candidate pool」と書く。LOTUS のデータセットは添付されていない。11/11 昼の日報で読んだ ozertuu の旧ノート（`ozertuu/casmi26-dual-neural-physical-isomer`、11/10）は LOTUS を添付していたが、版 21 には無い
 - 点数: 題の「0.500+」は作者の申告で**未確認**。セル 1 の表は 0.487 写しのセル 1 と同じ形の表（行の一部が違う）で、版 21 自体の盤面の値は書かれていない
 
@@ -37,7 +37,7 @@
 ozertuu 版 21 とセル 0・4・14・23 だけ違う（題も同じ「Imperial Zenith」）。
 - スコアラー: sanpier 0.50 + v80 0.25 + `ozertuu/casmi26-our-scorer-v80-model` 0.25 の z 平均（markdown の記述）。コードは `/kaggle/input` の `final_model.pt` を全部集める作りで、`ozertuu/casmi26-our-scorer-v80-model` は `dataset_sources` に入っていない → 実際にいくつのモデルで平均するかは未確認。**定数**（重み）と、全 train 学習のモデルの追加
 - `POP_W, SPEC_W, NP_W` 0.12/0.12/0.12→0.10/0.05/0.02、`LIB_HIT_GATE` 0.78→0.87、`RR8_ALPHA` 0.25 → **定数**
-- LOTUS 候補を添付（空いた枠を質量の合う天然物で埋める段が動く）→ **構造的**（候補源）だが、0.487 系統の既知の部品（`lineage-reproducibility.md` の 23 行。README に作り方、コードは見つからない、CC0）
+- LOTUS 候補を添付（空いた枠を質量の合う天然物で埋める段が動く）→ **構造的**（候補源）だが、0.487 系統の既知の部品（`lineage-reproducibility.md` の部品表の 23 番。README に作り方、コードは見つからない、CC0）
 - 外部ライブラリの重ねは ozertuu の付加イオン対応だけを入れ、2 位差し込みは無い
 - 点数: 題の「0.500+」は**未確認**、票 0
 
@@ -68,6 +68,7 @@ ozertuu 版 21 とセル 0・4・14・23 だけ違う（題も同じ「Imperial 
 - 0.487 写しから新しい部品が無いもの: lucifer19 版 18
 
 ## 主催者スレッド（`kaggle competitions topics show <slug>/<id> --format json`、取得 2026-11-12 03:41:53 UTC = 12:41 JST）
+どれも参加者が立てたスレッドで、主催者（David Healey）の答えを待っている、または答えが付いたもの。
 - 758233「Clarification request: Reproducibility of small fixed index lists shipped inside public datasets」（Bhavish Mansharamani、2026-11-12 00:03:48 UTC）: commentCount 0。**回答なし（変化なし）**
 - 753662「Question on reproducibility: are public notebooks that rely on datasets without generation code eligible?」: commentCount 8。いちばん新しいのは 기욱 이 の質問（2026-11-12 00:56:33 UTC、公開の学習コードはあるが種や手順が一部書かれておらず、ビット一致しない重みをそのまま読んでよいか）で**未回答**。主催者の最新は David Healey 2026-11-11 00:15:52 UTC「Intermediate data and models need to be reproducible. If we can't reproduce it because parts of the generating code is missing, the solution is open to being disqualified. Use others' intermediate data artifacts at your own risk.」
 - 756893「Are shipped ranker tables without a public generator reproducible?」: commentCount 1。David Healey 2026-11-11 00:16:58 UTC「Solutions that load intermediate data artifacts without being able to reproduce those artifacts are not reproducible.」のまま。作り直した表が認められるかへの答えは無い
@@ -90,7 +91,7 @@ ozertuu 版 21 とセル 0・4・14・23 だけ違う（題も同じ「Imperial 
 - 採否の規則（設計 §5 のまま）: 4 集合 v3_c1・v3_c2・enveda_v1・v3_c2n すべてで、`train_eval.bootstrap_diff`（分子ブートストラップ 2,000 回、seed 0、`scripts/cv/frag_v3_check.py` と同じ）の (新 − 対照) 95% 区間の下限 ≥ −0.02、かつ 1 つ以上で下限 > 0。1 集合でも欠けたら採用しない
 - リークの確かめ方（この段は何も学習しないので、確かめるのは参照表が各集合の隠す規則どおりかどうか）:
   1. 学習する部品なし（FPNet は既存の fold0、prior・frag は既存）。新しい外部データも足さない
-  2. 参照は `library.load_refs` の規則どおりであること: v3_c2・enveda_v1・v3_c2n（rule all）は正解の構造の参照が 0 行、v3_c1（rule enveda_libs）は正解の参照に enveda-180・enveda-np-examples の行が 0 行。段を走らせる前にこれを数えて assert し、各集合の「正解に参照がある分子の数」と「lib_max ≥ 0.7 の分子の割合」を結果に書く
+  2. 参照は `library.load_refs` の規則どおりであること: v3_c2・enveda_v1・v3_c2n（rule all。enveda_v1 は `hide_rule.json` が無く、`library.hide_rule` の既定値 rule all・pool keep で動く）は正解の構造の参照が 0 行、v3_c1（rule enveda_libs）は正解の参照に enveda-180・enveda-np-examples の行が 0 行。段を走らせる前にこれを数えて assert し、各集合の「正解に参照がある分子の数」と「lib_max ≥ 0.7 の分子の割合」を結果に書く
   3. 参照のキャッシュ `outputs/local_eval/<h>/refs_top60.parquet` は、作ったときのリストの候補キーしか持たない。frag の後のリストのキーが全部入っているかを確かめ、足りなければ別名のキャッシュを作り直す（足りないキーは「参照なし」として黙って扱われるため）
   4. 縮小版の対照が変わらないこと: `score,prior,frag` の csv が変更前の写しと `cmp` 同一、mrr25 が上の 4 値と一致
 - この案で分からないこと: 縮小版の土台は弱い（LB 0.282）。ここで勝っても、0.487 の系統（すでに ExtLib の 1 位差し上げと `LIB_HIT_GATE` を持つ）の上で勝つとは言えない。盤面に出すなら、0.487 写しへの重ねとして別に事前登録する
@@ -101,7 +102,7 @@ ozertuu 版 21 とセル 0・4・14・23 だけ違う（題も同じ「Imperial 
 - RR8・heliosli の各モデル: 生成コードが見つからない、または非公開で、v3 の正解を学習に含む可能性がある
 - 付加イオン対応の外部ライブラリ照合: データ（ExtLib・MassBank harmonized）が timsTOF の条件で v3 では測れない
 - MSG 参照表: 上の重なりのとおり、4 集合では効く余地がほぼ測れない
-- LOTUS 候補: 既知の部品（`lineage-reproducibility.md` の 23 行）。空いた枠を埋めるだけで、v3_c2 の正解（enveda-180 だけの構造）は COCONUT にほぼ無いので、LOTUS にも少ないと見込む（未確認）
+- LOTUS 候補: 既知の部品（`lineage-reproducibility.md` の部品表の 23 番）。空いた枠を埋めるだけで、v3_c2 の正解（enveda-180 だけの構造）は COCONUT にほぼ無いので、LOTUS にも少ないと見込む（未確認）
 
 ## 再現のコマンド
 ```
