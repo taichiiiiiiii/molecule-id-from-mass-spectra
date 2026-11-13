@@ -37,10 +37,11 @@ PIP = ["rdkit==2026.03.3", "lightgbm==4.7.0"]
 
 RUNNER = r'''
 # ---- Issue #88: TC 段 1 (simulate_v1ctx.py) の T4 試走。ノート全体 25 分で打ち切り ----
-import os, sys, time, json, glob, shutil, signal, subprocess, threading, platform
+import os, sys, time, json, glob, shutil, signal, subprocess, threading, platform, shlex
 from pathlib import Path
 T0 = time.time()
 BUDGET = 25 * 60
+PY = shlex.quote(sys.executable)
 OUT = Path('/kaggle/working/out'); OUT.mkdir(parents=True, exist_ok=True)
 R = Path('/tmp/R')                      # 作業場所は /tmp（/kaggle/working に 4 GB の symlink を置かない）
 REPORT = dict(issue=88, slug=SLUG, started_unix=T0, budget_s=BUDGET, args=TC_ARGS + TRIAL_ARGS, env=TC_ENV,
@@ -70,15 +71,17 @@ def main():
     step('env')
     pip = {}
     for spec in PIP:
-        o = sh(f'{sys.executable} -m pip install -q {spec}', timeout=300)
+        o = sh(f'{PY} -m pip install -q {spec}', timeout=300)
         pip[spec] = o[-1500:] if o else 'ok'
     REPORT['pip'] = pip
-    REPORT['versions'] = sh(f'{sys.executable} -c "import sys, numpy, pandas, pyarrow, torch, numba; '
-                            f'from rdkit import rdBase; import lightgbm; '
-                            f'print(dict(python=sys.version.split()[0], numpy=numpy.__version__, pandas=pandas.__version__, '
-                            f'pyarrow=pyarrow.__version__, torch=torch.__version__, cuda=torch.version.cuda, '
-                            f'gpu=torch.cuda.get_device_name(0) if torch.cuda.is_available() else None, '
-                            f'numba=numba.__version__, rdkit=rdBase.rdkitVersion, lightgbm=lightgbm.__version__))"', timeout=120)
+    vers = {}
+    for mod, expr in (('torch', "import torch; print(torch.__version__, torch.version.cuda, torch.cuda.get_device_name(0) if torch.cuda.is_available() else None)"),
+                      ('rdkit', "from rdkit import rdBase; print(rdBase.rdkitVersion)"),
+                      ('numpy', "import numpy; print(numpy.__version__)"), ('pandas', "import pandas; print(pandas.__version__)"),
+                      ('pyarrow', "import pyarrow; print(pyarrow.__version__)"), ('numba', "import numba; print(numba.__version__)"),
+                      ('lightgbm', "import lightgbm; print(lightgbm.__version__)")):
+        vers[mod] = sh(f'{PY} -c "{expr}"', timeout=120)[-300:]
+    REPORT['versions'] = vers
     REPORT['tc_env'] = 'TC README §4: python 3.14.5, torch 2.14.0+cu130, lightgbm 4.7.0, rdkit 2026.03.3（ここと違う版は versions を見る）'
     step('pip', versions=REPORT['versions'])
 
@@ -134,6 +137,9 @@ def main():
     bad = compare(EXP_DATA, act) + compare({k: dict(sha256=v) for k, v in EXP_CODE.items()}, act_code)
     REPORT['inputs'] = {w: dict(EXP_DATA[w], actual_sha256=act[w]['sha256'], actual_bytes=act[w]['bytes']) for w in EXP_DATA}
     REPORT['code_checked'] = len(act_code)
+    # 記録の無い TC のコード（段 1 の入口 simulate_v1ctx.py ほか）は sha256 だけを残す
+    REPORT['code_unrecorded_sha256'] = {str(f.relative_to(R)): sha256_file(f) for f in sorted((R / 'work').rglob('*.py'))
+                                        if str(f.relative_to(R)) not in EXP_CODE}
     REPORT['mismatch'] = bad
     step('verify', n_data=len(act), n_code=len(act_code), n_bad=len(bad))
     if bad:
@@ -209,11 +215,18 @@ def main():
         rc = p.wait(timeout=tmo)
     except subprocess.TimeoutExpired:
         timed_out = True
-        os.killpg(p.pid, signal.SIGTERM)
+        try:
+            os.killpg(p.pid, signal.SIGTERM)
+        except ProcessLookupError:
+            pass
         try:
             rc = p.wait(timeout=15)
         except subprocess.TimeoutExpired:
-            os.killpg(p.pid, signal.SIGKILL); rc = p.wait()
+            try:
+                os.killpg(p.pid, signal.SIGKILL)
+            except ProcessLookupError:
+                pass
+            rc = p.wait()
     th_r.join(timeout=10)
     wall = time.time() - t_start
     parsed = parse_sim_log(lines)
