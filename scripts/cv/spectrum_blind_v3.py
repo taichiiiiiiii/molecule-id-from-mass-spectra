@@ -121,22 +121,33 @@ def main() -> None:
         rule = L.hide_rule(h)
         hidden = L.drop_keys(h) if rule.get("pool") == "remove" else set()
         preds, n_win, n_nofp = {}, [], 0
+        t_in_win = t_pop_pos = 0
+        t_pop_rank = []   # 窓（hidden 除去後）の中で正解より pop が厳密に大きい候補の数 + 1
         for mid in truth:
             if mid not in targets:
                 preds[mid] = []
                 continue
             idx = pool.window(targets[mid])
             if hidden:
-                n_win.append(int((~np.isin(pool.key[idx], list(hidden))).sum()))
-            else:
-                n_win.append(len(idx))
+                idx = idx[~np.isin(pool.key[idx], list(hidden))]
+            n_win.append(len(idx))
+            sel = idx[pool.key[idx] == M.to_key(truth[mid])]
+            if len(sel):
+                p = float(pool.pop[sel].max())
+                t_in_win += 1
+                t_pop_pos += p > 0
+                t_pop_rank.append(int((pool.pop[idx] > p).sum()) + 1)
             rows = blind_rank(idx, pool.pop, pool.key, hidden)
             n_nofp += sum(fpc(pool.smiles[i]) is None for i in rows)
             preds[mid] = [pool.smiles[i] for i in rows]
         bm, branks = metrics(truth, preds)
         bm.update(n_no_target=sum(m not in targets for m in truth), window_median=float(np.median(n_win)),
                   window_le25=round(float(np.mean(np.array(n_win) <= K)), 4),
-                  top25_without_fp=n_nofp)
+                  top25_without_fp=n_nofp, truth_in_window=t_in_win, truth_pop_gt0=t_pop_pos,
+                  truth_pop_rank_median=float(np.median(t_pop_rank)) if t_pop_rank else None)
+        if hidden:   # 指標のキー（tautomer 正準化後）で見て、hidden を除いたプールに残っている正解
+            left = set(pool.key) - hidden
+            bm["truth_metric_key_left_in_pool"] = sorted(m for m in truth if M.to_key(truth[m]) in left)
         # 既存 stage
         ex = {}
         for tag in ("score+prior", "score+prior+frag"):
