@@ -126,3 +126,94 @@ def test_generated_notebook_compiles_and_metadata(tmp_path):
     assert "--max_structs" in src and "'40'" in src and "sha256_file" in src
     # 足すのは --shard 0 --nshard 6 --max_structs 40 だけ
     assert mk.TRIAL_ARGS == ["--shard", "0", "--nshard", "6", "--max_structs", "40"]
+
+
+# ---- 2 シャード同時（2026-11-14 夜） ----
+_spec3 = importlib.util.spec_from_file_location("sim1_trial2", ROOT / "scripts/train/sim1_trial2.py")
+st2 = importlib.util.module_from_spec(_spec3)
+_spec3.loader.exec_module(st2)
+
+
+def _inputs(tmp_path):
+    r = tmp_path / "README.md"; r.write_text(README)
+    g = tmp_path / "g.json"; g.write_text(json.dumps(_v4g()))
+    b = tmp_path / "b.json"; b.write_text(json.dumps(_v4b()))
+    return r, g, b
+
+
+def test_default_build_keeps_committed_cells_except_constants(tmp_path):
+    """既定（1 シャード）の生成物は昼にコミットしたノートと同じ（定数のセルは実の記録から作るので除く）。"""
+    nb, meta = mk.build(*_inputs(tmp_path))
+    committed = json.loads((ROOT / "kernels/casmi26-v4b-sim1-trial/notebook.ipynb").read_text())
+    assert len(nb["cells"]) == len(committed["cells"]) == 4
+    for i in (0, 1, 3):
+        assert nb["cells"][i] == committed["cells"][i], i
+    c_new, c_old = nb["cells"][2]["source"].splitlines(), committed["cells"][2]["source"].splitlines()
+    assert [l for l in c_new if not l.startswith(("EXP_DATA", "EXP_CODE", "EMBED_SOURCES"))] == \
+           [l for l in c_old if not l.startswith(("EXP_DATA", "EXP_CODE", "EMBED_SOURCES"))]
+    assert nb["metadata"] == committed["metadata"]
+    assert meta == json.loads((ROOT / "kernels/casmi26-v4b-sim1-trial/kernel-metadata.json").read_text())
+
+
+def test_two_shard_notebook_compiles_and_metadata(tmp_path):
+    nb, meta = mk.build(*_inputs(tmp_path), two_shards=True)
+    assert mk.check(nb) == 4
+    assert meta["id"] == "taichiiiii/casmi26-v4b-sim1-trial2" and meta["is_private"] and meta["enable_gpu"]
+    assert meta["machine_shape"] == "NvidiaTeslaT4" and meta["dataset_sources"] == mk.DATASETS
+    run = nb["cells"][4]["source"]
+    # 照合までは昼と同じコード、段 1 から先だけが違う
+    day_head = mk.RUNNER.lstrip("\n").split("    # 5. 段 1\n")[0]
+    assert run.split("    # 5. 段 1 を 2 シャード同時に")[0].replace("BUDGET = BUDGET2_S", "BUDGET = 25 * 60") \
+        .replace("の 2 シャード同時の T4 試走。ノート全体 60 分・段 1 は 45 分で打ち切り", "の T4 試走。ノート全体 25 分で打ち切り") == day_head
+    assert "CUDA_VISIBLE_DEVICES" in nb["cells"][2]["source"] and "DAY_SHARD0 = " in nb["cells"][3]["source"]
+    # 埋め込みの定数・部品を実際に実行し、2 シャードの引数を確かめる
+    ns = {}
+    exec(compile(nb["cells"][1]["source"] + "\n" + nb["cells"][2]["source"], "<mods>", "exec"), ns)
+    assert ns["shard_args"](0) == mk.TRIAL_ARGS and ns["shard_args"](1) == ["--shard", "1", "--nshard", "6", "--max_structs", "40"]
+    assert ns["SHARD_GPU"] == ((0, 0), (1, 1))
+
+
+def test_shard_env_sets_gpu_and_tc_threads():
+    e = st2.shard_env({"PATH": "/x", "CUDA_VISIBLE_DEVICES": "0,1"}, mk.TC_ENV, 1)
+    assert e["CUDA_VISIBLE_DEVICES"] == "1" and e["OMP_NUM_THREADS"] == "2" and e["PATH"] == "/x"
+
+
+def test_stage2_timeout_45min_cap_and_60min_budget():
+    assert st2.stage2_timeout(60) == 45 * 60
+    assert st2.stage2_timeout(20 * 60) == 60 * 60 - 20 * 60 - 180
+    assert st2.stage2_timeout(59 * 60) <= 60
+
+
+def test_gpu_query_parse_and_peak():
+    s = st2.parse_gpu_query("0, 1397, 31\n1, 1200, 45\nbad line\n")
+    assert s == {0: (1397.0, 31.0), 1: (1200.0, 45.0)}
+    p = st2.update_gpu_peak({}, s)
+    p = st2.update_gpu_peak(p, {0: (1000.0, 50.0)})
+    assert p == {"0": dict(mem_mb=1397.0, util=50.0), "1": dict(mem_mb=1200.0, util=45.0)}
+
+
+def test_wait_all_kills_only_late_process():
+    clock = [0.0]
+    class P:
+        def __init__(self, dur): self.dur = dur
+    def wait_one(p, timeout):
+        if p.dur > clock[0] + timeout:
+            clock[0] += timeout
+            raise TimeoutError
+        clock[0] = max(clock[0], p.dur)
+        return 0
+    res = st2.wait_all({0: P(10), 1: P(100)}, 50, lambda: clock[0], wait_one, lambda p: -15)
+    assert res == {0: (0, False), 1: (-15, True)}
+
+
+def test_slowdown_and_signature():
+    assert st2.slowdown(1857.6858239173890, 928.8429119586945) == 2.0
+    assert st2.slowdown(None, 1.0) is None
+    a = st2.query_signature([6, 6], ["c1", "c2"], [[1, 2], [3]])
+    assert a == st2.query_signature([6, 6], ["c1", "c2"], [(1, 2), (3,)]) != st2.query_signature([6, 6], ["c2", "c1"], [[1, 2], [3]])
+    assert st2.t_query_sum([1.0, 2.0, 3.0]) == dict(n=3, sum=6.0, mean=2.0)
+
+
+def test_cpu_model_from_lscpu():
+    t = "Architecture: x86_64\nCPU(s):  4\nModel name:   Intel(R) Xeon(R) CPU @ 2.00GHz\nNUMA node0 CPU(s): 0-3\n"
+    assert st2.cpu_model(t) == ("Intel(R) Xeon(R) CPU @ 2.00GHz", 4)

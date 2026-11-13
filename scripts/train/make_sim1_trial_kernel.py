@@ -11,6 +11,10 @@
 引数は TC 既定（`launch_sim1x.sh`）に `--shard 0 --nshard 6 --max_structs 40` だけを足す。照合に使う sha256 は
 上の 3 つの配布元の記録から完全な値を取り、ノートに埋め込む（カーネルの中でも v4b MANIFEST と spec README を
 マウントから読み直して同じか確かめる）。1 つでも違えば段 1 を回さず trial_report.json に記録して終える。
+
+`--two-shards`（2026-11-14 夜）: kernels/casmi26-v4b-sim1-trial2/ に、シャード 0 を GPU 0・シャード 1 を GPU 1 で
+同時に回すノートを作る（照合までは昼と同じコード、段 1 は 45 分・ノート全体 60 分で打ち切り、部品は
+`sim1_trial2.py`）。この引数を付けないときの生成物は昼のものとバイト同一。
 """
 import argparse
 import hashlib
@@ -291,13 +295,214 @@ finally:
 '''
 
 
-def module_source():
-    src = (ROOT / "scripts" / "train" / "sim1_trial.py").read_text()
+def module_source(name="sim1_trial.py"):
+    src = (ROOT / "scripts" / "train" / name).read_text()
     assert "from __future__" not in src
     return src
 
 
-def build(spec_readme: Path, v4g_manifest: Path, v4b_manifest: Path):
+# ---- 2 シャード同時（--two-shards、2026-11-14 夜、#88）。既定（1 シャード）の生成物は変えない ----
+KDIR2 = ROOT / "kernels" / "casmi26-v4b-sim1-trial2"
+SLUG2 = "taichiiiii/casmi26-v4b-sim1-trial2"
+# 昼の試走（taichiiiii/casmi26-v4b-sim1-trial v1）のシャード 0 の rows_0_p000_meta.parquet から（s の分母）
+DAY_SHARD0 = dict(kernel="taichiiiii/casmi26-v4b-sim1-trial v1",
+                  meta_sha256="253c729adfcc27817a027398872dd59dd3cf183f65300ec181d2734b90bcb51c",
+                  n_queries=200, n_structs=40, t_query_sum=928.8429119586945,
+                  query_signature="6c64b7d4df0129725e3387e963463b0702475b1c8b4785a966449c16feca61f1",
+                  cpu="Intel(R) Xeon(R) CPU @ 2.00GHz", vcpus=4)
+_STAGE1_MARK = "    # 5. 段 1\n"
+
+RUNNER2_STAGE = r'''    # 5. 段 1 を 2 シャード同時に（シャード 0 → GPU 0、シャード 1 → GPU 1）
+    tmo = stage2_timeout(time.time() - T0)
+    REPORT['stage1_timeout_s'] = tmo
+    REPORT['day_shard0'] = DAY_SHARD0
+    if tmo <= 60:
+        REPORT['status'] = 'skipped_no_time'
+        return
+    use_time = os.path.exists('/usr/bin/time') and sh('/usr/bin/time -v true').find('Maximum resident') >= 0
+    procs, lines, cmds = {}, {}, {}
+    t_start = time.time()
+    for shard, gpu in SHARD_GPU:
+        cmd = [sys.executable, 'work/analysis/fe_v4/simulate_v1ctx.py'] + TC_ARGS + shard_args(shard)
+        if use_time:
+            cmd = ['/usr/bin/time', '-v'] + cmd
+        cmds[str(shard)] = dict(cmd=cmd, CUDA_VISIBLE_DEVICES=str(gpu))
+        lines[shard] = []
+        procs[shard] = subprocess.Popen(cmd, cwd=str(R), env=shard_env(os.environ, TC_ENV, gpu), stdout=subprocess.PIPE,
+                                        stderr=subprocess.STDOUT, text=True, start_new_session=True, bufsize=1)
+    REPORT['stage1_cmds'] = cmds
+    REPORT['stage1_start_gap_s'] = round(time.time() - t_start, 2)
+    step('stage1_started', shards=[s for s, _ in SHARD_GPU])
+
+    def reader(shard):
+        p = procs[shard]
+        with open(OUT / f'sim1_stdout_s{shard}.log', 'w') as fh:
+            for ln in p.stdout:
+                lines[shard].append(ln.rstrip('\n')); fh.write(ln); fh.flush(); print(f'[s{shard}] ' + ln, end='', flush=True)
+
+    def tree_rss_mb(root):
+        try:
+            import psutil
+            pr = psutil.Process(root)
+            return sum(q.memory_info().rss for q in [pr] + pr.children(recursive=True)) / 2**20
+        except ImportError:
+            pass
+        except Exception:
+            return 0.0
+        tot, todo, seen = 0, [root], set()
+        while todo:
+            q = todo.pop()
+            if q in seen:
+                continue
+            seen.add(q)
+            try:
+                for l in open(f'/proc/{q}/status'):
+                    if l.startswith('VmRSS:'):
+                        tot += int(l.split()[1])
+                for t in os.listdir(f'/proc/{q}/task'):
+                    try:
+                        todo += [int(c) for c in open(f'/proc/{q}/task/{t}/children').read().split()]
+                    except OSError:
+                        pass
+            except OSError:
+                pass
+        return tot / 1024
+
+    peak = dict(rss_mb={str(s): 0.0 for s, _ in SHARD_GPU}, rss_total_mb=0.0, gpu={}, min_mem_available_mb=None,
+                loadavg1_max=0.0, n_samples=0)
+    def monitor():
+        while any(p.poll() is None for p in procs.values()):
+            tot = 0.0
+            for s, p in procs.items():
+                v = tree_rss_mb(p.pid) if p.poll() is None else 0.0
+                peak['rss_mb'][str(s)] = max(peak['rss_mb'][str(s)], v); tot += v
+            peak['rss_total_mb'] = max(peak['rss_total_mb'], tot)
+            o = sh('nvidia-smi --query-gpu=index,memory.used,utilization.gpu --format=csv,noheader,nounits', timeout=10)
+            update_gpu_peak(peak['gpu'], parse_gpu_query(o))
+            try:
+                ma = [int(l.split()[1]) for l in open('/proc/meminfo') if l.startswith('MemAvailable:')][0] / 1024
+                peak['min_mem_available_mb'] = ma if peak['min_mem_available_mb'] is None else min(peak['min_mem_available_mb'], ma)
+                peak['loadavg1_max'] = max(peak['loadavg1_max'], float(open('/proc/loadavg').read().split()[0]))
+            except Exception:
+                pass
+            peak['n_samples'] += 1
+            time.sleep(2)
+    ths = [threading.Thread(target=reader, args=(s,), daemon=True) for s in procs]
+    for th in ths:
+        th.start()
+    th_m = threading.Thread(target=monitor, daemon=True); th_m.start()
+
+    def kill_one(p):
+        try:
+            os.killpg(p.pid, signal.SIGTERM)
+        except ProcessLookupError:
+            pass
+        try:
+            return p.wait(timeout=15)
+        except subprocess.TimeoutExpired:
+            try:
+                os.killpg(p.pid, signal.SIGKILL)
+            except ProcessLookupError:
+                pass
+            return p.wait()
+    def wait_one(p, timeout):
+        return p.wait(timeout=timeout)
+    res = wait_all(procs, t_start + tmo, time.time, wait_one, kill_one)
+    for th in ths:
+        th.join(timeout=10)
+    wall = time.time() - t_start
+    st1 = {}
+    for s, _ in SHARD_GPU:
+        parsed = parse_sim_log(lines[s])
+        gnu = None
+        for ln in lines[s]:
+            if 'Maximum resident set size' in ln:
+                gnu = round(int(ln.split(':')[-1].strip()) / 1024, 1)
+        st1[str(s)] = dict(returncode=res[s][0], timed_out=res[s][1], header=parsed['header'], done=parsed['done'],
+                           progress=parsed['progress'], gnu_time_max_rss_mb=gnu, tail=lines[s][-40:], _parsed=parsed)
+    REPORT['stage1'] = {k: {kk: vv for kk, vv in v.items() if kk != '_parsed'} for k, v in st1.items()}
+    REPORT['stage1_wall_s'] = round(wall, 1)
+    REPORT['stage1_peak'] = peak
+    step('stage1', **{f'rc{k}': v['returncode'] for k, v in st1.items()}, wall_s=round(wall, 1),
+         timed_out=[k for k, v in st1.items() if v['timed_out']])
+
+    # 6. 出力の形（シャードごと）と s
+    import numpy as np, pandas as pd
+    sim = R / 'work/analysis/v1fe/sim1x'
+    REPORT['outputs'] = {str(f.relative_to(sim)): f.stat().st_size for f in sorted(sim.rglob('*')) if f.is_file()}
+    shards = {}
+    for s, _ in SHARD_GPU:
+        d = {}
+        try:
+            parts = sorted(sim.glob(f'rows_{s}_p[0-9][0-9][0-9].npz'))
+            rows_q = None
+            if parts:
+                with np.load(parts[0], allow_pickle=True) as z:
+                    X, y, g, feats = z['X'], z['y'], z['g'], list(z['features'])
+                d.update(part=parts[0].name, n_parts=len(parts), n_rows=int(X.shape[0]), n_cols=int(X.shape[1]),
+                         n_features=len(feats), same_as_94=bool(X.shape[1] == 94 and len(feats) == 94), dtype=str(X.dtype),
+                         all_finite=bool(np.isfinite(X).all()), n_groups=int(len(np.unique(g))), n_pos=int(y.sum()))
+                mp = str(parts[0]).replace('.npz', '_meta.parquet')
+                m = pd.read_parquet(mp)
+                rows_q = int(len(m))
+                tq = t_query_sum(m.t_query)
+                d['meta'] = dict(n=int(len(m)), n_structs=int(m.sid.nunique()), regime=m.regime.value_counts().to_dict(),
+                                 has_truth=int(m.has_truth.sum()), t_query=tq, t_query_median=float(m.t_query.median()),
+                                 t_query_max=float(m.t_query.max()),
+                                 t_query_mean_by_regime={k: float(v) for k, v in m.groupby('regime').t_query.mean().items()},
+                                 query_signature=query_signature(m.sid, m.regime, m.qidx), sha256=sha256_file(mp))
+                shutil.copy2(mp, OUT / Path(mp).name)
+            ctxs = sorted((sim / 'ctx').glob(f'ctx_s{s}_c*.pkl'))
+            d['ctx'] = dict(files=len(ctxs), bytes=int(sum(c.stat().st_size for c in ctxs)))
+        except Exception as e:
+            d['error'] = repr(e)
+        d['summary'] = summarize(st1[str(s)]['_parsed'], rows_meta_queries=rows_q)
+        shards[str(s)] = d
+    REPORT['shards'] = shards
+    m0 = shards.get('0', {}).get('meta')
+    sv = dict(definition='同時実行のシャード 0 の t_query 合計 ÷ 昼の試走のシャード 0 の t_query 合計',
+              day_sum=DAY_SHARD0['t_query_sum'])
+    if m0:
+        sv.update(concurrent_sum=m0['t_query']['sum'], s=slowdown(m0['t_query']['sum'], DAY_SHARD0['t_query_sum']),
+                  same_queries_as_day=(m0['query_signature'] == DAY_SHARD0['query_signature']),
+                  n_queries=m0['n'], day_n_queries=DAY_SHARD0['n_queries'])
+    model, ncpu = cpu_model(REPORT.get('env_kaggle', {}).get('lscpu', ''))
+    sv['cpu_this_session'] = dict(model=model, vcpus=ncpu)
+    sv['cpu_day_session'] = dict(model=DAY_SHARD0['cpu'], vcpus=DAY_SHARD0['vcpus'])
+    sv['note'] = '別のセッションなのでホストの CPU の違いが s に混ざる'
+    REPORT['slowdown'] = sv
+    ok = all((shards[str(s)]['summary'].get('structs') or 0) >= 40 and st1[str(s)]['returncode'] == 0
+             and not st1[str(s)]['timed_out'] for s, _ in SHARD_GPU)
+    REPORT['status'] = 'ok' if ok else 'incomplete'
+    step('summary', s=sv.get('s'), status=REPORT['status'])
+
+try:
+    main()
+except Exception as e:
+    import traceback
+    REPORT['status'] = 'error'
+    REPORT['error'] = traceback.format_exc()[-4000:]
+    log(REPORT['error'])
+finally:
+    save()
+    log('SIM1_TRIAL2', REPORT['status'], el(), 's')
+    log(dumps({k: REPORT.get(k) for k in ('status', 'slowdown', 'stage1_wall_s', 'stage1_peak', 'mismatch')}))
+'''
+
+
+def runner2():
+    """昼の RUNNER の 1〜4（環境・pip・記録・配置・照合）をそのまま使い、5 以降を 2 シャード同時に差し替える。"""
+    assert RUNNER.count(_STAGE1_MARK) == 1
+    head = RUNNER.split(_STAGE1_MARK)[0]
+    old_h = "# ---- Issue #88: TC 段 1 (simulate_v1ctx.py) の T4 試走。ノート全体 25 分で打ち切り ----"
+    new_h = "# ---- Issue #88: TC 段 1 (simulate_v1ctx.py) の 2 シャード同時の T4 試走。ノート全体 60 分・段 1 は 45 分で打ち切り ----"
+    assert head.count(old_h) == 1 and head.count("BUDGET = 25 * 60\n") == 1
+    head = head.replace(old_h, new_h).replace("BUDGET = 25 * 60\n", "BUDGET = BUDGET2_S\n")
+    return head + RUNNER2_STAGE
+
+
+def build(spec_readme: Path, v4g_manifest: Path, v4b_manifest: Path, two_shards: bool = False):
+    """two_shards=False は昼の 1 シャードの生成物と同じ（バイト同一）。True で 2 シャード同時のノート。"""
     import sys
     sys.path.insert(0, str(ROOT / "scripts" / "train"))
     import sim1_trial as st
@@ -311,9 +516,10 @@ def build(spec_readme: Path, v4g_manifest: Path, v4b_manifest: Path):
         "casmi26-attributed-v4g-reproduction-assets/MANIFEST.json": hashlib.sha256(v4g_manifest.read_bytes()).hexdigest(),
         "casmi26-v4b-models/MANIFEST.json": hashlib.sha256(v4b_manifest.read_bytes()).hexdigest(),
     }
-    consts = "\n".join([
+    slug = SLUG2 if two_shards else SLUG
+    consts_lines = [
         "# ---- 定数（scripts/train/make_sim1_trial_kernel.py が配布元の記録から埋め込む） ----",
-        f"SLUG = {SLUG!r}",
+        f"SLUG = {slug!r}",
         f"TC_ARGS = {TC_ARGS!r}",
         f"TRIAL_ARGS = {TRIAL_ARGS!r}",
         f"TC_ENV = {TC_ENV!r}",
@@ -321,22 +527,32 @@ def build(spec_readme: Path, v4g_manifest: Path, v4b_manifest: Path):
         f"EXP_DATA = json.loads({json.dumps(exp_data, ensure_ascii=False)!r})",
         f"EXP_CODE = json.loads({json.dumps(exp_code)!r})",
         f"EMBED_SOURCES = {sources!r}",
-    ])
+    ]
+    if two_shards:
+        consts_lines.append(f"DAY_SHARD0 = {DAY_SHARD0!r}")
+    consts = "\n".join(consts_lines)
     md = ("# casmi26 v4b 段 1 の T4 試走（Issue #88）\n\n"
           "TC `ahmedberatozer/casmi26-training-code` の `fe_v4/simulate_v1ctx.py` を、TC 既定の引数に "
           "`--shard 0 --nshard 6 --max_structs 40` だけを足して回し、構造あたりの秒数・出力の形・GPU メモリ・RAM を "
           "`/kaggle/working/out/trial_report.json` に書く。入力の sha256 が配布元の記録と 1 つでも違えば段 1 を回さない。"
           "ノート全体 25 分で打ち切り。生成: `scripts/train/make_sim1_trial_kernel.py`。")
-    cells = [
-        {"cell_type": "markdown", "metadata": {}, "source": md},
-        {"cell_type": "code", "metadata": {}, "execution_count": None, "outputs": [], "source": module_source()},
-        {"cell_type": "code", "metadata": {}, "execution_count": None, "outputs": [], "source": consts},
-        {"cell_type": "code", "metadata": {}, "execution_count": None, "outputs": [], "source": RUNNER.lstrip("\n")},
-    ]
+    code = lambda src: {"cell_type": "code", "metadata": {}, "execution_count": None, "outputs": [], "source": src}
+    if two_shards:
+        md = ("# casmi26 v4b 段 1 の 2 シャード同時の T4 試走（Issue #88、2026-11-14 夜）\n\n"
+              "昼の試走（`taichiiiii/casmi26-v4b-sim1-trial` v1）と同じ TC 既定の引数＋`--nshard 6 --max_structs 40` で、"
+              "シャード 0 を GPU 0（`CUDA_VISIBLE_DEVICES=0`）、シャード 1 を GPU 1 で同時に回し、減速倍率 "
+              "s = 同時実行のシャード 0 の t_query 合計 ÷ 昼のシャード 0 の t_query 合計 を "
+              "`/kaggle/working/out/trial_report.json` に書く。入力の照合は昼と同じ（1 つでも違えば段 1 を回さない）。"
+              "段 1 は 45 分、ノート全体 60 分で打ち切り。生成: `scripts/train/make_sim1_trial_kernel.py --two-shards`。")
+        cells = [{"cell_type": "markdown", "metadata": {}, "source": md}, code(module_source()),
+                 code(module_source("sim1_trial2.py")), code(consts), code(runner2().lstrip("\n"))]
+    else:
+        cells = [{"cell_type": "markdown", "metadata": {}, "source": md}, code(module_source()), code(consts),
+                 code(RUNNER.lstrip("\n"))]
     nb = {"cells": cells, "metadata": {"kernelspec": {"display_name": "Python 3", "language": "python", "name": "python3"},
                                        "language_info": {"name": "python"}}, "nbformat": 4, "nbformat_minor": 5}
     meta = {
-        "id": SLUG, "title": "casmi26 v4b sim1 trial", "code_file": "notebook.ipynb", "language": "python",
+        "id": slug, "title": "casmi26 v4b sim1 trial2" if two_shards else "casmi26 v4b sim1 trial", "code_file": "notebook.ipynb", "language": "python",
         "kernel_type": "notebook", "is_private": True, "enable_gpu": True, "enable_tpu": False,
         "enable_internet": True, "keywords": ["gpu", "chemistry"], "dataset_sources": DATASETS,
         "kernel_sources": [], "competition_sources": [], "model_sources": [], "machine_shape": "NvidiaTeslaT4",
@@ -358,9 +574,12 @@ def main():
     ap.add_argument("--spec-readme", type=Path, required=True)
     ap.add_argument("--v4g-manifest", type=Path, required=True)
     ap.add_argument("--v4b-manifest", type=Path, required=True)
-    ap.add_argument("--out", type=Path, default=KDIR)
+    ap.add_argument("--out", type=Path, default=None)
+    ap.add_argument("--two-shards", action="store_true", help="2 シャード同時の試走（kernels/casmi26-v4b-sim1-trial2）")
     a = ap.parse_args()
-    nb, meta = build(a.spec_readme, a.v4g_manifest, a.v4b_manifest)
+    if a.out is None:
+        a.out = KDIR2 if a.two_shards else KDIR
+    nb, meta = build(a.spec_readme, a.v4g_manifest, a.v4b_manifest, two_shards=a.two_shards)
     n = check(nb)
     a.out.mkdir(parents=True, exist_ok=True)
     (a.out / "notebook.ipynb").write_text(json.dumps(nb, ensure_ascii=False, indent=1) + "\n")
