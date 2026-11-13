@@ -39,7 +39,7 @@
 ### DreaMS（出典 6）
 - 確認（論文）: 自己教師ありの事前学習は GeMS（MassIVE GNPS から集めた**ラベルの無い**スペクトル）の GeMS-A10（2,400 万スペクトル）で、隠したピークの予測と保持時間の順序の予測で学習する
 - 確認（論文）: 「DreaMS 埋め込み」（`embedding_model.ckpt`）は、同じ構造の別スペクトルを正、質量差 0.05 Da 以内の別構造を負とする三つ組の損失で短く微調整したもの。「スペクトルライブラリへの偏りを避けるため MoNA の 5,500 分子だけを使う」と本文にある。DreaMS のリポジトリの `dreams/training/fine_tune.sh` にも `MoNA_A_Murcko_split_neighbours_[M+H]+_0.05Da.pkl` を使うコマンドがある（コメントアウト）
-- 確認（論文 Methods）: 埋め込みの微調整について「MoNA の histogram-disjoint 分割の精選した部分集合（約 25,000 スペクトル、InChI の connectivity block で 5,500 種）で対照学習し、**NIST20 のスペクトルは学習に一切使わない**」と明記されている。学習ログでは確かめていない
+- 確認（論文 Methods）: 埋め込みの微調整について「MoNA の histogram-disjoint 分割の精選した部分集合（約 25,000 スペクトル、InChI の connectivity block で 5,500 種）で対照学習し、**NIST20 のスペクトルは学習に一切使わない**」と明記されている（同じ段落で、埋め込み空間の評価には NIST20 の高品質な部分集合を使う＝学習ではなく評価）。学習ログでは確かめていない
 - 確認（論文 Methods「Linear probing」）: 自己教師ありの事前学習の途中、2,500 反復ごとに、**凍結した**モデルの precursor トークンの埋め込みから MACCS 166 ビットを当てるロジスティック回帰（線形層 1 枚）を、NIST20 と MoNA の Murcko histogram 分割から無作為に取った 6,000 件で学習して、構造の情報の現れ方を測っている。backbone に NIST20 の勾配は入らない書き方。ただし、配布の `ssl_model.ckpt` をどの反復で選んだか、その選択にこのプロービングの値を使ったかは、本文に見当たらない（未確認）
 
 ### MassSpecGym の retrieval 設定（出典 7、1）
@@ -70,7 +70,7 @@
 - 自前でやる場合: MSAlign のコードは MIT なので、整列 MLP の部分（`models/MSAlign/`）を参考に自前のスクリプトを書けばよい。この競技の train.parquet と v2 プールに合わせたデータ読み込みは自前で書く必要がある（MSAlign の datamodule は MassSpecGym と Spectraverse の形式向け。確認）
 
 ### (b) 事前学習の重みが 748882 の条件に当てはまるか
-- DreaMS `ssl_model.ckpt`: **当てはまると読む**（裁定の文言と論文は確認、当てはめは読み）。748882 A.1 が「NIST などの禁止データ由来でない限り、自己教師ありの backbone を含む」と明示し、学習データ GeMS は MassIVE GNPS のラベル無しスペクトルで NIST ではない（論文で確認）。注意: 事前学習の途中の線形プロービングに NIST20+MoNA の 6,000 件を使っている（上の DreaMS の節）。プローブは凍結したモデルの上の別の線形層なので backbone の重みは NIST から作られていないと読むが、配布の重みの選択にプローブの値を使ったか、748882 の「NIST 由来」がこれを含むかは**未確認**（主催者に聞かれていない。`lineage-reproducibility.md` 4 行でも要確認としていた点）。渡すもの: Zenodo 10997887 の md5 を固定した重み、DreaMS の学習コード（GitHub、commit を固定）と GeMS への参照、自前の学習・推論コード
+- DreaMS `ssl_model.ckpt`: **当てはまると読む**（裁定の文言と論文は確認、当てはめは読み）。748882 A.1 が「NIST などの禁止データ由来でない限り、自己教師ありの backbone を含む」と明示し、学習データ GeMS は MassIVE GNPS のラベル無しスペクトルで NIST ではない（論文で確認）。注意: 事前学習の途中の線形プロービングに NIST20+MoNA の 6,000 件を使っている（上の DreaMS の節）。プローブは凍結したモデルの上の別の線形層なので backbone の重みは NIST から作られていないと読むが、配布の重みの選択にプローブの値を使ったか、748882 の「NIST 由来」がこれを含むかは**未確認**（748882 で yesterdays_rebel が 2026-11-05 に「fe_D の土台の公式 SSL チェックポイントの config は NIST20+MoNA をプロービング集合として挙げている（学習の目的ではなく監視用と読める）が、許可に入るか」と質問済みで、取得時点で主催者の返答は無い。`lineage-reproducibility.md` 4 行でも要確認としていた点）。渡すもの: Zenodo 10997887 の md5 を固定した重み、DreaMS の学習コード（GitHub、commit を固定）と GeMS への参照、自前の学習・推論コード
 - DreaMS `embedding_model.ckpt`（MSAlign が使う版）: 754610 の「公式に配布されたチェックポイントは可」には入る（確認）。微調整は MoNA の 5,500 分子で、NIST20 は使わないと論文に明記（確認。学習ログは見ていない）。**v3 の正解構造が MoNA の 5,500 分子に入っているかは未確認**なので、リーク無しの測定には使わない
 - MolDeBERTa: **未確認・使わない**。承認済みの一覧（748882 A.1）に無い。第三者の重みとしては「元の学習コードと許可データ」が要るが、学習コードのリポジトリにライセンス表示が無く（確認）、重みは ND（改変禁止）。凍結して出力だけ使う場合に ND に触れるかは法的な解釈で、主催者にも聞かれていない。この調査では使わない側に決める
 - MSAlign の配布重み（出典 3）: MassSpecGym（757307 で可）で学習しているが、MolDeBERTa に依存するので上と同じ理由で使わない。加えて v3_c2n の正解の 58.5% が MassSpecGym にある（#66、`mist-massspecgym.md`）ので、リーク無しに測れない
@@ -105,7 +105,7 @@
   - 分子側 h: v2 プールの 10,226 ビット指紋（`pool_fp.npy`、FPNet と同じビット）→ MLP 3 層 → 512 次元に正規化。MolDeBERTa は使わない（(b) の理由）
   - 点: 分子の各スペクトルの g の平均を正規化したものと h の cosine
   - 学習の設定は `massspecgym_formula.yaml` の値をそのまま使う（`k_candidates 128`、`batch_size 128`、`n_max_steps 30000`、`lr 1e-4`、`weight_decay 1e-6`、`warmup 2000`、`dropout 0.30`、`temperature_init 0.07`、`gradient_clip 5.0`）。**最後のステップの重みを使い、検証で途中の重みを選ばない**。候補が 128 に満たない問い合わせは MSAlign と同じくパディングして無効扱い
-  - 埋め込みの代表値は DreaMS の precursor トークンの最終層（DreaMS `dreams/api.py` commit dbec3a0 の埋め込み関数は `precursor_only=True` で `output[:, 0, :]` を取る＝確認。`ssl_model.ckpt` を読んだときに同じ出力になるか（`DreaMS_embedding` は `embedding_model.ckpt` の頭を通す）は実装時に確かめる＝未確認）
+  - 埋め込みの代表値は DreaMS の precursor トークンの最終層（DreaMS `dreams/api.py` commit dbec3a0 の `dreams_intermediates`（`transformer_encoder.ffs[i]` へのフック）は `precursor_only=True` で `output[:, 0, :]` を取る＝確認。`ssl_model.ckpt` を読んだときに同じ出力になるか（`DreaMS_embedding` は `embedding_model.ckpt` の頭を通す）は実装時に確かめる＝未確認）
 - 混ぜ方（#60 の sanpier と同じ、1 つだけ）: 分子ごとに、±10 ppm 窓のプール候補の FPNet の点 s と整列の点 a をそれぞれ z 化し、s' = μ_s + σ_s·(z_s + z_a)/2（等重み。重みは定義から決め、検証で選ばない）。そのあと既存の prior（μ 0.15）と frag（λ 0.5）をそのまま当てる。a が付かない分子（窓の候補 1 個、σ_a = 0、使えるスペクトル無し）は s のまま
 - 対照: score+prior+frag（v3_c1 0.8535 / v3_c2 0.0117 / enveda_v1 0.8376 / v3_c2n 0.6284、#97 で cmp 同一を確認済み）
 - 採否（#97 と同じ型。結果を見て変えない）: `bootstrap_diff`（`scripts/ranker/train_eval.py`、2,000 回、seed 0）の「新 − 対照」の 95% 下限が **4 集合すべてで ≥ −0.02、かつ v3_c1 の下限 > 0** なら採用、それ以外は不採用。v3_c2 は対照の値が除外漏れ 3 件だけで決まる（#92）ので ≥ −0.02 の確認にだけ使う。必須の集合が欠けたら不採用
