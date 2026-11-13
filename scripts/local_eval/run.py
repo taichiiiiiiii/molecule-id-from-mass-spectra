@@ -10,6 +10,8 @@
                   点は scripts/local_eval/sanpier.py が outputs/local_eval/<h>/sanpier_scores.npz に作る
   4. frag       : 上位 TOPN の同一組成式グループを MetFrag-lite 断片説明率で並べ替え（0.479 版 v7c と同じ:
                   gl_fuse.rerank_multi、λ=0.5、学習なしなのでリーク無し）
+  4b. elem      : （#90、指定時だけ）dedup 後の上位 TOPN で、C・H・N・O・P・S・F・Cl・Br・I 以外の元素を含む候補を
+                  含まない候補の後ろへ回す（安定な分割、定数なし。scripts/local_eval/elem_rule.py）
   5. output     : InChIKey14 で重複除去した上位 25 → submission 形式 → MRR@25
 
     python scripts/local_eval/run.py --holdout np_v2
@@ -190,6 +192,7 @@ def merge_slots(base, base_keys, pc, pc_keys, slots, n=K):
 # ---------------------------------------------------------------- 実行
 def run(holdout: str, stages: list[str], logits_run: str | None = None) -> dict:
     from mrr25 import calculate_mrr25, read_truth
+    from elem_rule import demote_unusual
     t0 = time.time()
     run_name = logits_run or f"{holdout}_fold0"
     zf = np.load(ROOT / f"outputs/holdout_eval/{run_name}/pc_logits.npz", allow_pickle=True)
@@ -229,6 +232,8 @@ def run(holdout: str, stages: list[str], logits_run: str | None = None) -> dict:
         if "frag" in stages:
             rows = frag_rerank(rows, pool, spectra.get(mid, []), frag, fuse, fcache, formula_of)
         lists[mid] = dedup(rows, pool, TOPN)
+        if "elem" in stages:   # #90: 天然物らしくない元素を含む候補を後ろへ（安定な分割、定数なし）
+            lists[mid] = demote_unusual(lists[mid], lambda r: pool.smiles[r[1]])
     diag = {}
     if need_lib:
         keys = {pool.key[i] for rows in lists.values() for _, i in rows}
@@ -307,7 +312,7 @@ def run(holdout: str, stages: list[str], logits_run: str | None = None) -> dict:
 def main() -> None:
     ap = argparse.ArgumentParser()
     ap.add_argument("--holdout", required=True)
-    ap.add_argument("--stages", default="score,prior", help="カンマ区切り: score[,sanpier][,prior][,frag][,lib][,reflast][,pubchem]")
+    ap.add_argument("--stages", default="score,prior", help="カンマ区切り: score[,sanpier][,prior][,frag][,elem][,lib][,reflast][,pubchem]")
     ap.add_argument("--logits-run", default=None, help="outputs/holdout_eval/<run>/pc_logits.npz（既定 <holdout>_fold0）")
     args = ap.parse_args()
     print(json.dumps(run(args.holdout, args.stages.split(","), args.logits_run), indent=2))
