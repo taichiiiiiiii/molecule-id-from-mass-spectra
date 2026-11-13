@@ -6,6 +6,8 @@
   1. candidates : 候補プール（pool_meta）の ±PPM 窓
   2. score      : fold-0 FPNet ロジット z で fp[bits] @ z（ホールドアウト分子を学習で見ていないモデル）
   3. prior      : 上位 TOPN を z 標準化 + POOLPOP_MU * (log1p 物質数 + log1p PubMed)（0.479 版 v19 と同じ定数）
+  2a. pmi      : （#97、指定時だけ）候補の点を fp @ (z − z̄) にする。z̄ は同じ評価集合の全問い合わせロジット
+                  （pc_logits.npz の __targets__ 以外の全キー）の単純平均で、係数は 1。joint・pubchem とは併用しない
   2b. sanpier   : （#60、指定時だけ）fold-safe sanpier の点 n と s を分子ごとに z 化し、s' = μ_s + σ_s·(z_s+z_n)/2（等重み）。
                   点は scripts/local_eval/sanpier.py が outputs/local_eval/<h>/sanpier_scores.npz に作る
   4. frag       : 上位 TOPN の同一組成式グループを MetFrag-lite 断片説明率で並べ替え（0.479 版 v7c と同じ:
@@ -93,6 +95,30 @@ def score_window(idx: np.ndarray, pool: Pool, z: np.ndarray, fpc: FPCache):
             rows.append((float(fp @ z), int(i)))
     rows.sort(key=lambda r: -r[0])
     return rows
+
+
+# ---------------------------------------------------------------- 段 2a: pmi（#97、候補ごとの hubness 補正）
+PMI_EXCLUSIVE = ("joint", "pubchem")   # 生の z で score_window を呼び直す経路。pmi と併用しない
+
+
+def check_stages(stages: list[str]) -> None:
+    """pmi と、生の z を使う経路（joint・pubchem）の同時指定を止める。"""
+    bad = [s for s in PMI_EXCLUSIVE if s in stages]
+    assert not ("pmi" in stages and bad), f"pmi は {bad} と併用できない（#97 の範囲外）"
+
+
+def query_mean(zf) -> np.ndarray:
+    """z̄: npz の全問い合わせベクトル（__targets__ 以外の全キー）の float64 の単純平均（#97）。"""
+    keys = [k for k in zf.files if k != "__targets__"]
+    assert keys, "問い合わせのロジットが無い"
+    return np.mean([np.asarray(zf[k], np.float64) for k in keys], axis=0)
+
+
+def stage_z(z: np.ndarray, zbar: np.ndarray | None) -> np.ndarray:
+    """score_window に渡す z。zbar が None（pmi 無し）なら今までどおり float32 の z。"""
+    if zbar is None:
+        return z.astype(np.float32)
+    return (np.asarray(z, np.float64) - zbar).astype(np.float32)
 
 
 # ---------------------------------------------------------------- 段 2b: sanpier（#60、等重み）
@@ -193,10 +219,12 @@ def merge_slots(base, base_keys, pc, pc_keys, slots, n=K):
 def run(holdout: str, stages: list[str], logits_run: str | None = None) -> dict:
     from mrr25 import calculate_mrr25, read_truth
     from elem_rule import demote_unusual
+    check_stages(stages)
     t0 = time.time()
     run_name = logits_run or f"{holdout}_fold0"
     zf = np.load(ROOT / f"outputs/holdout_eval/{run_name}/pc_logits.npz", allow_pickle=True)
     targets = {m: float(t) for m, t in zf["__targets__"]}
+    zbar = query_mean(zf) if "pmi" in stages else None   # #97: 集合ごとに 1 回だけ
     pool = load_pool()
     fpc = FPCache(np.load(ROOT / "data/ext/v4g/casmi26-v2-pool/fp_bits.npy"))
     truth = read_truth(ROOT / f"outputs/holdouts/{holdout}/truth.csv")
@@ -224,7 +252,7 @@ def run(holdout: str, stages: list[str], logits_run: str | None = None) -> dict:
         idx = pool.window(targets[mid])
         if hidden:
             idx = idx[~np.isin(pool.key[idx], list(hidden))]
-        rows = score_window(idx, pool, zf[mid].astype(np.float32), fpc)
+        rows = score_window(idx, pool, stage_z(zf[mid], zbar), fpc)
         if "sanpier" in stages:
             rows = sanpier_mix(rows, nscores[mid])
         if "prior" in stages:
@@ -305,6 +333,8 @@ def run(holdout: str, stages: list[str], logits_run: str | None = None) -> dict:
         res["lib_max_ge_tau"] = round(float((lm >= LIB_TAU).mean()), 3)
         res["lib_max_median"] = round(float(np.median(lm)), 3)
     res.update(diag_pc)
+    if zbar is not None:   # #97: z̄ を作った問い合わせ数と z̄ の要約（記録用）
+        res.update(pmi_n_queries=len(zf.files) - 1, pmi_zbar_mean=round(float(zbar.mean()), 4), pmi_zbar_std=round(float(zbar.std()), 4))
     (out_dir / f"result_{tag}.json").write_text(json.dumps(res, indent=2))
     return res
 
@@ -312,7 +342,7 @@ def run(holdout: str, stages: list[str], logits_run: str | None = None) -> dict:
 def main() -> None:
     ap = argparse.ArgumentParser()
     ap.add_argument("--holdout", required=True)
-    ap.add_argument("--stages", default="score,prior", help="カンマ区切り: score[,sanpier][,prior][,frag][,elem][,lib][,reflast][,pubchem]")
+    ap.add_argument("--stages", default="score,prior", help="カンマ区切り: score[,pmi][,sanpier][,prior][,frag][,elem][,lib][,reflast][,pubchem]")
     ap.add_argument("--logits-run", default=None, help="outputs/holdout_eval/<run>/pc_logits.npz（既定 <holdout>_fold0）")
     args = ap.parse_args()
     print(json.dumps(run(args.holdout, args.stages.split(","), args.logits_run), indent=2))
