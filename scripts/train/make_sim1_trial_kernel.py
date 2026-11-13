@@ -370,8 +370,12 @@ RUNNER2_STAGE = r'''    # 5. 段 1 を 2 シャード同時に（シャード 0 
 
     peak = dict(rss_mb={str(s): 0.0 for s, _ in SHARD_GPU}, rss_total_mb=0.0, gpu={}, min_mem_available_mb=None,
                 loadavg1_max=0.0, n_samples=0)
+    ends = {}   # シャードごとの終了を見た時刻（2 秒おきの監視。2 本が重なっていた時間を出す）
     def monitor():
         while any(p.poll() is None for p in procs.values()):
+            for s, p in procs.items():
+                if p.poll() is not None and s not in ends:
+                    ends[s] = time.time()
             tot = 0.0
             for s, p in procs.items():
                 v = tree_rss_mb(p.pid) if p.poll() is None else 0.0
@@ -411,6 +415,10 @@ RUNNER2_STAGE = r'''    # 5. 段 1 を 2 シャード同時に（シャード 0 
     for th in ths:
         th.join(timeout=10)
     wall = time.time() - t_start
+    for s, p in procs.items():
+        ends.setdefault(s, time.time())
+    REPORT['stage1_end_s'] = {str(s): round(ends[s] - t_start, 1) for s in procs}
+    REPORT['stage1_overlap_s'] = round(min(ends.values()) - t_start, 1)
     st1 = {}
     for s, _ in SHARD_GPU:
         parsed = parse_sim_log(lines[s])
@@ -469,7 +477,14 @@ RUNNER2_STAGE = r'''    # 5. 段 1 を 2 シャード同時に（シャード 0 
     model, ncpu = cpu_model(REPORT.get('env_kaggle', {}).get('lscpu', ''))
     sv['cpu_this_session'] = dict(model=model, vcpus=ncpu)
     sv['cpu_day_session'] = dict(model=DAY_SHARD0['cpu'], vcpus=DAY_SHARD0['vcpus'])
-    sv['note'] = '別のセッションなのでホストの CPU の違いが s に混ざる'
+    sv['note'] = ('別のセッションなのでホストの CPU の違いが s に混ざる。numba の JIT キャッシュは 2 本で同じ /tmp/R を使う。'
+                  'シャード 1 が先に終わるとシャード 0 の後半は単独で走る（stage1_end_s・stage1_overlap_s を見る）')
+    n_gpu = len([l for l in REPORT.get('env_kaggle', {}).get('nvidia_smi', '').splitlines() if 'Tesla' in l or 'T4' in l])
+    sv['n_gpu_lines_in_nvidia_smi'] = n_gpu
+    sv['gpus_seen_by_monitor'] = sorted(peak['gpu'])
+    sv['s_valid'] = bool(sv.get('s') is not None and sv.get('same_queries_as_day') and len(peak['gpu']) >= 2
+                         and all(st1[str(x)]['returncode'] == 0 and not st1[str(x)]['timed_out']
+                                 and (shards[str(x)]['summary'].get('structs') or 0) >= 40 for x, _ in SHARD_GPU))
     REPORT['slowdown'] = sv
     ok = all((shards[str(s)]['summary'].get('structs') or 0) >= 40 and st1[str(s)]['returncode'] == 0
              and not st1[str(s)]['timed_out'] for s, _ in SHARD_GPU)
