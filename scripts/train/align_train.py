@@ -194,7 +194,10 @@ def free_gb() -> dict:
         return {"free_gb": None}
     ps = int(re.search(r"page size of (\d+) bytes", txt).group(1))
     get = lambda k: int(re.search(rf"{k}:\s+(\d+)", txt).group(1)) * ps / 1e9  # noqa: E731
-    return {"free_gb": round(get("Pages free") + get("Pages speculative"), 2), "inactive_gb": round(get("Pages inactive"), 2)}
+    fr, ina = get("Pages free") + get("Pages speculative"), get("Pages inactive")
+    # avail_gb = free + speculative + inactive（inactive は macOS が回収して使える）。起動・実行中の判定はこれを使う。
+    # free_gb だけで判定すると、この Mac では inactive が 14〜19 GB あっても free が 1 GB 未満で常に止まる（#109、11/14 実測）
+    return {"free_gb": round(fr, 2), "inactive_gb": round(ina, 2), "avail_gb": round(fr + ina, 2)}
 
 
 def unpack_bits_np(packed: np.ndarray, nbits: int = FP_BITS) -> np.ndarray:
@@ -524,7 +527,7 @@ def train(root=".", embed_dir=None, out_dir=None, holdout_keys=None, device="aut
             step += 1
             acc += float(loss.detach()); n_acc += 1
             if step % 200 == 0:
-                fg = free_gb().get("free_gb")
+                fg = free_gb().get("avail_gb")
                 if fg is not None and fg < MIN_RUN_FREE_GB:
                     stop_reason = f"paused_low_memory free={fg}GB"
             if stop_reason:   # 空きが足りない: 評価せずに state だけ書いて止める（止め方の数え方を変えない）
@@ -670,8 +673,8 @@ def main() -> None:
         if os.environ.get(k) != v:
             raise SystemExit(f"set {k}={v} before starting (torch reads it at import)")
     fg = free_gb()
-    if fg.get("free_gb") is not None and fg["free_gb"] < args.min_free_gb:
-        raise SystemExit(f"vm_stat free {fg} < {args.min_free_gb} GB")
+    if fg.get("avail_gb") is not None and fg["avail_gb"] < args.min_free_gb:
+        raise SystemExit(f"vm_stat avail(free+speculative+inactive) {fg} < {args.min_free_gb} GB")
     own = own_heavy_jobs()
     if own:
         raise SystemExit(f"another heavy job of this repo is running: {own}")

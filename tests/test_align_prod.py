@@ -137,7 +137,8 @@ def test_free_gb_parses_vm_stat(monkeypatch):
     txt = ("Mach Virtual Memory Statistics: (page size of 16384 bytes)\nPages free:      100000.\n"
            "Pages active:   5.\nPages inactive:  200000.\nPages speculative:  50000.\n")
     monkeypatch.setattr(subprocess, "run", lambda *a, **k: type("R", (), {"stdout": txt})())
-    assert T.free_gb() == {"free_gb": round(150000 * 16384 / 1e9, 2), "inactive_gb": round(200000 * 16384 / 1e9, 2)}
+    assert T.free_gb() == {"free_gb": round(150000 * 16384 / 1e9, 2), "inactive_gb": round(200000 * 16384 / 1e9, 2),
+                           "avail_gb": round(350000 * 16384 / 1e9, 2)}   # 判定は avail = free + speculative + inactive
     assert T.FP_BITS == 10_226 and T.PPM == 10.0 and E.PEAKS == 100
 
 

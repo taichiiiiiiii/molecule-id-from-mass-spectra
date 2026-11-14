@@ -37,8 +37,8 @@ def check_env(min_free_gb: float) -> dict:
         if os.environ.get(k) != v:
             raise SystemExit(f"set {k}={v} before starting (torch reads it at import)")
     fg = T.free_gb()
-    if fg.get("free_gb") is not None and fg["free_gb"] < min_free_gb:
-        raise SystemExit(f"vm_stat free {fg} < {min_free_gb} GB")
+    if fg.get("avail_gb") is not None and fg["avail_gb"] < min_free_gb:
+        raise SystemExit(f"vm_stat avail(free+speculative+inactive) {fg} < {min_free_gb} GB")
     own = T.own_heavy_jobs()
     if own:
         raise SystemExit(f"another heavy job of this repo is running: {own}")
@@ -174,7 +174,7 @@ def main() -> None:
     for k in range(n_shards):
         if E.shard_is_done(out, k, chash):
             continue
-        fg = T.free_gb().get("free_gb")
+        fg = T.free_gb().get("avail_gb")
         if fg is not None and fg < MIN_RUN_FREE_GB:
             logs.append({"shard": k, "status": "not_started_low_memory", "free_gb": fg})
             break
