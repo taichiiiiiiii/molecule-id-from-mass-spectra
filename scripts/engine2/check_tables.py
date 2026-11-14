@@ -7,7 +7,8 @@
 - sim: X 51 列・blocks = base, libx, anapol, fragx・各グループの正例 1。rank_train: X 31 列・M ∈ {0,1}・各 (G, M) の正例 1
 - 恒等式（engine2_table_schema の describe）が全式 1.0（FP 列は sim で全 0）
 - 分子数 = n_mol − 捨てた数、除外とクエリの積 0（report の値）、読んだファイルに元の 2 表の名前が 0 件
-- 複数の run があれば 2 表の中身の sha256 が一致
+- 複数の run があれば run_agreement（#74 判断 (a)）: sim 完全一致、rank_train の Y・G・M と FP 以外の列が完全一致、
+  生の z が allclose(rtol 1e-5, atol 1e-6)。中身の sha256 の一致（runs_content_equal）は記録だけ
 - 表の統計（正例率・候補数）を元の 2 表と並べる（見て条件を変えない）
 - --ab-check の出力なら: (i) 高速化前（own_*_hidden.npz）と (ii) channels_pair（own_*.npz）の配列ごとの一致、
   z の 2 回（own_fp_logits.npz 対 own_fp_logits_zrep1.npz）の差、CPU 情報
@@ -124,6 +125,36 @@ def compare_to(d, refs):
     return out
 
 
+RTOL, ATOL = 1e-5, 1e-6      # #74 判断 (a)（11/14、事前登録 6874834819）。結果を見て変えない
+
+
+def run_agreement(d1, d2, rtol=RTOL, atol=ATOL):
+    """本番 run1/run2 の一致（#74 判断 (a)）: ① sim 全配列が完全一致 ② rank_train の Y・G・M と FP 由来でない列が完全一致
+    ③ own_fp_logits の set/ik/fold が一致し、Z が allclose(rtol, atol)。①〜③ すべてで agree=True。"""
+    o1, o2 = os.path.join(d1, "own"), os.path.join(d2, "own")
+    s1, s2 = load(os.path.join(o1, "own_sim_rank_rows.npz")), load(os.path.join(o2, "own_sim_rank_rows.npz"))
+    r1, r2 = load(os.path.join(o1, "own_rank_train.npz")), load(os.path.join(o2, "own_rank_train.npz"))
+    z1, z2 = load(os.path.join(o1, "own_fp_logits.npz")), load(os.path.join(o2, "own_fp_logits.npz"))
+    non_fp = [j for j in range(31) if j not in FP_COLS]
+    res = dict(rtol=rtol, atol=atol, sim_arrays_equal=_arrays_equal(s1, s2))
+    same_shape = r1["X"].shape == r2["X"].shape
+    res["rank_train_same_shape"] = bool(same_shape)
+    res["rank_train_YGM_equal"] = bool(same_shape and all(np.array_equal(r1[k], r2[k]) for k in ("Y", "G", "M")))
+    res["rank_train_nonfp_cols_equal"] = bool(same_shape and np.array_equal(r1["X"][:, non_fp], r2["X"][:, non_fp]))
+    zk = all(k in z1 and k in z2 and z1[k].shape == z2[k].shape and np.array_equal(z1[k], z2[k]) for k in ("set", "ik", "fold"))
+    res["z_same_molecules"] = bool(zk)
+    zc = bool(zk and z1["Z"].shape == z2["Z"].shape and np.allclose(z1["Z"], z2["Z"], rtol=rtol, atol=atol))
+    res["z_allclose"] = zc
+    if zk and z1["Z"].shape == z2["Z"].shape and z1["Z"].size:
+        dz = np.abs(z1["Z"].astype(np.float64) - z2["Z"].astype(np.float64))
+        res["z_max_abs_diff"] = float(dz.max()); res["z_n_elem_diff"] = int((z1["Z"] != z2["Z"]).sum())
+    if same_shape:
+        res["rank_train_fp_cols_max_abs_diff"] = {str(j): float(np.abs(r1["X"][:, j].astype(np.float64) - r2["X"][:, j].astype(np.float64)).max())
+                                                  if r1["X"].shape[0] else 0.0 for j in FP_COLS}
+    res["agree"] = bool(res["sim_arrays_equal"] and res["rank_train_YGM_equal"] and res["rank_train_nonfp_cols_equal"] and zc)
+    return res
+
+
 def ref_stats(ref_dir):
     sim = load(os.path.join(ref_dir, "sim_rank_rows_nofp.npz")); rt = load(os.path.join(ref_dir, "rank_train.npz"))
     return table_stats(sim, rt)
@@ -141,12 +172,13 @@ def main():
         res["compare_to"] = {d: compare_to(d, a.compare_to) for d in a.runs}
     if len(res["runs"]) > 1:
         c = [r["content_sha256"] for r in res["runs"]]
-        res["runs_content_equal"] = all(x == c[0] for x in c)
+        res["runs_content_equal"] = all(x == c[0] for x in c)          # 記録だけ（FP 列の丸めで false になりうる）
+        res["run_agreement"] = [run_agreement(a.runs[0], d) for d in a.runs[1:]]
     if os.path.isdir(a.ref_dir):
         res["original_tables_stats"] = ref_stats(a.ref_dir)
     res["all_ok"] = all(r["sim_shape_ok"] and r["rt_shape_ok"] and r["pos_one_per_group"] and r["identities_ok"] and r["molecules_ok"]
                         and not r["opened_forbidden"] and r["query_exclusion_overlap"] == 0 and r["sim_fp_zero"]
-                        for r in res["runs"]) and res.get("runs_content_equal", True)
+                        for r in res["runs"]) and all(x["agree"] for x in res.get("run_agreement", []))
     os.makedirs(os.path.dirname(os.path.abspath(a.out)), exist_ok=True)
     json.dump(res, open(a.out, "w"), indent=1)
     print(json.dumps(res, indent=1)[:6000])
