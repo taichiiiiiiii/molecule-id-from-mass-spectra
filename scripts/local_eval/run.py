@@ -13,6 +13,8 @@
                   joint・pubchem・sanpier・lib・reflast とは併用しない
   2b. sanpier   : （#60、指定時だけ）fold-safe sanpier の点 n と s を分子ごとに z 化し、s' = μ_s + σ_s·(z_s+z_n)/2（等重み）。
                   点は scripts/local_eval/sanpier.py が outputs/local_eval/<h>/sanpier_scores.npz に作る
+  2c. align     : （整列チャネル、指定時だけ）凍結 DreaMS ＋ 自前学習の整列 MLP の点 a を sanpier と同じ等重みの z 合成で混ぜる。
+                  点は scripts/local_eval/align.py が outputs/local_eval/<h>/align_scores.npz に作る
   4. frag       : 上位 TOPN の同一組成式グループを MetFrag-lite 断片説明率で並べ替え（0.479 版 v7c と同じ:
                   gl_fuse.rerank_multi、λ=0.5、学習なしなのでリーク無し）
   4b. elem      : （#90、指定時だけ）dedup 後の上位 TOPN で、C・H・N・O・P・S・F・Cl・Br・I 以外の元素を含む候補を
@@ -178,6 +180,7 @@ def check_stages(stages: list[str]) -> None:
     bad = [s for s in NBZ_EXCLUSIVE if s in stages]
     assert not ("nbz" in stages and bad), f"nbz は {bad} と併用できない（#103 の範囲外）"
     assert not ("pmi" in stages and "nbz" in stages), "pmi と nbz は併用できない（どちらの事前登録の範囲でもない）"
+    assert not ("align" in stages and ("pmi" in stages or "nbz" in stages)), "align は pmi・nbz と併用できない（#109 の範囲外）"
 
 
 # ---------------------------------------------------------------- 段 2b: sanpier（#60、等重み）
@@ -312,6 +315,9 @@ def run(holdout: str, stages: list[str], logits_run: str | None = None) -> dict:
                         nbz_s_median=round(float(np.median([p[2] for p in pairs])), 4) if pairs else None,
                         nbz_crosscheck_101=nbz_crosscheck(pairs, ROOT / f"outputs/local_eval/query_network_{holdout}.json"),
                         nbz_connected=sorted(nbz_z))
+    if "align" in stages:
+        import sanpier as SP
+        ascores = SP.load_scores(ROOT / f"outputs/local_eval/{holdout}/align_scores.npz")
     lists = {}
     for mid in truth:
         if mid not in targets:
@@ -323,6 +329,8 @@ def run(holdout: str, stages: list[str], logits_run: str | None = None) -> dict:
         rows = score_window(idx, pool, stage_z(z, zbar), fpc)
         if "sanpier" in stages:
             rows = sanpier_mix(rows, nscores[mid])
+        if "align" in stages:   # 文書 §(e): FPNet の s と整列の a を等重みで z 合成（sanpier と同じ式）
+            rows = sanpier_mix(rows, ascores.get(mid, {}))
         if "prior" in stages:
             rows = rerank_with_prior(rows, pool)
         if "frag" in stages:
@@ -411,7 +419,7 @@ def run(holdout: str, stages: list[str], logits_run: str | None = None) -> dict:
 def main() -> None:
     ap = argparse.ArgumentParser()
     ap.add_argument("--holdout", required=True)
-    ap.add_argument("--stages", default="score,prior", help="カンマ区切り: score[,pmi|,nbz][,sanpier][,prior][,frag][,elem][,lib][,reflast][,pubchem]")
+    ap.add_argument("--stages", default="score,prior", help="カンマ区切り: score[,pmi|,nbz][,sanpier][,align][,prior][,frag][,elem][,lib][,reflast][,pubchem]")
     ap.add_argument("--logits-run", default=None, help="outputs/holdout_eval/<run>/pc_logits.npz（既定 <holdout>_fold0）")
     args = ap.parse_args()
     print(json.dumps(run(args.holdout, args.stages.split(","), args.logits_run), indent=2))
