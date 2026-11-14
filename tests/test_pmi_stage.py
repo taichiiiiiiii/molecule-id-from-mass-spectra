@@ -99,7 +99,7 @@ def test_d_without_pmi_score_input_is_unchanged():
 def test_d_run_source_only_uses_zbar_when_pmi():
     src = (ROOT / "scripts/local_eval/run.py").read_text()
     assert 'zbar = query_mean(zf) if "pmi" in stages else None' in src
-    assert src.count("stage_z(zf[mid], zbar)") == 1
+    assert src.count("stage_z(z, zbar)") == 1   # nbz と統合後: z は nbz_z[mid] か zf[mid]
 
 
 def test_check_script_rule():

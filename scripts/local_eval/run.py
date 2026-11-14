@@ -8,6 +8,9 @@
   3. prior      : 上位 TOPN を z 標準化 + POOLPOP_MU * (log1p 物質数 + log1p PubMed)（0.479 版 v19 と同じ定数）
   2a. pmi      : （#97、指定時だけ）候補の点を fp @ (z − z̄) にする。z̄ は同じ評価集合の全問い合わせロジット
                   （pc_logits.npz の __targets__ 以外の全キー）の単純平均で、係数は 1。joint・pubchem とは併用しない
+  2c. nbz      : （#103、指定時だけ）評価集合の中の問い合わせ同士の相互最近傍 j（#101 の定義、しきい値なし）がある
+                  分子 i だけ、z_i' = (z_i + s_ij·z_j) / (1 + s_ij) にしてから fp @ z_i' で採点する（z_j は元のロジット）。
+                  joint・pubchem・sanpier・lib・reflast とは併用しない
   2b. sanpier   : （#60、指定時だけ）fold-safe sanpier の点 n と s を分子ごとに z 化し、s' = μ_s + σ_s·(z_s+z_n)/2（等重み）。
                   点は scripts/local_eval/sanpier.py が outputs/local_eval/<h>/sanpier_scores.npz に作る
   4. frag       : 上位 TOPN の同一組成式グループを MetFrag-lite 断片説明率で並べ替え（0.479 版 v7c と同じ:
@@ -101,12 +104,6 @@ def score_window(idx: np.ndarray, pool: Pool, z: np.ndarray, fpc: FPCache):
 PMI_EXCLUSIVE = ("joint", "pubchem")   # 生の z で score_window を呼び直す経路。pmi と併用しない
 
 
-def check_stages(stages: list[str]) -> None:
-    """pmi と、生の z を使う経路（joint・pubchem）の同時指定を止める。"""
-    bad = [s for s in PMI_EXCLUSIVE if s in stages]
-    assert not ("pmi" in stages and bad), f"pmi は {bad} と併用できない（#97 の範囲外）"
-
-
 def query_mean(zf) -> np.ndarray:
     """z̄: npz の全問い合わせベクトル（__targets__ 以外の全キー）の float64 の単純平均（#97）。"""
     keys = [k for k in zf.files if k != "__targets__"]
@@ -119,6 +116,68 @@ def stage_z(z: np.ndarray, zbar: np.ndarray | None) -> np.ndarray:
     if zbar is None:
         return z.astype(np.float32)
     return (np.asarray(z, np.float64) - zbar).astype(np.float32)
+
+
+# ---------------------------------------------------------------- 段 2a: nbz（#103、相互最近傍の問い合わせのロジットを s で混ぜる）
+NBZ_EXCLUSIVE = ("joint", "pubchem", "sanpier", "lib", "reflast")   # 生の z を使う経路・測らない組み合わせ
+
+
+def nbz_mix(zs: dict, pairs: list) -> dict:
+    """pairs = [(a, b, s_ab)] の相互最近傍の組。両端のロジットがある組だけ、各端 i に
+    z_i' = (z_i + s·z_j) / (1 + s) を float64 で計算して float32 で返す（z_j は元のロジット。反復しない）。
+    返すのはつながりのある分子だけ。その他の分子は呼び出し側で元の z を使う。"""
+    out = {}
+    for a, b, s in pairs:
+        if a not in zs or b not in zs:
+            continue
+        s = float(s)
+        za, zb = np.asarray(zs[a], np.float64), np.asarray(zs[b], np.float64)
+        out[a] = ((za + s * zb) / (1.0 + s)).astype(np.float32)
+        out[b] = ((zb + s * za) / (1.0 + s)).astype(np.float32)
+    return out
+
+
+def nbz_pairs(spectra: dict) -> list:
+    """#101 と同じ定義（query_network.sim_matrix / mutual_pairs、library._prep と同じ前処理、entropy_sim）で、
+    spectra（query_spectra の形）の中の相互最近傍の組 [(a, b, s)] を返す。spectra は書き換えない。"""
+    sys.path.insert(0, str(ROOT / "scripts/cv"))
+    import query_network as QN
+    from casmi import spectra as sp
+    from casmi.library import SearchCfg
+    c = SearchCfg()
+    specs = {}
+    for m, v in spectra.items():
+        specs[m] = []
+        for q in v:
+            pm, pp = sp.prep_query(q["mz"], q["it"], c.floor, c.topk, c.power, c.ent_weight)
+            specs[m].append(dict(mode=q["mode"], pm=pm, pp=pp))
+
+    def sim(x, y):
+        return sp.entropy_sim(x["pm"], x["pp"], y["pm"], y["pp"], c.tol, c.ppm_tol)
+
+    ids = list(specs)
+    S = QN.sim_matrix(ids, specs, sim)
+    return [(ids[i], ids[j], float(S[i, j])) for i, j in QN.mutual_pairs(ids, S)]
+
+
+def nbz_crosscheck(pairs: list, path: Path) -> str:
+    """#101 の出力 json の pairs と照合する。json が無ければ 'no_json'。組か s が違えば止める。"""
+    if not path.exists():
+        return "no_json"
+    ref = {(p["a"], p["b"]): p["s"] for p in json.loads(path.read_text())["pairs"]}
+    got = {(a, b): s for a, b, s in pairs}
+    assert set(ref) == set(got), f"#101 と相互最近傍の組が違う: {sorted(set(ref) ^ set(got))[:5]}"
+    assert all(abs(ref[k] - got[k]) <= 1e-9 for k in ref), "#101 と s が違う"
+    return "match"
+
+
+def check_stages(stages: list[str]) -> None:
+    """pmi（#97）・nbz（#103）と、それぞれ測っていない段の同時指定を止める。pmi と nbz の併用も止める。"""
+    bad = [s for s in PMI_EXCLUSIVE if s in stages]
+    assert not ("pmi" in stages and bad), f"pmi は {bad} と併用できない（#97 の範囲外）"
+    bad = [s for s in NBZ_EXCLUSIVE if s in stages]
+    assert not ("nbz" in stages and bad), f"nbz は {bad} と併用できない（#103 の範囲外）"
+    assert not ("pmi" in stages and "nbz" in stages), "pmi と nbz は併用できない（どちらの事前登録の範囲でもない）"
 
 
 # ---------------------------------------------------------------- 段 2b: sanpier（#60、等重み）
@@ -245,6 +304,14 @@ def run(holdout: str, stages: list[str], logits_run: str | None = None) -> dict:
     if "sanpier" in stages:
         import sanpier as SP
         nscores = SP.load_scores(ROOT / f"outputs/local_eval/{holdout}/sanpier_scores.npz")
+    nbz_z, nbz_diag = {}, {}
+    if "nbz" in stages:   # #103: 集合ごとに 1 回だけ。z_j は同じ npz（zf）から取る
+        pairs = nbz_pairs(query_spectra(holdout))
+        nbz_z = nbz_mix({m: zf[m] for m in zf.files if m != "__targets__"}, pairs)
+        nbz_diag = dict(nbz_n_pairs=len(pairs), nbz_n_connected=len(nbz_z),
+                        nbz_s_median=round(float(np.median([p[2] for p in pairs])), 4) if pairs else None,
+                        nbz_crosscheck_101=nbz_crosscheck(pairs, ROOT / f"outputs/local_eval/query_network_{holdout}.json"),
+                        nbz_connected=sorted(nbz_z))
     lists = {}
     for mid in truth:
         if mid not in targets:
@@ -252,7 +319,8 @@ def run(holdout: str, stages: list[str], logits_run: str | None = None) -> dict:
         idx = pool.window(targets[mid])
         if hidden:
             idx = idx[~np.isin(pool.key[idx], list(hidden))]
-        rows = score_window(idx, pool, stage_z(zf[mid], zbar), fpc)
+        z = nbz_z[mid] if mid in nbz_z else zf[mid]
+        rows = score_window(idx, pool, stage_z(z, zbar), fpc)
         if "sanpier" in stages:
             rows = sanpier_mix(rows, nscores[mid])
         if "prior" in stages:
@@ -335,6 +403,7 @@ def run(holdout: str, stages: list[str], logits_run: str | None = None) -> dict:
     res.update(diag_pc)
     if zbar is not None:   # #97: z̄ を作った問い合わせ数と z̄ の要約（記録用）
         res.update(pmi_n_queries=len(zf.files) - 1, pmi_zbar_mean=round(float(zbar.mean()), 4), pmi_zbar_std=round(float(zbar.std()), 4))
+    res.update(nbz_diag)   # #103: nbz の組の数・つながりのある分子（記録用）
     (out_dir / f"result_{tag}.json").write_text(json.dumps(res, indent=2))
     return res
 
@@ -342,7 +411,7 @@ def run(holdout: str, stages: list[str], logits_run: str | None = None) -> dict:
 def main() -> None:
     ap = argparse.ArgumentParser()
     ap.add_argument("--holdout", required=True)
-    ap.add_argument("--stages", default="score,prior", help="カンマ区切り: score[,pmi][,sanpier][,prior][,frag][,elem][,lib][,reflast][,pubchem]")
+    ap.add_argument("--stages", default="score,prior", help="カンマ区切り: score[,pmi|,nbz][,sanpier][,prior][,frag][,elem][,lib][,reflast][,pubchem]")
     ap.add_argument("--logits-run", default=None, help="outputs/holdout_eval/<run>/pc_logits.npz（既定 <holdout>_fold0）")
     args = ap.parse_args()
     print(json.dumps(run(args.holdout, args.stages.split(","), args.logits_run), indent=2))
