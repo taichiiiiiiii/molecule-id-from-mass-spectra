@@ -426,6 +426,8 @@ def test_train_end_to_end_resume_and_rule(tmp_path, monkeypatch):
     T._PERM_CACHE.clear()
     rep_b = T.train(out_dir=tmp_path / "b", max_steps=12, resume=True, **kw)
     assert rep_b["resumed_from_step"] == 6
+    with pytest.raises(SystemExit):   # 終わった学習は続けない（model_best.pt を上書きしない）
+        T.train(out_dir=tmp_path / "b", max_steps=12, resume=True, **kw)
     log_b = [json.loads(x) for x in (tmp_path / "b/train_log.jsonl").read_text().splitlines()]
     n = len(log)
     assert [round(r["val_loss"], 5) for r in log_b[:n]] == [round(r["val_loss"], 5) for r in log]
@@ -440,3 +442,16 @@ def test_own_heavy_jobs_ignores_shell_and_time_wrappers(monkeypatch):
     monkeypatch.setattr(subprocess, "run", lambda *a, **k: type("R", (), {"stdout": txt})())
     got = T.own_heavy_jobs()
     assert len(got) == 1 and got[0].startswith("13 ")
+
+
+def test_atomic_save_and_trim_log(tmp_path):
+    import torch
+    p = tmp_path / "state.pt"
+    T.atomic_torch_save({"a": torch.zeros(2)}, p)
+    T.atomic_torch_save({"a": torch.ones(2)}, p)
+    assert torch.load(p)["a"].sum() == 2 and not (tmp_path / "state.pt.tmp").exists()
+    logp = tmp_path / "train_log.jsonl"
+    logp.write_text("".join(json.dumps({"step": s}) + "\n" for s in (2000, 4000, 4000, 6000)))
+    assert T.trim_log(logp, 4000) == 2                       # 重複 1 行と、state より先の 1 行
+    assert [json.loads(x)["step"] for x in logp.read_text().splitlines()] == [2000, 4000]
+    assert T.trim_log(logp, 4000) == 0 and T.trim_log(tmp_path / "none.jsonl", 0) == 0

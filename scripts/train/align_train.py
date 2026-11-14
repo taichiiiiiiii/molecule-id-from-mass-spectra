@@ -184,6 +184,30 @@ def warmup_lr(step: int, base: float = LR, warmup: int = WARMUP) -> float:
     return base * min(1.0, step / max(1, warmup))
 
 
+def atomic_torch_save(obj, path) -> None:
+    """tmp に書いてから os.replace（保存の途中で止められても、前のファイルが壊れない）。"""
+    import torch
+    tmp = Path(str(path) + ".tmp")
+    torch.save(obj, tmp)
+    os.replace(tmp, path)
+
+
+def trim_log(logp, step: int) -> int:
+    """再開のとき、state より先の step の行（state を書く前に止まった評価）と重複行を train_log.jsonl から落とす。落とした行数を返す。"""
+    if not Path(logp).exists():
+        return 0
+    rows = [json.loads(x) for x in Path(logp).read_text().splitlines() if x.strip()]
+    keep, seen = [], set()
+    for r in rows:
+        if r["step"] <= step and r["step"] not in seen:
+            keep.append(r); seen.add(r["step"])
+    if len(keep) != len(rows):
+        tmp = Path(str(logp) + ".tmp")
+        tmp.write_text("".join(json.dumps(r) + "\n" for r in keep))
+        os.replace(tmp, logp)
+    return len(rows) - len(keep)
+
+
 def free_gb() -> dict:
     """vm_stat の free と speculative（すぐ使える空き）と inactive（GB = 10^9 バイト）。macOS 以外は None。"""
     import re
@@ -421,6 +445,14 @@ def train(root=".", embed_dir=None, out_dir=None, holdout_keys=None, device="aut
     if holdout_keys is None:
         holdout_keys = json.loads((root / DEFAULTS["keys"]).read_text())
     rpath, logp, statep = out / "train_report.json", out / "train_log.jsonl", out / "state.pt"
+    if rpath.exists():   # 収束（status ok）で終わった学習は続けない・やり直さない（model_best.pt を上書きしないため）
+        try:
+            prev = json.loads(rpath.read_text())
+        except ValueError:
+            prev = {}
+        ptr = prev.get("train") or {}
+        if prev.get("status") == "ok" and (ptr.get("stop_reason") == "converged" or ptr.get("steps", 0) >= max_steps):
+            raise SystemExit(f"{rpath} は status ok（{prev.get('train')}）。やり直すなら出力先を変える")
     dev = pick_device(device)
     rep = {"issue": 109, "status": "running", "device": dev, "numerics": NUMERICS_NOTE.get(dev.split(":")[0]),
            "config": {"MSALIGN_COMMIT": MSALIGN_COMMIT, "SEED": SEED, "D_SHARED": D_SHARED, "D_HIDDEN": D_HIDDEN,
@@ -477,6 +509,7 @@ def train(root=".", embed_dir=None, out_dir=None, holdout_keys=None, device="aut
             scaler.load_state_dict(st["scaler"]); stopper.load(st["stopper"]); step = st["step"]
             torch.set_rng_state(st["torch_rng"])
             rep["resumed_from_step"] = step
+            rep["log_rows_trimmed_on_resume"] = trim_log(logp, step)
         rep["data"]["params"] = int(sum(p.numel() for p in model.parameters()))
         n_tr = len(tr_i)
 
@@ -531,9 +564,9 @@ def train(root=".", embed_dir=None, out_dir=None, holdout_keys=None, device="aut
                 if fg is not None and fg < MIN_RUN_FREE_GB:
                     stop_reason = f"paused_low_memory free={fg}GB"
             if stop_reason:   # 空きが足りない: 評価せずに state だけ書いて止める（止め方の数え方を変えない）
-                torch.save({"model": model.state_dict(), "opt": opt.state_dict(), "plateau": plateau.state_dict(),
-                            "scaler": scaler.state_dict(), "stopper": stopper.state(), "step": step,
-                            "torch_rng": torch.get_rng_state()}, statep)
+                atomic_torch_save({"model": model.state_dict(), "opt": opt.state_dict(), "plateau": plateau.state_dict(),
+                                   "scaler": scaler.state_dict(), "stopper": stopper.state(), "step": step,
+                                   "torch_rng": torch.get_rng_state()}, statep)
                 break
             if step % eval_every == 0 or step == max_steps:
                 vl = val_loss()
@@ -541,7 +574,7 @@ def train(root=".", embed_dir=None, out_dir=None, holdout_keys=None, device="aut
                     plateau.step(vl)
                 u = stopper.update(vl, step)
                 if u["is_best"]:
-                    torch.save(model.state_dict(), out / "model_best.pt")
+                    atomic_torch_save(model.state_dict(), out / "model_best.pt")
                 row = {"step": step, "train_loss": acc / max(n_acc, 1), "val_loss": vl, "lr": opt.param_groups[0]["lr"],
                        "temperature": float(model.log_temperature.detach().exp()), **u,
                        "best": stopper.best, "best_step": stopper.best_step, "t": round(time.time() - t0, 1),
@@ -550,9 +583,9 @@ def train(root=".", embed_dir=None, out_dir=None, holdout_keys=None, device="aut
                     f.write(json.dumps(row) + "\n")
                 print("EVAL", json.dumps(row), flush=True)
                 acc, n_acc, ts = 0.0, 0, time.time()
-                torch.save({"model": model.state_dict(), "opt": opt.state_dict(), "plateau": plateau.state_dict(),
-                            "scaler": scaler.state_dict(), "stopper": stopper.state(), "step": step,
-                            "torch_rng": torch.get_rng_state()}, statep)
+                atomic_torch_save({"model": model.state_dict(), "opt": opt.state_dict(), "plateau": plateau.state_dict(),
+                                   "scaler": scaler.state_dict(), "stopper": stopper.state(), "step": step,
+                                   "torch_rng": torch.get_rng_state()}, statep)
                 save()
                 if u["stop"]:
                     stop_reason = "converged"
