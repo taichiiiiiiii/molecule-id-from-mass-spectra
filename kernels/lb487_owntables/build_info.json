@@ -1,0 +1,32 @@
+{
+ "frozen_sha_old": "d1e757c2b71b46e6e8a5777f14302a4737d0fdbcd56d8365093c039b93c5fd88",
+ "frozen_sha_new": "7153f8dee9935047645ba3db4a6232261e34ce929c9b10f2f02c65e2ee8ae7de",
+ "changed_frozen_cell": 32,
+ "changed_outer_cells": [
+  5,
+  12
+ ],
+ "changed_metadata": [
+  "casmi.frozen_source_sha256",
+  "casmi.upstream_casmi_metadata.frozen_source_sha256"
+ ],
+ "sim_rel": "own_sim_rank_rows.npz",
+ "sim_sha": "6c30031b2b43c7fb6ab95a4289b314b2f547c1db58fd58ca8a2bc3bf7c232397",
+ "rt_rel": "own_rank_train.npz",
+ "rt_sha": "66a8cef9820a208fa29b1b184bb8f868764af97476e3c8fa2d9f0b1fd97d30eb",
+ "dataset_sources": [
+  "samartalwar/casmi-2026-spectral-library-massbankharmonized",
+  "sanpier/casmi-spectrum-model-v1",
+  "dmitriigluzdov/casmi26-fold-safe-fpnet",
+  "dmitriigluzdov/casmi26-natural-product-knowledge-table",
+  "dmitriigluzdov/casmi26-natural-product-panel-benchmark",
+  "dmitriigluzdov/casmi26-pubchem-popularity-prior",
+  "dmitriigluzdov/casmi26-attributed-v4g-reproduction-assets",
+  "takumuhata/casmi26-extlib",
+  "sanpier/catalogue-experiment-saner",
+  "metric/rdkit-2026-3-3-wheel",
+  "taichiiiii/casmi26-engine2-own-tables",
+  "taichiiiii/casmi26-engine2-build-code"
+ ],
+ "provisional": false
+}
