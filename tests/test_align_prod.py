@@ -428,3 +428,14 @@ def test_train_end_to_end_resume_and_rule(tmp_path, monkeypatch):
     log_b = [json.loads(x) for x in (tmp_path / "b/train_log.jsonl").read_text().splitlines()]
     n = len(log)
     assert [round(r["val_loss"], 5) for r in log_b[:n]] == [round(r["val_loss"], 5) for r in log]
+
+
+def test_own_heavy_jobs_ignores_shell_and_time_wrappers(monkeypatch):
+    import subprocess
+    txt = ("  11 /bin/zsh -lic cd x && .venv/bin/python scripts/train/align_train.py\n"
+           "  12 /usr/bin/time -l .venv/bin/python scripts/train/align_train.py --bench 30\n"
+           "  13 .venv/bin/python scripts/train/align_local_embed.py\n"
+           "  14 /opt/python3 other_project/train.py\n")
+    monkeypatch.setattr(subprocess, "run", lambda *a, **k: type("R", (), {"stdout": txt})())
+    got = T.own_heavy_jobs()
+    assert len(got) == 1 and got[0].startswith("13 ")

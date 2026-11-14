@@ -700,9 +700,10 @@ def own_heavy_jobs() -> list[str]:
     out = []
     for line in txt.splitlines():
         pid, _, cmd = line.strip().partition(" ")
-        if pid.isdigit() and int(pid) != me and "python" in cmd and any(
+        argv0 = os.path.basename(cmd.strip().split(" ")[0]) if cmd.strip() else ""
+        if pid.isdigit() and int(pid) != me and argv0.startswith("python") and any(
                 s in cmd for s in ("align_local_embed.py", "align_train.py", "local_fold0_logits.py")):
-            out.append(line.strip()[:160])
+            out.append(line.strip()[:160])   # シェルや /usr/bin/time の行（argv0 が python でない）は数えない
     return out
 
 
