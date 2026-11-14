@@ -4,7 +4,9 @@
 学習の本番ではない。#99 の条件 (2)「1 万スペクトルの速度を測り、外挿が 6 時間を超えるなら止める」の材料だけを作る。
 事前登録: https://github.com/taichiiiiiiii/molecule-id-from-mass-spectra/issues/99#issuecomment-6870838727
 
-ノートの中では、このファイルを /kaggle/working に書いて import し、`run()` を呼ぶ。
+ノートの中では、このファイルを /kaggle/tmp_align に書いて import し、`run()` を呼ぶ。
+段の順: fp32 の段（ピーク 60・100 の前向き、MLP）→ 外挿と判定 → fp16 の参考の段。fp16 の段は失敗しても記録して続ける
+（DreaMS の注意の masked_fill(-1e9) は fp16 であふれうるため）。判定は fp32 だけで決まる。
 出力は align_speed_report.json だけ。どの段で止まっても report を書いて終える（数値は作らない）。
 
 torch はモジュールの先頭で import しない（CI は torch を入れないので、純粋な関数だけをテストする）。
@@ -249,6 +251,8 @@ def download_ckpt(dest: Path, url=ZENODO_URL, expected_md5=CKPT_MD5, expected_si
                   timeout_s=DOWNLOAD_TIMEOUT_S) -> dict:
     t0 = time.time()
 
+    got = [0]
+
     def chunks():
         with urllib.request.urlopen(url, timeout=60) as r, open(dest, "wb") as f:
             while True:
@@ -256,11 +260,14 @@ def download_ckpt(dest: Path, url=ZENODO_URL, expected_md5=CKPT_MD5, expected_si
                 if not b:
                     return
                 if time.time() - t0 > timeout_s:
-                    raise StageTimeout(f"download exceeded {timeout_s}s")
+                    raise StageTimeout(f"download exceeded {timeout_s}s after {got[0]} bytes "
+                                       f"({got[0] / max(time.time() - t0, 1e-9) / 1e6:.2f} MB/s)")
                 f.write(b)
+                got[0] += len(b)
                 yield b
     info = md5_stream(chunks(), expected_md5, expected_size)
     info["seconds"] = round(time.time() - t0, 3)
+    info["mb_per_s"] = info["size"] / max(info["seconds"], 1e-9) / 1e6
     return info
 
 
@@ -312,6 +319,8 @@ def load_dreams(dreams_root: str, ckpt, device: str = "cpu", stub_tops=STUB_TOP)
     finally:
         if finder in sys.meta_path:
             sys.meta_path.remove(finder)
+        for name in list(finder.made):   # 後で本物を import できるように stub を sys.modules から外す
+            sys.modules.pop(name, None)
 
 
 def find_inputs(root=Path("/kaggle/input")):
@@ -323,7 +332,7 @@ def find_inputs(root=Path("/kaggle/input")):
 def select_spectra(train_path, split_path, n=N_SPECTRA) -> tuple[list, dict]:
     import pyarrow.parquet as pq
     t0 = time.time()
-    drop, source = set(), "fallback_head"
+    drop, source, empty = set(), "fallback_head", 0
     if split_path is not None:
         try:
             drop = set(pq.read_table(split_path, columns=["inchikey14"]).column("inchikey14").to_pylist())
@@ -331,6 +340,7 @@ def select_spectra(train_path, split_path, n=N_SPECTRA) -> tuple[list, dict]:
         except Exception as e:  # split が読めなければ先頭から
             source = f"fallback_head ({type(e).__name__})"
             drop = set()
+    t_split = time.time() - t0
     pf = pq.ParquetFile(train_path)
     out, rows_read = [], 0   # rows_read = parquet から読んで展開した行数（外挿の T_read の分母）
     for batch in pf.iter_batches(batch_size=READ_BATCH, columns=TRAIN_COLS):
@@ -342,6 +352,7 @@ def select_spectra(train_path, split_path, n=N_SPECTRA) -> tuple[list, dict]:
                 continue
             mz, it = t["ms2_mzs"][i], t["ms2_normalized_intensities"][i]
             if not mz:
+                empty += 1
                 continue
             ce = t["collision_energy_ev"][i]
             out.append((mz, it, float(t["precursor_mz"][i]), (ce[0] if ce else None), t["adduct"][i]))
@@ -350,7 +361,8 @@ def select_spectra(train_path, split_path, n=N_SPECTRA) -> tuple[list, dict]:
         if len(out) >= n:
             break
     info = {"data_source": source, "n_drop_structures": len(drop), "rows_read": rows_read, "n_selected": len(out),
-            "seconds": round(time.time() - t0, 3)}
+            "n_skipped_empty_spectra": empty, "read_batch": READ_BATCH, "seconds_split_read": round(t_split, 3),
+            "seconds": round(time.time() - t0, 3)}   # seconds = split の読み＋parquet の読み＋選別（外挿の T_read に使う）
     return out, info
 
 
@@ -485,6 +497,17 @@ def mlp_speed(emb, specs, device, amp: bool, n_steps=None, bank_size=FP_BANK, de
             "gpu_mem": mem, "n_adducts": len(adducts)}
 
 
+def optional_stage(rep: dict, tag: str, fn):
+    """参考の段（fp16）。失敗してもエラーを記録して続ける。判定には使わない。"""
+    try:
+        rep["stages"][tag] = fn()
+    except StageTimeout:
+        raise
+    except Exception as e:  # noqa: BLE001
+        rep["stages"][tag] = {"error": f"{type(e).__name__}: {str(e)[:500]}", "reference_only": True}
+    return rep["stages"][tag]
+
+
 def _env_info():
     import torch
     info = {"python": sys.version.split()[0], "torch": torch.__version__, "cuda": torch.version.cuda,
@@ -495,6 +518,31 @@ def _env_info():
     except Exception as e:
         info["lscpu"] = f"unavailable: {e}"
     return info
+
+
+def summarize(rep: dict) -> dict:
+    """判定は fp32 の外挿だけ。fp16 の参考の段は無い・失敗でも書ける。"""
+    S = rep["stages"]
+
+    def ref(tag, key):
+        v = S.get(tag)
+        if v is None:
+            return "not_run"
+        return v.get(key, v.get("error"))
+    return {
+        "gpu_name": rep.get("env", {}).get("gpu_name"),
+        "forward_sps_fp32": {p: S[f"embed_p{p}_fp32"]["forward_sps"] for p in PEAKS},
+        "forward_sps_fp16_reference": {p: ref(f"embed_p{p}_fp16", "forward_sps") for p in PEAKS},
+        "mlp_steps_per_s_fp32": S["mlp_fp32"]["steps_per_s"],
+        "mlp_steps_per_s_fp16_reference": ref("mlp_fp16", "steps_per_s"),
+        "gpu_mem_peak_max_allocated": max([v.get("gpu_mem", {}).get("max_allocated", 0) for v in S.values()
+                                           if isinstance(v, dict)] + [0]),
+        "gpu_mem_peak_max_reserved": max([v.get("gpu_mem", {}).get("max_reserved", 0) for v in S.values()
+                                          if isinstance(v, dict)] + [0]),
+        "ram_peak": ram_peak(),
+        "T_total_hours": rep["extrapolation"]["T_total_hours"],
+        "decision": rep["extrapolation"]["decision"],
+    }
 
 
 def run(out_dir="/kaggle/working", work_dir="/kaggle/tmp_align", input_root="/kaggle/input", t0=None,
@@ -578,34 +626,28 @@ def run(out_dir="/kaggle/working", work_dir="/kaggle/tmp_align", input_root="/ka
         rep["stages"]["select_spectra"] = sinfo
         save()
 
-        emb_keep = None
+        # ---- fp32（判定に使う）
+        emb_keep, arrs = None, {}
         for n_peaks in PEAKS:
             stage(f"preprocess_p{n_peaks}")
             arr, t_pre = preprocess(specs, SP, DFA, n_peaks)
+            arrs[n_peaks] = (arr, t_pre)
             rep["stages"][f"preprocess_p{n_peaks}"] = {"seconds": t_pre, "sps": len(arr) / t_pre, "shape": list(arr.shape)}
             save()
-            for amp in (False, True):
-                tag = f"embed_p{n_peaks}_{'fp16' if amp else 'fp32'}"
-                stage(tag)
-                emb, einfo = embed_speed(model, arr, dev, amp, deadline=deadline)
-                einfo["sps_preprocess_plus_forward"] = len(arr) / (t_pre + einfo["seconds_forward"])
-                rep["stages"][tag] = einfo
-                save()
-                if n_peaks == PEAKS[0] and not amp:
-                    emb_keep = emb
-            del arr
-        del model
+            tag = f"embed_p{n_peaks}_fp32"
+            stage(tag)
+            emb, einfo = embed_speed(model, arr, dev, False, deadline=deadline)
+            einfo["sps_preprocess_plus_forward"] = len(arr) / (t_pre + einfo["seconds_forward"])
+            rep["stages"][tag] = einfo
+            save()
+            if n_peaks == PEAKS[0]:
+                emb_keep = emb
+        stage("mlp_fp32")
+        rep["stages"]["mlp_fp32"] = mlp_speed(emb_keep, specs, dev, False, n_steps=mlp_steps, bank_size=bank_size,
+                                              deadline=deadline)
+        save()
         if dev == "cuda":
             torch.cuda.empty_cache()
-
-        for amp in (False, True):
-            tag = f"mlp_{'fp16' if amp else 'fp32'}"
-            stage(tag)
-            rep["stages"][tag] = mlp_speed(emb_keep, specs, dev, amp, n_steps=mlp_steps, bank_size=bank_size,
-                                           deadline=deadline)
-            save()
-            if dev == "cuda":
-                torch.cuda.empty_cache()
 
         stage("extrapolate")
         S = rep["stages"]
@@ -613,18 +655,32 @@ def run(out_dir="/kaggle/working", work_dir="/kaggle/tmp_align", input_root="/ka
         fixed = S["download_ckpt"]["seconds"] + S["dreams_code"]["seconds"] + S["load_model"]["seconds"]
         rep["extrapolation"] = extrapolate(sps, S["mlp_fp32"]["steps_per_s"], S["select_spectra"]["seconds"],
                                            S["select_spectra"]["rows_read"], fixed)
-        rep["summary"] = {
-            "gpu_name": rep["env"]["gpu_name"],
-            "forward_sps_fp32": {p: S[f"embed_p{p}_fp32"]["forward_sps"] for p in PEAKS},
-            "forward_sps_fp16_reference": {p: S[f"embed_p{p}_fp16"]["forward_sps"] for p in PEAKS},
-            "mlp_steps_per_s_fp32": S["mlp_fp32"]["steps_per_s"],
-            "mlp_steps_per_s_fp16_reference": S["mlp_fp16"]["steps_per_s"],
-            "gpu_mem_peak_max_allocated": max(v.get("gpu_mem", {}).get("max_allocated", 0) for v in S.values()
-                                              if isinstance(v, dict)),
-            "ram_peak": ram_peak(),
-            "T_total_hours": rep["extrapolation"]["T_total_hours"],
-            "decision": rep["extrapolation"]["decision"],
-        }
+        rep["status"] = "ok_fp32"
+        save()
+
+        # ---- fp16 autocast（参考。失敗しても続ける。判定に使わない）
+        for n_peaks in PEAKS:
+            tag = f"embed_p{n_peaks}_fp16"
+            stage(tag)
+            arr, t_pre = arrs[n_peaks]
+
+            def _e(arr=arr, t_pre=t_pre):
+                _, info = embed_speed(model, arr, dev, True, deadline=deadline)
+                info["sps_preprocess_plus_forward"] = len(arr) / (t_pre + info["seconds_forward"])
+                info["reference_only"] = True
+                return info
+            optional_stage(rep, tag, _e)
+            save()
+        del arrs, model
+        if dev == "cuda":
+            torch.cuda.empty_cache()
+        stage("mlp_fp16")
+        optional_stage(rep, "mlp_fp16", lambda: dict(mlp_speed(emb_keep, specs, dev, True, n_steps=mlp_steps,
+                                                              bank_size=bank_size, deadline=deadline),
+                                                     reference_only=True))
+        save()
+
+        rep["summary"] = summarize(rep)
         rep["status"] = "ok"
         rep["stage"] = "done"
     except Md5Mismatch as e:
@@ -632,13 +688,15 @@ def run(out_dir="/kaggle/working", work_dir="/kaggle/tmp_align", input_root="/ka
         rep["error"] = str(e)
         rep["md5_ok"] = False
     except StageTimeout as e:
-        rep["status"] = "timeout"
+        rep["status"] = "ok_fp32_reference_timeout" if "extrapolation" in rep else "timeout"
         rep["error"] = str(e)
     except Exception as e:  # noqa: BLE001
         import traceback
-        rep["status"] = "error"
+        rep["status"] = "ok_fp32_reference_error" if "extrapolation" in rep else "error"
         rep["error"] = f"{type(e).__name__}: {e}"
         rep["traceback"] = traceback.format_exc()[-4000:]
+    if "extrapolation" in rep and "summary" not in rep:
+        rep["summary"] = summarize(rep)
     save()
     return rep
 

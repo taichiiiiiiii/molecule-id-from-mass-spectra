@@ -197,3 +197,68 @@ def test_run_does_not_start_stage_after_cutoff(tmp_path, monkeypatch):
     rep = A.run(out_dir=tmp_path / "out", work_dir=tmp_path / "work", input_root=None,
                 t0=_t.time() - A.STAGE_CUTOFF_S - 1)
     assert rep["status"] == "timeout" and "not starting stage env" in rep["error"]
+
+
+# ---- fp16 の参考の段は失敗しても fp32 の判定を残す（レビュー 1 回目の high の指摘）
+
+def test_optional_stage_records_error_and_continues():
+    rep = {"stages": {}}
+    out = A.optional_stage(rep, "embed_p60_fp16", lambda: (_ for _ in ()).throw(
+        RuntimeError("value cannot be converted to type c10::Half without overflow")))
+    assert "c10::Half" in out["error"] and out["reference_only"] is True
+    assert A.optional_stage(rep, "ok", lambda: {"x": 1}) == {"x": 1}
+    with pytest.raises(A.StageTimeout):
+        A.optional_stage(rep, "t", lambda: (_ for _ in ()).throw(A.StageTimeout("late")))
+
+
+def _patch_pipeline(monkeypatch, fp16_error=None):
+    _fake_torch(monkeypatch)
+    monkeypatch.setattr(A, "download_ckpt", lambda dest, *a, **k: {"seconds": 60.0})
+    monkeypatch.setattr(A, "fetch_dreams_code", lambda *a, **k: {"root": "x", "seconds": 5.0})
+    monkeypatch.setattr(A, "load_dreams", lambda *a, **k: ("model", None, None, {"seconds": 10.0}))
+    monkeypatch.setattr(A, "find_inputs", lambda root: ("train.parquet", "split.parquet"))
+    monkeypatch.setattr(A, "select_spectra", lambda *a, **k: ([("s",)] * 100, {"rows_read": 8192, "seconds": 2.0,
+                                                                               "data_source": "foldsafe_split_excluded"}))
+    class _Arr(list):
+        shape = (100, 61, 2)
+    monkeypatch.setattr(A, "preprocess", lambda specs, SP, DFA, n: (_Arr(range(100)), 0.01))
+    calls = []
+
+    def emb(model, arr, dev, amp, deadline=None):
+        calls.append(("emb", amp))
+        if amp and fp16_error is not None:
+            raise fp16_error
+        return None, {"seconds_forward": 0.5, "spectra": 100, "forward_sps": 200.0, "gpu_mem": {}}
+
+    def mlp(emb_keep, specs, dev, amp, **k):
+        calls.append(("mlp", amp))
+        if amp and fp16_error is not None:
+            raise fp16_error
+        return {"steps_per_s": 5.0, "gpu_mem": {}}
+    monkeypatch.setattr(A, "embed_speed", emb)
+    monkeypatch.setattr(A, "mlp_speed", mlp)
+    return calls
+
+
+def test_run_keeps_fp32_decision_when_fp16_reference_fails(tmp_path, monkeypatch):
+    calls = _patch_pipeline(monkeypatch, RuntimeError("value cannot be converted to type c10::Half without overflow"))
+    rep = A.run(out_dir=tmp_path / "out", work_dir=tmp_path / "work", input_root=tmp_path)
+    assert rep["status"] == "ok" and rep["stage"] == "done"
+    # fp32 の段がすべて fp16 より前
+    assert calls[:3] == [("emb", False), ("emb", False), ("mlp", False)]
+    assert all(amp for _, amp in calls[3:]) and len(calls) == 6
+    assert "c10::Half" in rep["stages"]["embed_p60_fp16"]["error"]
+    assert "c10::Half" in rep["stages"]["mlp_fp16"]["error"]
+    ex = rep["extrapolation"]
+    assert ex["T_fixed_s"] == pytest.approx(65.0, abs=0.5)  # download 60 + code 5 + load（run が実測で上書き） and ex["decision"] in ("candidate_for_next_plan", "stop_production")
+    assert rep["summary"]["decision"] == ex["decision"]
+    assert "c10::Half" in rep["summary"]["mlp_steps_per_s_fp16_reference"]
+
+
+def test_run_marks_reference_timeout_but_keeps_extrapolation(tmp_path, monkeypatch):
+    # fp16 の段で打ち切りの時刻を過ぎた（embed_speed が StageTimeout）ときも fp32 の外挿と判定は残る
+    _patch_pipeline(monkeypatch, A.StageTimeout("embedding stopped at 64 spectra"))
+    rep = A.run(out_dir=tmp_path / "out", work_dir=tmp_path / "work", input_root=tmp_path)
+    assert rep["status"] == "ok_fp32_reference_timeout" and rep["stage"] == "embed_p60_fp16"
+    assert "extrapolation" in rep and rep["summary"]["decision"] == rep["extrapolation"]["decision"]
+    assert rep["summary"]["mlp_steps_per_s_fp16_reference"] == "not_run"
