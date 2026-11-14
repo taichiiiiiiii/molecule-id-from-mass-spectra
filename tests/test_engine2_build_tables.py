@@ -117,6 +117,17 @@ def test_a_hidden_rows_absent_and_equal_to_removed_library(mode):
         _same_channels(got, ref)
 
 
+def test_a_channels_pair_equals_two_hidden_calls():
+    P, L, add, I, rng = _setup()
+    for p in (3, 7, 25, 31):
+        rows, modes, target = _query(L, add, p)
+        truth_rows = np.flatnonzero(L["row_p"] == p)
+        specs = BT.query_specs(L, rows)
+        c1, c2 = BT.channels_pair(E, L, I, specs, L["prec"][rows], modes, target, rows, truth_rows, p, truth_rows)
+        _same_channels(c1, BT.channels_hidden(E, L, I, specs, L["prec"][rows], modes, target, rows, p, truth_rows, "c1"))
+        _same_channels(c2, BT.channels_hidden(E, L, I, specs, L["prec"][rows], modes, target, truth_rows, p, truth_rows, "c2"))
+
+
 def test_a_mode_none_equals_engine():
     P, L, add, I, rng = _setup()
     rows, modes, target = _query(L, add, 7)
@@ -289,6 +300,85 @@ def test_e_build_end_to_end_identities(tmp_path, monkeypatch):
     sim2, rt2, _ = BT.build(E, L, meta, I, queries, fold, {1: None, 2: None, 3: None, 4: None}, np.arange(64), 1,
                             log=lambda *a: None)
     assert BT.content_sha256(sim) == BT.content_sha256(sim2) and BT.content_sha256(rt) == BT.content_sha256(rt2)
+
+
+def _synthetic_build_inputs(monkeypatch):
+    P, L, add, I, rng = _setup()
+    n = len(L["prec"])
+    ik = P["keys"][L["row_p"]]
+    lib_set = np.where(np.arange(n) % 2 == 0, "gnps", "riken").astype(object)
+    meta = dict(ingest_lib=lib_set, ik=ik, adduct=add, mode=np.where(L["pol"] == 1, "positive", "negative").astype(object),
+                ce=np.array([None] * n, dtype=object))
+    fold = pd.DataFrame(dict(scorer_key=P["keys"], fold_identity=[1 + i % 4 for i in range(len(P["keys"]))]), index=P["keys"])
+    queries = {"gnps": list(P["keys"][[3, 10, 25]]), "riken": list(P["keys"][[4, 30]])}
+    zr = np.random.default_rng(5)
+    calls = []
+
+    def fake_logits(bank, sp):
+        calls.append(bank)
+        return zr.normal(size=64).astype(np.float32)
+    monkeypatch.setattr(base_fs, "fs_logits", fake_logits)
+    monkeypatch.setattr(base_fs, "fs_fp", lambda smi, bits: (np.random.default_rng(len(smi)).random(64) < 0.3).astype(np.uint8))
+
+    def fake_frag(recs, workers):
+        fr = np.random.default_rng(9)
+        for r in recs:
+            r.pop("specs")
+            _frag(r, fr)
+    monkeypatch.setattr(E, "compute_frag", fake_frag)
+    return L, meta, I, queries, fold, calls
+
+
+def test_e_ab_check_hidden_equals_pair(monkeypatch):
+    """--ab-check の 2 経路: (i) channels_hidden 2 回 と (ii) channels_pair の 2 表が np.array_equal。z は共有（2 回目は計算しない）。"""
+    L, meta, I, queries, fold, calls = _synthetic_build_inputs(monkeypatch)
+    banks = {1: "bank1", 2: "bank2", 3: "bank3", 4: "bank4"}
+    zc, zl_i, zl_ii = {}, [], []
+    sim_i, rt_i, rep_i = BT.build(E, L, meta, I, queries, fold, banks, np.arange(64), 1, log=lambda *a: None,
+                                  channels_impl="hidden", zcache=zc, zout=zl_i)
+    n_calls = len(calls)
+    sim_ii, rt_ii, rep_ii = BT.build(E, L, meta, I, queries, fold, banks, np.arange(64), 1, log=lambda *a: None,
+                                     channels_impl="pair", zcache=zc, zout=zl_ii)
+    assert len(calls) == n_calls == rep_i["molecules"] == 5          # (ii) は z を計算し直さない
+    assert rep_i["channels_impl"] == "hidden" and rep_ii["channels_impl"] == "pair"
+    for a, b in ((sim_i, sim_ii), (rt_i, rt_ii)):
+        assert sorted(a) == sorted(b)
+        for k in a:
+            assert a[k].dtype == b[k].dtype and np.array_equal(a[k], b[k]), k
+    assert BT.content_sha256(sim_i) == BT.content_sha256(sim_ii) and BT.content_sha256(rt_i) == BT.content_sha256(rt_ii)
+    assert [x[:3] for x in zl_i] == [x[:3] for x in zl_ii] and all(a[3] is b[3] for a, b in zip(zl_i, zl_ii))
+    assert [x[:2] for x in zl_i] == [(q["set"], q["ik"]) for q in rep_i["queries"]]
+    # (i) は既定（pair）の表とも一致し、z の共有は表の中身を変えない
+    calls.clear()
+    sim0, rt0, _ = BT.build(E, L, meta, I, queries, fold, banks, np.arange(64), 1, log=lambda *a: None)
+    assert len(calls) == 5
+    assert BT.content_sha256(sim0) == BT.content_sha256(sim_i)
+    with pytest.raises(AssertionError):
+        BT.build(E, L, meta, I, queries, fold, banks, np.arange(64), 1, log=lambda *a: None, channels_impl="other")
+
+
+def test_e_logits_saved_and_cpu_info_keys(tmp_path):
+    """z の保存（own_fp_logits*.npz）と CPU 情報の json キー。"""
+    import json
+    rng = np.random.default_rng(0)
+    zl = [("gnps", "AAAAAAAAAAAAAA", 1, rng.normal(size=8).astype(np.float32)),
+          ("riken", "BBBBBBBBBBBBBB", 3, rng.normal(size=8).astype(np.float32))]
+    path = BT.save_logits(str(tmp_path), zl, "_x")
+    assert os.path.basename(path) == "own_fp_logits_x.npz"
+    z = np.load(path)
+    assert z["Z"].shape == (2, 8) and z["Z"].dtype == np.float32 and np.array_equal(z["Z"][1], zl[1][3])
+    assert list(z["set"]) == ["gnps", "riken"] and list(z["ik"]) == ["AAAAAAAAAAAAAA", "BBBBBBBBBBBBBB"] and list(z["fold"]) == [1, 3]
+    BT._check_name(path)                                            # 自前のファイル名はガードに掛からない
+    c = BT.compare_logits(zl, [(a, b, k, v.copy()) for a, b, k, v in zl])
+    assert c == dict(n=2, n_equal=2, all_equal=True, max_abs_diff=0.0)
+    zl2 = [zl[0], (*zl[1][:3], zl[1][3] + np.float32(1e-3))]
+    c = BT.compare_logits(zl, zl2)
+    assert c["n_equal"] == 1 and not c["all_equal"] and 9e-4 < c["max_abs_diff"] < 1.1e-3
+    info = BT.cpu_info()
+    for k in ("os_cpu_count", "lscpu", "torch_config", "torch_num_threads", "torch_version", "platform", "env_threads"):
+        assert k in info, k
+    assert info["os_cpu_count"] == os.cpu_count()
+    json.dumps(info)
 
 
 # ------------------------------------------------------------------------------------------------
