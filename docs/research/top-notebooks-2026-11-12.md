@@ -113,3 +113,43 @@ git show c3d9992:kernels/lb487/casmi26-lb487-copy.ipynb > $S/lb487.ipynb
 kaggle competitions topics show enveda-CASMI26-molecule-id-mass-spectra/758233 --format json   # 753662・756893・757307 も同様
 kaggle datasets files heliosli/casmi26-denovo-v3   # 403（非公開）
 ```
+
+## 追記: 2026-11-14 昼（計画 2026-11-14 昼 項目 4、日報 `report_2026-11-14_noon.md` 調査 1 の内容）
+
+読んだのはノートのコードと markdown だけで、どれも実行していない。点数は断りが無いかぎり**作者の申告で未確認**。
+
+### 取得の条件
+- pull: `kaggle kernels pull <ref> -p <scratch>/nb_1114noon/<owner>_<slug> -m`（10:11〜10:18 JST）。11:59 JST に同じ 6 本を pull し直し、ipynb の sha256 を比べた（変わったのは zz3t3rn41 だけ。下の 3）
+- 版番号: Kaggle API `get_kernel` の `current_version_number`（11:5x JST に取得）
+- 比べる基準: 0.487 の写し `taichiiiii/casmi26-lb487-copy`（ipynb sha256 380e2c82…、31 セル）
+
+### 1. alexchilton「CASMI26 LB 0.488 | Peaks to Structures + Network」（版 14、ipynb 9bc6431e…、32 セル）
+- https://www.kaggle.com/code/alexchilton/casmi26-lb-0-488-peaks-to-structures-network 。0.487 の土台だったノート（前の slug `…-0-487-peaks-to-structures-scorer` は 10:11 JST に「not found」）の改名と読む。slug の付け替えの経緯は未確認
+- 最初の md セル: 「analyticaobscura の casmi-2026 をそのまま走らせた版。前の版（0.487）にコードセル N-1c を 1 つ足しただけ」。`dataset_sources`（10 件）・`kernel_sources`（1 件）・docker image は 0.487 写しと同じ（確認）
+- N-1c（セル 24）: テストのスペクトル同士を modified cosine ≥ 0.6・一致ピーク ≥ 6 で結び（[M+H]+ と [M-H]- のスペクトルだけ）、各分子の上位 25 候補に「隣の分子の上位 5 候補との Tanimoto × w^4」を足し、z(−log rank) + 0.25 × z(隣の点) で並べ替える。例外時は元のまま（md の説明とコード `_n1c(LAM=0.25, TAU=0.6)`）→ **構造的**（新しい証拠チャネル: テスト内の分子ネットワークによる伝播）
+- 申告: 0.488（提出 58314720、11/13）。作者の offline 指標では −0.0033。`LAM` 0.25→0.50 で 0.484、`TAU` 0.6→0.5 で 0.488（どれも申告）
+- 読み方: +0.001 は公開分割（約 130 分子という参加者の申告）で 1 分子の top-1 の動き（約 0.008）より小さく、SE ≈ 0.035 よりはるかに小さい。雑音と区別できない
+
+### 2. analyticaobscura「Casmi-2026」（版 1、ipynb 7a7162f7…）— N-1c の元
+- https://www.kaggle.com/code/analyticaobscura/casmi-2026 。N-1c のセルあり。alexchilton の 0.488 版とは md の 2 セルだけが違い、コードのセルは同じ（セル 12・24 の本文の sha1 が一致、確認）。md の最初のセルは「LB 0.484 …」の古い説明のまま
+
+### 3. zz3t3rn41「casmi26-peaks-to-structures-v2」（11:59 JST の pull で版 53、ipynb 7c977ba3…、31 セル）
+- 10:11 JST の pull（ipynb 65c42025…、30 セル、md は「Version 52」）から 11:59 JST までに版が上がった
+- 版 52（10:11 JST）: md「Target 0.5040+ · Current Official PB 0.4870」。0.487 写しに `bgunshui/casmi26-scorer-v2-model` と `qwertykeypadapple/casmi26-lotus-candidates` を足し、`kernel_sources` から popwenman の scorer v80 が外れ、docker image も違う（確認）。中身は定数（MASS_CENTER −1.5 ppm、cos ≥ 0.78 など）の調整が中心と md に書かれている → **定数**が中心
+- 版 53（11:59 JST）: `dataset_sources`・`kernel_sources`・docker image は版 52 と同じ。N-1c を足した（セル 23、関数 `_n1c_vectorized(LAM=0.20, TAU=0.60, lib_shield=0.85)`、セル 4 に `N1C_LAM = 0.20` など）。alexchilton のセル 24 と比べると、同じ処理を書き直した行が多く（差分の一部を見た。全体の対応は追っていない）、λ を 0.25→0.20 にし、「lib_max ≥ 0.85 なら 1 位を動かさない」盾を足している → N-1c 型（alexchilton 版の改変と読む。推測）＋**定数**と規則 1 つ。md の「Current Official PB 0.4870」のまま、版 53 の点数は書かれていない
+
+### 4. ozertuu の 2 本
+- 「🏆 CASMI26: From Peaks to Structures」（https://www.kaggle.com/code/ozertuu/casmi26-from-peaks-to-structures 、版 138、ipynb a3be59a3…、32 セル。題に「0.487 SOTA」）: N-1c のセルあり（セル 24、alexchilton のセル 24 とは 1 行目のコメントの飾りだけが違う、確認）。0.487 写しとのコードの差 157 行（日報 調査 1）。md は定数（質量のずれ −1.5 ppm の中心化など）の説明 → N-1c の写し＋**定数**
+- 「👑 [0.500+] CASMI26 Dual-Neural & Physical Isomer」（版 45、ipynb a77bde9b…。11/12 の §1 は版 21）: md は「Target 0.500+ / Verified Baseline 0.487」で、0.500 の盤面は示されていない（未確認）。N-1c は無い
+
+### 5. heliosli「casmi26-0.488」（版 2、ipynb e102d021…、26 セル。11/12 の §4 は版 1・ipynb 0848adfa…）
+- 最初の md セルは「LB 0.477 …」（10/29 の古い説明のまま）。0.488 の根拠は題だけで、中身の説明は無い（未確認）
+- `dataset_sources` 9 件のうち名前の出ない空文字が **2 件**（版 1 は 6 件）。MassBank harmonized・ExtLib・RDKit wheel の名前は無く、`kernel_sources` も空（v80 なし）。docker image も 0.487 写しと違う（確認）。これらが「外れた」というのは、コードにそれらへの参照が無いことが根拠
+- 版 1 から残ったもの: FRIGID＋E1（セル 11・25）、rr3 同式異性体リランカー（セル 14・23・24）。版 1 にあった cvjoint・push489 の文字列は版 2 に無い（確認）
+- 生成コードの判定は 11/12 の §4 と同じ（**見つからない**、使うモデルは非公開）
+
+### まとめ（追記分）
+- 新しい部品で構造的なのは **N-1c（テスト内の分子ネットワークによる伝播）だけ**。申告の効果は +0.001 で雑音の範囲、作者の offline は −0.0033
+- こちらは N-1c を写さず、自前の形で測った: 問い合わせ同士の相互最近傍の数（#101 / PR #102）→ それを使う自前の段 `nbz`（#103 / PR #104）は v3_c1 0.8360 対 0.8535（差 −0.0175 [−0.0308, −0.0063]）で**不採用**。読みは `docs/research/network-propagation.md`（#105 / PR #106）
+- **写し・定数は候補にしない**: N-1c の写し（alexchilton・ozertuu）と改変（zz3t3rn41）は方針（自前の部品）に反し、λ・τ・盾のしきい値の変更（0.25→0.20、0.85 など）はハイパラ調整の禁止に当たる。zz3t3rn41 版 52 の定数の調整も同じ
+- heliosli 版 2 の部品は 11/12 の判定のまま（構造的だが作り方が見つからない／非公開）
