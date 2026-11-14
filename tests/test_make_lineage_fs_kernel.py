@@ -93,18 +93,87 @@ def test_forbidden_list_and_matching():
     assert not K.is_forbidden("/kaggle/working/own_rank_train.npz")                                              # #74 の自前表
 
 
-def test_guard_cell_blocks_and_logs(tmp_path, monkeypatch):
+def _guarded_targets():
+    """監視のセルが差し替える (モジュール, 属性)。入っていないパッケージは飛ばす。"""
+    import importlib
+    out = [(np, "load"), (pickle, "load")]
+    for mod, attr in (("torch", "load"), ("joblib", "load"), ("lightgbm", "Booster")):
+        try:
+            out.append((importlib.import_module(mod), attr))
+        except ImportError:
+            pass
+    return out
+
+
+@pytest.fixture
+def restore_guarded():
+    saved = [(m, a, getattr(m, a)) for m, a in _guarded_targets()]
+    yield
+    for m, a, f in saved:
+        setattr(m, a, f)
+
+
+def test_guard_cell_blocks_and_logs(tmp_path, monkeypatch, restore_guarded):
     ok = tmp_path / "ok.npy"; np.save(ok, np.arange(3))
     bad = tmp_path / "fpnet_full1.pt"; bad.write_bytes(pickle.dumps(1))
-    real_load, real_pload = np.load, pickle.load
+    ns: dict = {}
+    exec(compile(K.guard_cell_source(), "<guard>", "exec"), ns)
+    monkeypatch.chdir(tmp_path)
+    assert list(np.load(ok)) == [0, 1, 2]
+    with open(bad, "rb") as f, pytest.raises(RuntimeError, match="forbidden"):
+        pickle.load(f)
+    assert [d["path"] for d in ns["OPENED_FILES"]] == [str(ok), str(bad)]
+    assert ns["OPENED_FORBIDDEN"] == [str(bad)]
+
+
+def test_guard_is_restored_by_fixture():
+    # 前のテストの差し替えが残っていない（restore_guarded）
+    for m, a in _guarded_targets():
+        assert not getattr(getattr(m, a), "_lineage_wrapped", False), (m.__name__, a)
+
+
+def test_guard_joblib_and_lgb_booster_with_stubs(tmp_path, monkeypatch, restore_guarded):
+    """joblib.load と lgb.Booster（model_file を位置引数でもキーワードでも）を包む。CI に無いパッケージなので差し替えの模型で見る。"""
+    import types
+    jl = types.ModuleType("joblib"); jl.load = lambda filename, mmap_mode=None: ("loaded", filename)
+    lg = types.ModuleType("lightgbm")
+
+    class Booster:
+        def __init__(self, params=None, train_set=None, model_file=None, model_str=None):
+            self.model_file = model_file
+    lg.Booster = Booster
+    monkeypatch.setitem(sys.modules, "joblib", jl)
+    monkeypatch.setitem(sys.modules, "lightgbm", lg)
+    monkeypatch.chdir(tmp_path)
+    ns: dict = {}
+    exec(compile(K.guard_cell_source(), "<guard>", "exec"), ns)
+    assert jl.load("ok.pkl") == ("loaded", "ok.pkl")
+    with pytest.raises(RuntimeError, match="forbidden"):
+        jl.load("/x/rank_train.npz")
+    with pytest.raises(RuntimeError, match="forbidden"):
+        lg.Booster(None, None, "/x/fe_D.pt")                       # model_file を位置引数で
+    with pytest.raises(RuntimeError, match="forbidden"):
+        lg.Booster(model_file="/x/fe_A.pt")
+    assert lg.Booster(model_file="/x/ranker_ok.txt").model_file == "/x/ranker_ok.txt"
+    lg.Booster(params={})                                           # model_file 無し（学習用）は記録しない
+    assert ns["OPENED_FORBIDDEN"] == ["/x/rank_train.npz", "/x/fe_D.pt", "/x/fe_A.pt"]
+    assert [d["kind"] for d in ns["OPENED_FILES"]] == ["joblib.load", "joblib.load", "lgb.Booster", "lgb.Booster", "lgb.Booster"]
+
+
+def test_real_notebook_byte_roundtrip():
+    """c3d9992 の本物のノートで、復号 → 再エンコードが元のバイト列（FROZEN_SHA256）に戻る。CI（浅い clone）では飛ばす。"""
+    import subprocess
     try:
-        ns: dict = {}
-        exec(compile(K.guard_cell_source(), "<guard>", "exec"), ns)
-        monkeypatch.chdir(tmp_path)
-        assert list(np.load(ok)) == [0, 1, 2]
-        with open(bad, "rb") as f, pytest.raises(RuntimeError, match="forbidden"):
-            pickle.load(f)
-        assert [d["path"] for d in ns["OPENED_FILES"]] == [str(ok), str(bad)]
-        assert ns["OPENED_FORBIDDEN"] == [str(bad)]
-    finally:
-        np.load, pickle.load = real_load, real_pload
+        nb, sha = K.load_base(None)
+    except (subprocess.CalledProcessError, FileNotFoundError, OSError):
+        pytest.skip(f"{K.BASE_COMMIT}:{K.BASE_PATH} が無い（浅い clone）")
+    assert sha == K.BASE_SHA256
+    inner, fsha = K.get_frozen(nb)
+    assert fsha == K.FROZEN_SHA256_BASE
+    assert hashlib.sha256(K.encode_frozen(inner)).hexdigest() == fsha
+    out, rep = K.apply_patches(nb, ())
+    assert out == nb and rep["frozen_sha256_after"] is None              # 差し替え無しなら何も変えない
+    nb2 = json.loads(json.dumps(nb))
+    assert K.set_frozen(nb2, inner) == fsha                                # 書き戻しても同じ sha256
+    assert K.cell_source(nb2["cells"][K.FROZEN_CELL]) == K.cell_source(nb["cells"][K.FROZEN_CELL])   # セル 12 の文字列も同じ
+    assert K.compile_all(K.insert_guard(nb, K.FROZEN_CELL + 1))["frozen"] > 0

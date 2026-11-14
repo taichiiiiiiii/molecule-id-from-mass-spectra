@@ -8,8 +8,12 @@ Issue #114、設計 docs/design/lineage487-foldsafe-eval.md §3.1・§7 の 3。
   - get_frozen / set_frozen : 外側のセル 12 の FROZEN_B64（凍結ノートの JSON を base64 にしたもの）の復号と再エンコード、
                               FROZEN_SHA256 の書き換え
   - compile_all : 外側の全コードセル、MODULES の入れ子のモジュール、凍結ノートの全コードセルを compile()（構文だけ）
-  - FORBIDDEN / GUARD_CELL : 読み込みの監視。torch.load・np.load・pickle.load・lgb.Booster を包み、禁止の名前を読んだら例外、
-                             読んだファイルを全部 opened_files.json に書く（§3.1）
+  - FORBIDDEN / GUARD_CELL : 読み込みの監視。torch.load・np.load・pickle.load・joblib.load・lgb.Booster を包み、禁止の名前を
+                             読んだら例外、読んだファイルを全部 opened_files.json に書く（§3.1）。
+                             lgb.Booster は model_file を位置引数（3 番目）でもキーワードでも見る。
+                             既知の穴（2 日目に塞ぐ）: 監視のセルより前に `from torch import load` などで関数そのものを取った
+                             名前は包めない（モジュールの属性を差し替えるだけなので）。セル 13 の前に入れるので凍結コード（F c*）の
+                             import は包んだ後になるが、外側のセル 0〜12 で取った参照は対象外。open() も包まない（§3.1）
   - apply_patches : Patch の一覧を当て、変えたセルの一覧を返す
 
 元のノート: kernels/lb487/casmi26-lb487-copy.ipynb（origin/feat/77-lb487-owntables の c3d9992、sha256 380e2c82…）。
@@ -103,6 +107,11 @@ def _lineage_wrap(mod, attr, kind, key='file'):
 _lineage_wrap(_np, 'load', 'np.load')
 _lineage_wrap(_pickle, 'load', 'pickle.load')
 try:
+    import joblib as _joblib
+    _lineage_wrap(_joblib, 'load', 'joblib.load', key='filename')
+except ImportError:
+    pass
+try:
     import torch as _torch
     _lineage_wrap(_torch, 'load', 'torch.load', key='f')
 except ImportError:
@@ -114,8 +123,9 @@ try:
         class _GuardBooster(_OrigBooster):
             _lineage_wrapped = True
             def __init__(self, *a, **k):
-                if k.get('model_file') is not None:
-                    _lineage_record('lgb.Booster', k['model_file'])
+                mf = k.get('model_file', a[2] if len(a) > 2 else None)   # Booster(params, train_set, model_file, ...)
+                if mf is not None:
+                    _lineage_record('lgb.Booster', mf)
                 super().__init__(*a, **k)
         _lgb.Booster = _GuardBooster
 except ImportError:

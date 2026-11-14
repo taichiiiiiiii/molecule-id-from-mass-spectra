@@ -8,8 +8,9 @@ outputs/research/lineage_leak_audit.json に書く。分母はすべて outputs/
 正解のキーは 2 種類:
   ik14   : truth.csv の inchikey14
   scorer : truth.csv の smiles を scripts/validate/mrr25.py の to_key（公式の scorer と同じ正準化）で InChIKey14 にしたもの
-積は「どちらかのキーが相手の集合に入る分子の数」（n）と、キーごとの数（n_ik14 / n_scorer）を出す。相手の集合が
-scorer のキーを持つときは、それも相手のキーに足す。
+積は「どちらかのキーが相手の集合に入る分子の数」（n）と、キーごとの数（n_ik14 / n_scorer。どちらも相手 = target ∪ target_scorer）
+を出す。相手の集合が scorer のキーを持つときは、それも相手のキーに足す。
+train の行の構造は inchikey14 と、train_structs.key（= scorer のキー）の両方で正解と突き合わせる（9。tautomer の別名の行を拾う）。
 
 手元で数えられない項目は status = "not_computable" と理由（reason）を書く。
 
@@ -71,7 +72,7 @@ def overlap(truth: dict[str, dict[str, tuple[str, str | None]]], target: set, ta
     for s, mols in truth.items():
         n = len(mols)
         hit = sorted(m for m, (ik, sk) in mols.items() if ik in tall or (sk is not None and sk in tall))
-        n_ik = sum(1 for ik, _ in mols.values() if ik in target)
+        n_ik = sum(1 for ik, _ in mols.values() if ik in tall)          # n_ik14 も n_scorer も同じ相手（target ∪ target_scorer）
         n_sk = sum(1 for _, sk in mols.values() if sk is not None and sk in tall)
         out[s] = dict(n=len(hit), denom=n, frac=round(len(hit) / n, 4) if n else 0.0, n_ik14=n_ik, n_scorer=n_sk)
     return out
@@ -90,13 +91,18 @@ def hit_mids(truth: dict, target: set, target_scorer: set | None = None) -> dict
     return {s: {m for m, (ik, sk) in mols.items() if ik in tall or (sk is not None and sk in tall)} for s, mols in truth.items()}
 
 
-def c_rule(truth: dict, components: dict[str, dict[str, set] | None], c_max: float = C_MAX) -> dict:
-    """§2.1: 集合ごとに、正解が components のどれかに入る分子の割合 c。
+def c_rule(truth: dict, components: dict[str, dict[str, set] | None], c_max: float = C_MAX,
+           required: tuple[str, ...] = ("fragnet_train_structures",), approximate: tuple[str, ...] = ()) -> dict:
+    """§2.1（事前登録どおり）: 集合ごとに、正解が components のどれかに入る分子の割合 c。
 
     components: {名前: {集合: 当たった molecule_id の集合}}。None の成分は「一覧を作れない」。
-    判定: どの集合でも c ≤ c_max かつ一覧を作れない成分が無い → usable。それ以外 → not_usable。
+    判定（設計 §2.1 の文のまま）: どれか 1 集合でも c > c_max、または required（fragnet の学習構造）の一覧を作れない
+    → not_usable。それ以外 → usable。approximate に挙げた required の成分は「近似で、一覧そのものは作れていない」として
+    作れない側に数える（fragnet は作者の train fold で近似しただけ）。
+    required 以外の成分が None（analog_struct など）でも判定は変えない（規則に無い）。そのときの c は下限（c_is_lower_bound）。
     """
     missing = sorted(k for k, v in components.items() if v is None)
+    req_missing = sorted(k for k in required if components.get(k) is None or k in approximate)
     per = {}
     for s, mols in truth.items():
         u = set().union(*[v.get(s, set()) for v in components.values() if v is not None]) if components else set()
@@ -104,32 +110,53 @@ def c_rule(truth: dict, components: dict[str, dict[str, set] | None], c_max: flo
         per[s] = dict(n=len(u), denom=n, c=round(len(u) / n, 4) if n else 0.0,
                       by_component={k: len(v.get(s, set())) for k, v in components.items() if v is not None})
     worst = max((r["c"] for r in per.values()), default=0.0)
-    usable = not missing and worst <= c_max
+    usable = not req_missing and worst <= c_max
     reasons = []
-    if missing:
-        reasons.append(f"一覧を作れない成分: {missing}")
     if worst > c_max:
         reasons.append(f"c の最大 {worst} > {c_max}")
-    return dict(c_max=c_max, per_set=per, missing_components=missing, worst_c=worst,
+    if req_missing:
+        reasons.append(f"fragnet の学習構造の一覧を作れない（無い・近似だけ）: {req_missing}")
+    return dict(c_max=c_max, per_set=per, missing_components=missing, required_not_exact=req_missing,
+                c_is_lower_bound=bool(missing), worst_c=worst,
                 decision="usable" if usable else "not_usable", reasons=reasons)
 
 
-def kept_after_hide(rows_libs_keys, drop: dict[str, set], rules: dict[str, str]) -> dict[str, set]:
+def kept_after_hide(rows_libs_keys, drop: dict[str, set], rules: dict[str, str], canon: dict[str, str] | None = None,
+                    drop_canon: dict[str, set] | None = None, scorer_drop: bool = False,
+                    stats: dict | None = None) -> dict[str, set]:
     """train の行（(ingest_lib, ik14) の列）に集合ごとの hide_rule を当てたあと、drop の構造のうち 1 行でも残る構造。
 
     rule = all: drop の構造の行を全部落とす。enveda_libs: drop の構造の enveda 系の行だけ落とす。
+    「drop の構造」は ik14 ∈ drop[s] か、scorer のキー canon[ik14]（train_structs.key = mrr25.to_key(smiles)）∈ drop_canon[s]
+    の行（#92 と同じ穴: 同じ構造が別の ik14 で train に載る）。drop_canon の既定は {canon[k] for k in drop[s]} ∪ drop[s]。
+    scorer_drop=False: 今の drop_keys.txt のとおり ik14 ∈ drop[s] の行だけ落とす（別名の行は残る）。
+    scorer_drop=True : scorer のキーでも落とす（作り直した drop_keys の場合）。
+    返す集合には残った行の ik14 と scorer のキーの両方を入れる（overlap で正解の ik14・scorer のどちらでも当たるように）。
+    stats を渡すと {集合: {scorer のキー: {ingest_lib: 残った行数}}} を足していく。
     """
     for r in rules.values():
         if r not in ("all", "enveda_libs"):
             raise ValueError(r)
-    alld = set().union(*drop.values()) if drop else set()
+    cn = canon or {}
+    if drop_canon is None:
+        drop_canon = {s: set(ks) | {cn.get(k, k) for k in ks} for s, ks in drop.items()}
+    watch = set().union(*drop.values(), *drop_canon.values()) if drop else set()
     kept = {s: set() for s in drop}
     for lib, k in rows_libs_keys:
-        if k not in alld:
+        c = cn.get(k, k)
+        if k not in watch and c not in watch:
             continue
         for s, ks in drop.items():
-            if k in ks and rules[s] == "enveda_libs" and lib not in ENVEDA:
-                kept[s].add(k)
+            if k not in ks and c not in drop_canon[s]:
+                continue
+            hidden = k in ks or (scorer_drop and c in drop_canon[s])
+            if hidden and rules[s] == "enveda_libs":
+                hidden = lib in ENVEDA
+            if not hidden:
+                kept[s].update((k, c))
+                if stats is not None:
+                    d = stats.setdefault(s, {}).setdefault(c, {})
+                    d[lib] = d.get(lib, 0) + 1
     return kept
 
 
@@ -389,23 +416,76 @@ def main(argv=None) -> None:
     # 9. train_structs.parquet（パッチ前 = 全 train のまま、パッチ後 = hide_rule を当てた train から作り直す）
     ts_sha = sha256(R / "data/ext/v4g/casmi26-v2-pool/train_structs.parquet")
     ts_keys = keyset(ts, "inchikey14", "key")
+    # scorer のキー: train_structs.key（= mrr25.to_key(smiles)。ik14 と違う 4,370 行で to_key と全部一致を確かめた）
+    canon = {ik: k for ik, k in zip(ts.inchikey14.astype(str), ts.key.astype(str)) if ik != k}
+    # drop の構造の scorer のキー: drop_keys の ik14・その scorer のキー・正解の ik14 と scorer のキー
+    dcanon = {s: dk[s] | {canon.get(k, k) for k in dk[s]} | {x for ik, sk in truth[s].values() for x in (ik, sk) if x} for s in SETS}
     pf = pq.ParquetFile(R / "data/train.parquet")
     alld = set().union(*dk.values())
-    n_rows = [0]
-
-    def _rows():
-        for bt in pf.iter_batches(batch_size=262144, columns=["ingest_lib", "inchikey14"]):
-            iks = bt.column("inchikey14").to_pylist()
-            n_rows[0] += len(iks)
-            yield from zip(bt.column("ingest_lib").to_pylist(), iks)
-    kept = kept_after_hide(_rows(), dk, {s: rules[s]["rule"] for s in SETS})
-    n_rows = n_rows[0]
-    # rule=all の集合は drop の構造の行が全部消える。他の集合の drop は他の集合の正解と重ならない（pairwise を参照）
+    watch = alld | set().union(*dcanon.values())
+    n_rows, rows9 = 0, []
+    for bt in pf.iter_batches(batch_size=262144, columns=["ingest_lib", "inchikey14"]):
+        iks = bt.column("inchikey14").to_pylist()
+        n_rows += len(iks)
+        rows9 += [(lib, k) for lib, k in zip(bt.column("ingest_lib").to_pylist(), iks)
+                  if k in watch or canon.get(k, k) in watch]
+    rules_s = {s: rules[s]["rule"] for s in SETS}
+    st_asis: dict = {}
+    kept = kept_after_hide(rows9, dk, rules_s, canon=canon, drop_canon=dcanon, scorer_drop=False, stats=st_asis)
+    kept_fix = kept_after_hide(rows9, dk, rules_s, canon=canon, drop_canon=dcanon, scorer_drop=True)
+    # 集合ごとに、その集合の hide_rule だけを当てた train で数える。データセット A・B では 2 集合の hide_rule が同じ train に
+    # 当たるので、別の集合の drop が正解と重なる構造（set_pairwise_overlap_ik14: v3_c1∩enveda_v1 = VHNSOMLGZMGWNH、
+    # v3_c2∩enveda_v1 = LBLAVYDUPXGKQX・MUAYFYDPOHQAJL）は他方の規則でも落ちる（下の dataset_A）
     post = {s: overlap({s: truth[s]}, kept[s])[s] for s in SETS}
-    I["9_train_structs"] = dict(n_rows=len(ts), sha256=ts_sha, sha256_matches_pin=ts_sha == TRAIN_STRUCTS_PIN,
-                                pre_patch=overlap(truth, ts_keys), post_patch=post, train_rows_streamed=n_rows,
-                                note="パッチ後 = その集合の hide_rule を当てた train.parquet に 1 行でも残る正解。rule=enveda_libs（v3_c1）では"
-                                     "公開ライブラリの参照が残るのが本来の設計（隠れテストの『train に参照あり』と同じ）")
+    post_fix = {s: overlap({s: truth[s]}, kept_fix[s])[s] for s in SETS}
+    alias = {}
+    for s in SETS:
+        am = sorted(hit_mids({s: truth[s]}, kept[s])[s] - (hit_mids({s: truth[s]}, kept_fix[s])[s]))
+        ak = {k for k in kept[s] if k not in dk[s] and canon.get(k, k) != k}
+        nr = {c: v for c, v in st_asis.get(s, {}).items() if c in {canon[k] for k in ak}}
+        libs: dict = {}
+        for v in nr.values():
+            for lib, n in v.items():
+                libs[lib] = libs.get(lib, 0) + n
+        alias[s] = dict(molecules=len(am), molecule_ids=am, alias_ik14={k: canon[k] for k in sorted(ak)},
+                        alias_ik14_in_drop_keys=sum(1 for k in ak if k in dk[s]),
+                        train_rows_left=sum(libs.values()), train_rows_left_by_lib=dict(sorted(libs.items())),
+                        scored_after_msg_exclusion=len(set(am) - msg_any[s]) if msg_any is not None else None,
+                        denom_after_msg_exclusion=len(truth[s]) - len(msg_any[s]) if msg_any is not None else None)
+    # データセット A（v3_c1 + enveda_v1 を 1 本で回す）: enveda_v1 の rule=all が v3_c1 の正解の公開ライブラリの参照まで消す
+    dsa_m = sorted(m for m, (ik, sk) in truth["v3_c1"].items() if ik in dcanon["enveda_v1"] or (sk and sk in dcanon["enveda_v1"]))
+    dsa_keys = {x for m in dsa_m for x in truth["v3_c1"][m] if x}
+    dsa_rows = sum(n for c, v in st_asis.get("v3_c1", {}).items() if c in dsa_keys for n in v.values())
+    dsb_m = sorted(m for m, (ik, sk) in truth["v3_c2"].items() if ik in dcanon["enveda_v1"] or (sk and sk in dcanon["enveda_v1"]))
+    I["9_train_structs"] = dict(
+        n_rows=len(ts), sha256=ts_sha, sha256_matches_pin=ts_sha == TRAIN_STRUCTS_PIN,
+        pre_patch=overlap(truth, ts_keys), post_patch=post, post_patch_scorer_key_drop=post_fix,
+        scorer_key_aliases=alias, train_rows_streamed=n_rows,
+        dataset_A_cross_hide=dict(v3_c1_molecules_in_enveda_v1_drop=len(dsa_m), molecule_ids=dsa_m,
+                                  v3_c1_public_ref_rows_removed_by_enveda_v1_rule_all=dsa_rows,
+                                  note="A では enveda_v1 の rule=all が同じ構造の非 enveda の行も落とすので、v3_c1 の設計"
+                                       "（公開ライブラリの参照は残す）と食い違う。B（v3_c2 + v3_c2n）と enveda_v1 は同じデータセットに入らない"),
+        v3_c2_molecules_in_enveda_v1_drop=len(dsb_m),
+        note="post_patch = その集合の hide_rule を今の drop_keys.txt（truth の ik14、正準化なし）のまま当てた train に、"
+             "正解の構造（ik14 か scorer のキー）の行が 1 行でも残る分子。post_patch_scorer_key_drop = scorer のキーでも落とした場合"
+             "（drop_keys を作り直した後）。差が scorer_key_aliases（設計との食い違い (d)）。rule=enveda_libs（v3_c1）では"
+             "公開ライブラリの参照が残るのが本来の設計（隠れテストの『train に参照あり』と同じ）")
+    # 9b. 縮小版（scripts/local_eval）への影響: library.load_refs は候補の pool key と train の inchikey14 が等しい行だけを
+    # 読み、run.py はプールから drop_keys（pool=remove の集合だけ）を ik14 のまま外す
+    pk = set(pm.key.astype(str))
+    le = {}
+    for s in SETS:
+        ak = set(alias[s]["alias_ik14"])
+        sk_all = {x for ik, sk in truth[s].values() for x in (ik, sk) if x}
+        left = sorted(m for m, (ik, sk) in truth[s].items()
+                      if rules[s].get("pool") == "remove" and ((sk and sk in pk and sk not in dk[s]) or (ik in pk and ik not in dk[s])))
+        le[s] = dict(alias_molecules=alias[s]["molecules"], alias_ik14_that_are_pool_keys=len(ak & pk),
+                     alias_rows_reachable_by_load_refs=0 if not (ak & pk) else None,
+                     truth_scorer_keys_not_in_drop_keys=len(sk_all - dk[s]),
+                     pool_remove=rules[s].get("pool") == "remove", truth_left_in_pool_after_hidden=len(left), truth_left_in_pool_ids=left)
+    I["9b_local_eval_impact"] = dict(per_set=le, note="別名の行は hide_rule の後の train.parquet（ライブラリ）に残るが、load_refs は pool key で引くので、"
+                                                     "別名の ik14 が pool key でなければ縮小版の lib・reflast の段には届かない。"
+                                                     "プール側は pool=remove の集合（v3_c2）で scorer のキーが drop_keys に無い正解が残る（#92）")
     # 10. train_fp_sel.npy
     I["10_train_fp_sel"] = dict(status="not_computable_locally", reason="train_fp_sel.npy は手元に無い（casmi26-v2-pool の大きいファイル）",
                                 row_mapping="ctxlib.py 187 行 `train_fp[self.an_sid]` と F c36 の pin structure_rows = 275,810 から、行 i = train_structs の sid i と推定",
@@ -464,29 +544,41 @@ def main(argv=None) -> None:
                 "analog_struct_frag2_derivation_keys": None,
                 "train_structs_and_fp_sel(9-10)": hit_mids(truth, ts_keys)}
     comp_post = dict(comp_pre)
-    comp_post["train_structs_and_fp_sel(9-10)"] = {s: hit_mids({s: truth[s]}, kept[s])[s] for s in SETS}
+    # v3_c1（rule=enveda_libs）は公開ライブラリの参照を残す設計なので、train_structs に正解があるのは隠れテストの
+    # 「train に参照あり」と同じで漏れではない。c の成分からは外す（数は 9 の post_patch に残す）
+    comp_post["train_structs_and_fp_sel(9-10)"] = {s: (set() if rules[s]["rule"] == "enveda_libs" else hit_mids({s: truth[s]}, kept[s])[s])
+                                                  for s in SETS}
+    comp_fix = dict(comp_post)
+    comp_fix["train_structs_and_fp_sel(9-10)"] = {s: (set() if rules[s]["rule"] == "enveda_libs" else hit_mids({s: truth[s]}, kept_fix[s])[s])
+                                                 for s in SETS}
+    APPROX = ("fragnet_train_structures",)    # 作者の train fold での近似。一覧そのものではない
     ext_hits = None
     if d is not None:
         fl = keyset(d[d.in_train_structure.astype(bool)], "scorer_key")
         ext_hits = hit_mids(truth, fl)
         comp_pre["in_train_structure_external_refs(8)"] = ext_hits
         comp_post["in_train_structure_external_refs(8)"] = {s: set() for s in SETS}   # パッチで v3 のキーの行を落とす（§2-15）
+        comp_fix["in_train_structure_external_refs(8)"] = {s: set() for s in SETS}
     res["tier0_rule_2_1"] = dict(
-        pre_patch_record_only=c_rule(truth, comp_pre),
-        post_patch=c_rule(truth, comp_post),
-        note="判定は post_patch（§4 の 9〜10 と 8 の表を hide_rule に合わせて作り直した後）。pre_patch は記録だけ。"
-             "analog_struct / frag2 / derivation のキーは手元で一覧を作れないので missing。v3_c1 の 9〜10 の残りは hide_rule どおり。"
+        pre_patch_record_only=c_rule(truth, comp_pre, approximate=APPROX),
+        post_patch=c_rule(truth, comp_post, approximate=APPROX),
+        post_patch_scorer_key_drop=c_rule(truth, comp_fix, approximate=APPROX),
+        note="判定は post_patch（§4 の 9〜10 と 8 の表を hide_rule に合わせて作り直した後。drop_keys は今のまま）。pre_patch は記録だけ。"
+             "post_patch_scorer_key_drop は drop を scorer のキーでも当てた場合（判定は変わらない）。"
+             "判定は §2.1 の文のとおり（c > 5% か fragnet の一覧を作れない → not_usable）。fragnet は近似だけなので後者にも当たる。"
+             "analog_struct / frag2 / derivation のキーは手元で一覧を作れないので missing（規則の判定には入らないが c は下限）。"
+             "v3_c1（rule=enveda_libs）の 9〜10 は設計どおり残るので c の成分から外した。"
              "sensitivity_* は fragnet の近似（作者の train fold）を使わず、模擬クエリの構造だけで数えた c（判定には使わない）")
     only_q = {"ranker_v4b_sim_queries": comp_post["ranker_v4b_sim_queries"]}
-    res["tier0_rule_2_1"]["sensitivity_ranker_queries_only"] = c_rule(truth, only_q) if only_q["ranker_v4b_sim_queries"] is not None else None
+    res["tier0_rule_2_1"]["sensitivity_ranker_queries_only"] = c_rule(truth, only_q, required=()) if only_q["ranker_v4b_sim_queries"] is not None else None
     if msg_any is not None:
         if only_q["ranker_v4b_sim_queries"] is not None:
             res["tier0_rule_2_1"]["sensitivity_ranker_queries_only_after_msg_exclusion"] = c_rule(
                 {s: {m: v for m, v in truth[s].items() if m not in msg_any[s]} for s in SETS},
-                {"ranker_v4b_sim_queries": {s: only_q["ranker_v4b_sim_queries"][s] - msg_any[s] for s in SETS}})
+                {"ranker_v4b_sim_queries": {s: only_q["ranker_v4b_sim_queries"][s] - msg_any[s] for s in SETS}}, required=())
         res["tier0_rule_2_1"]["post_patch_after_msg_exclusion"] = c_rule(
             {s: {m: v for m, v in truth[s].items() if m not in msg_any[s]} for s in SETS},
-            {k: (None if v is None else {s: v[s] - msg_any[s] for s in SETS}) for k, v in comp_post.items()})
+            {k: (None if v is None else {s: v[s] - msg_any[s] for s in SETS}) for k, v in comp_post.items()}, approximate=APPROX)
     res["seconds"] = round(time.time() - T0, 1)
     out_p.parent.mkdir(parents=True, exist_ok=True)
     out_p.write_text(json.dumps(res, ensure_ascii=False, indent=1, default=lambda o: sorted(o) if isinstance(o, set) else str(o)))
