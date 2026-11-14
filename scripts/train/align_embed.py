@@ -171,6 +171,7 @@ def _fake_dreams():
 
     class M(torch.nn.Module):
         n_layers = 1
+        d_model = D_EMB
 
         def __init__(self):
             super().__init__()
