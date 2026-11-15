@@ -74,6 +74,15 @@ def load_pool(root: Path = ROOT) -> Pool:
     return Pool(meta, pop)
 
 
+def visible_window(pool: Pool, target: float, hidden: set, ppm: float = PPM) -> np.ndarray:
+    """±ppm の窓から hidden（pool=remove の集合の drop_keys.txt）のキーの候補を除く（#116 でテストのため関数にした。
+    中身は前と同じ）。hidden は pool の key（scorer のキー）と比べるので、drop_keys に scorer のキーが要る。"""
+    idx = pool.window(target, ppm)
+    if hidden:
+        idx = idx[~np.isin(pool.key[idx], list(hidden))]
+    return idx
+
+
 # ---------------------------------------------------------------- 段 2: 採点
 class FPCache:
     """SMILES -> 選択ビットの指紋。同じ構造を何度も計算しない。"""
@@ -316,9 +325,7 @@ def run(holdout: str, stages: list[str], logits_run: str | None = None) -> dict:
     for mid in truth:
         if mid not in targets:
             continue
-        idx = pool.window(targets[mid])
-        if hidden:
-            idx = idx[~np.isin(pool.key[idx], list(hidden))]
+        idx = visible_window(pool, targets[mid], hidden)
         z = nbz_z[mid] if mid in nbz_z else zf[mid]
         rows = score_window(idx, pool, stage_z(z, zbar), fpc)
         if "sanpier" in stages:
@@ -351,9 +358,7 @@ def run(holdout: str, stages: list[str], logits_run: str | None = None) -> dict:
         pool_keys = set(pool.key) - hidden
         pcres = PC.run_holdout(holdout, {m: targets[m] for m in lists}, zf, fpc.bits, pool_keys)
         for mid in lists:
-            idx = pool.window(targets[mid])
-            if hidden:
-                idx = idx[~np.isin(pool.key[idx], list(hidden))]
+            idx = visible_window(pool, targets[mid], hidden)
             prow = [(fz, pool.smiles[i], pool.key[i]) for fz, i in dedup(score_window(idx, pool, zf[mid].astype(np.float32), fpc), pool, TOPN)]
             allr = sorted(prow + [(fz, s_, k) for s_, fz, k in (pcres.get(mid) or [])], key=lambda r: -r[0])
             out, seen = [], set()

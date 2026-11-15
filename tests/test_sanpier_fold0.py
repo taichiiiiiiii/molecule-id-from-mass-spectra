@@ -85,4 +85,11 @@ def test_kernel_files_match_generator_and_compile():
     assert sorted(keys) == sorted(mk.HOLDOUTS)
     assert {h: len(v) for h, v in keys.items()} == {"v3_c1": 200, "v3_c2": 200, "enveda_v1": 202, "v3_c2n": 200}
     if (ROOT / "data/holdouts/v3_c1/drop_keys.txt").exists():  # data/ は git に無いので CI では数だけ確かめる
-        assert keys == mk.holdout_keys()
+        cur = mk.holdout_keys()
+        for h in keys:   # #116 で drop_keys を作り直した集合は、作り直す前（manifest の added を除いたもの）と比べる
+            mp = ROOT / "data/holdouts" / h / "drop_keys_manifest.json"
+            if mp.exists():
+                added = set(json.loads(mp.read_text())["added"])
+                assert set(keys[h]) <= set(cur[h]) and not (set(keys[h]) & added)
+                cur[h] = sorted(set(cur[h]) - added)
+        assert keys == cur
