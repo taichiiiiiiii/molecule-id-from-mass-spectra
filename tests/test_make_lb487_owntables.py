@@ -263,3 +263,16 @@ def test_e_kernel_metadata(built, tmp_path):
     assert info["provisional"] is True and info["sim_sha"] == SIM_SHA
     assert json.load(open(out / "kernel-metadata.json")) == meta
     assert json.load(open(out / "notebook.ipynb")) == built[0]
+
+
+def test_f_timing_variant_differs_only_in_smoke_n(built):
+    """時間測定の版（提出しない）: 提出版との違いは凍結セル 30 の SMOKE_N だけ。slug に timing が無ければ作れない。"""
+    nb_t, meta_t, rep_t = M.build(SIM_SHA, RT_SHA, slug="casmi26-lb487-owntables-timing400", smoke_n=400)
+    fa, fb = _frozen(built[0]), _frozen(nb_t)
+    diff = [k for k, (a, b) in enumerate(zip(fa["cells"], fb["cells"])) if _src(a) != _src(b)]
+    assert diff == [30]
+    assert _src(fb["cells"][30]) == _src(fa["cells"][30]).replace("SMOKE_N = 12", "SMOKE_N = 400")
+    assert rep_t["timing_only"] is True and rep_t["smoke_n"] == 400 and "timing" in meta_t["id"]
+    assert "timing_only" not in built[2]
+    with pytest.raises(AssertionError):
+        M.build(SIM_SHA, RT_SHA, smoke_n=400)
