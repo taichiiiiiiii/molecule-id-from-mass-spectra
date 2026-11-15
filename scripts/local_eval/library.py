@@ -10,6 +10,7 @@ from pathlib import Path
 
 import numpy as np
 import pandas as pd
+import pyarrow as pa
 import pyarrow.compute as pc
 import pyarrow.parquet as pq
 
@@ -35,14 +36,28 @@ def _prep(mz, it):
     return sp.prep_query(np.asarray(mz, np.float64), np.asarray(it, np.float64), c.floor, c.topk, c.power, c.ent_weight)
 
 
+REF_COLS = ["inchikey14", "ingest_lib", "ms2_mzs", "ms2_normalized_intensities"]
+
+
+def _read_rows(path: Path, keys: set, batch_size: int = 8192) -> pd.DataFrame:
+    """train.parquet の inchikey14 ∈ keys の行（REF_COLS、ファイルの順）。読み込みバッファを小さくして、バッチごとに読んで絞る（#116:
+    pq.read_table(filters=...) は最大常駐 12.5 GB だった。buffer_size=1 MiB・pre_buffer=False で約 0.8 GB）。
+    中身と順は read_table(filters=isin) と同じ（outputs の比較で確かめた）。"""
+    pf = pq.ParquetFile(path, buffer_size=1 << 20, pre_buffer=False)
+    schema = pa.schema([pf.schema_arrow.field(c) for c in REF_COLS])
+    vs = pa.array(sorted(keys), type=schema.field("inchikey14").type)
+    parts = [b.filter(pc.is_in(b.column("inchikey14"), value_set=vs))
+             for b in pf.iter_batches(batch_size=batch_size, columns=REF_COLS)]
+    return pa.Table.from_batches(parts, schema=schema).to_pandas()
+
+
 def load_refs(holdout: str, keys: set, cache: Path) -> dict:
     """keys の構造の参照スペクトル（隠す規則を適用済み）。key -> [(mz, p), ...]。cache に保存して再利用。"""
     if cache.is_file():
         df = pd.read_parquet(cache)
     else:
         rule, drop = hide_rule(holdout), drop_keys(holdout)
-        t = pq.read_table(ROOT / "data/train.parquet", columns=["inchikey14", "ingest_lib", "ms2_mzs", "ms2_normalized_intensities"],
-                          filters=pc.field("inchikey14").isin(sorted(keys))).to_pandas()
+        t = _read_rows(ROOT / "data/train.parquet", keys)
         hid = t.inchikey14.isin(drop)
         if rule["rule"] == "enveda_libs":
             hid &= t.ingest_lib.isin(ENVEDA)
