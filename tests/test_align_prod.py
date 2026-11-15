@@ -445,7 +445,7 @@ def test_own_heavy_jobs_ignores_shell_and_time_wrappers(monkeypatch):
 
 
 def test_atomic_save_and_trim_log(tmp_path):
-    import torch
+    torch = pytest.importorskip("torch")
     p = tmp_path / "state.pt"
     T.atomic_torch_save({"a": torch.zeros(2)}, p)
     T.atomic_torch_save({"a": torch.ones(2)}, p)
