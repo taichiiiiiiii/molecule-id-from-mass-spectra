@@ -11,6 +11,10 @@
 採否（文書 §(e) で事前固定、#48 の judge とは勝ちの条件が違う）: 4 集合すべてで下限 ≥ −0.02、かつ **v3_c1** の下限 > 0。
 v3_c2 は ≥ −0.02 の確認にだけ使う。必須の集合が 1 つでも欠けたら採用しない。
 
+blind 対照（#109、2026-11-15 事前登録。judge には使わない）: submission_score+alignblind+prior+frag.csv があれば、
+Δs = full − blind の bootstrap_diff（2,000 回、seed 0）と参考の blind − 対照 を json の blind 節に書く。
+v3_c1 の Δs の下限 > 0 のときだけ「スペクトル由来の情報を含む」（0.487 系統の診断提出に進める）。v3_c1 が無ければ進まない。
+
     .venv/bin/python scripts/cv/align_v3_check.py [--out outputs/local_eval/align_v3_check.json]
 """
 from __future__ import annotations
@@ -31,6 +35,7 @@ REQUIRED = ("v3_c1", "v3_c2", "enveda_v1", "v3_c2n")
 WIN = "v3_c1"
 NEW_TAG = "score+align+prior+frag"
 CTRL_TAG = "score+prior+frag"
+BLIND_TAG = "score+alignblind+prior+frag"   # #109 blind 対照（2026-11-15 事前登録）。judge には使わない
 
 
 def judge(diffs: dict[str, dict]) -> dict:
@@ -42,6 +47,23 @@ def judge(diffs: dict[str, dict]) -> dict:
     return dict(adopt=bool(adopt), missing=missing, failing=failing, v3_c1_lo_gt_0=bool(win), noninf=NONINF)
 
 
+def g_blind_info(src: Path | None = None) -> dict:
+    """b を作った本数と ‖b‖（train_report.json の blind 節）。無ければ missing。"""
+    p = Path(src or ROOT / "outputs/align_train") / "train_report.json"
+    if not p.exists():
+        return {"missing": True}
+    return json.loads(p.read_text()).get("blind") or {"missing": True}
+
+
+def blind_reading(blind_diffs: dict[str, dict]) -> dict:
+    """blind_diffs[h] = bootstrap_diff(full, blind)。v3_c1 の下限 > 0 のときだけ「スペクトル由来の情報を含む」。
+    v3_c1 が無い（測れない）ときは下限 ≤ 0 と同じ扱い。0.487 系統への診断提出に進めるのは spectral のときだけ。"""
+    missing = [h for h in REQUIRED if h not in blind_diffs]
+    spectral = WIN in blind_diffs and blind_diffs[WIN]["lo"] > 0
+    return dict(spectral=bool(spectral), proceed_to_0487_diagnostic=bool(spectral), missing=missing,
+                note="伸びはスペクトル由来の情報を含む" if spectral else "伸びはスペクトル由来と言えない")
+
+
 def main() -> None:
     import mrr25
     from train_eval import bootstrap_diff
@@ -50,6 +72,8 @@ def main() -> None:
     ap.add_argument("--out", default=str(ROOT / "outputs/local_eval/align_v3_check.json"))
     args = ap.parse_args()
     res: dict[str, dict] = {}
+    blind: dict[str, dict] = {}
+    blind_ref: dict[str, dict] = {}
     for h in REQUIRED:
         truth_p = ROOT / f"outputs/holdouts/{h}/truth.csv"
         new_p = ROOT / f"outputs/local_eval/{h}/submission_{NEW_TAG}.csv"
@@ -64,8 +88,21 @@ def main() -> None:
         d.update(n=len(a), new=round(sum(a.values()) / len(a), 4), ctrl=round(sum(b.values()) / len(b), 4))
         res[h] = d
         print(h, d)
-    out = dict(new=NEW_TAG, ctrl=CTRL_TAG, diffs=res, judge=judge(res))
+        bl_p = ROOT / f"outputs/local_eval/{h}/submission_{BLIND_TAG}.csv"
+        if bl_p.exists():
+            c = per_molecule_rr(truth, mrr25.read_submission(bl_p))
+            ds = bootstrap_diff(a, c)
+            ds.update(n=len(c), full=d["new"], blind=round(sum(c.values()) / len(c), 4))
+            blind[h] = ds
+            blind_ref[h] = bootstrap_diff(c, b)
+            print(h, "full-blind", ds)
+        else:
+            print(f"[warn] {h}: blind の CSV が無い（{bl_p}）")
+    out = dict(new=NEW_TAG, ctrl=CTRL_TAG, diffs=res, judge=judge(res),
+               blind=dict(tag=BLIND_TAG, full_minus_blind=blind, blind_minus_ctrl_reference=blind_ref,
+                          reading=blind_reading(blind), g_blind=g_blind_info()))
     print(json.dumps(out["judge"], ensure_ascii=False))
+    print(json.dumps(out["blind"]["reading"], ensure_ascii=False))
     Path(args.out).write_text(json.dumps(out, ensure_ascii=False, indent=2))
 
 

@@ -420,6 +420,21 @@ def test_train_end_to_end_resume_and_rule(tmp_path, monkeypatch):
     assert (tmp_path / "a/learning_curve.csv").exists() and (tmp_path / "a/model_best.pt").exists()
     cfg = json.loads((tmp_path / "a/align_config.json").read_text())
     assert cfg["weights"] == "best internal-val loss" and cfg["pool_meta_sha256"] == T.POOL_META_SHA256
+    # #109 blind 対照: b = 最良の重みでの学習スペクトル（内部検証を除く）の normalize(g) のスペクトル単位の平均
+    import torch
+    b = np.load(tmp_path / "a/g_blind.npy")
+    assert rep["blind"]["status"] == "ok" and rep["blind"]["n_spectra"] == d["n_train_spectra"] and b.shape == (T.D_SHARED,)
+    assert abs(rep["blind"]["norm"] - float(np.linalg.norm(b))) < 1e-5 and "g_blind.npy" in rep["outputs"]
+    D = T.prepare(root, root / T.DEFAULTS["embed_dir"], hk)
+    m = T.build_model(len(D["vocab"]) + 1, D["signs"], d_ms=T.D_EMB, d_mol=T.FP_BITS)
+    m.load_state_dict(torch.load(tmp_path / "a/model_best.pt")); m.eval()
+    tr = D["tr"]; ti = np.flatnonzero(~D["is_val"])
+    x = T.ShardEmb(root / T.DEFAULTS["embed_dir"], D["n_shards"]).take(tr.shard.values[ti], tr.pos.values[ti])
+    with torch.inference_mode():
+        gg = torch.nn.functional.normalize(m.encode_spectrum(
+            torch.from_numpy(x), torch.from_numpy(tr.ce.values[ti].astype(np.float32)),
+            torch.from_numpy(T.adduct_ids(tr.adduct.values[ti], D["vocab"]))).float(), dim=-1).numpy()
+    assert np.allclose(b, gg.astype(np.float64).mean(0), atol=1e-5)
     # 途中で止めて再開しても、同じ列になる
     T._PERM_CACHE.clear()
     T.train(out_dir=tmp_path / "b", max_steps=6, **kw)
@@ -455,3 +470,79 @@ def test_atomic_save_and_trim_log(tmp_path):
     assert T.trim_log(logp, 4000) == 2                       # 重複 1 行と、state より先の 1 行
     assert [json.loads(x)["step"] for x in logp.read_text().splitlines()] == [2000, 4000]
     assert T.trim_log(logp, 4000) == 0 and T.trim_log(tmp_path / "none.jsonl", 0) == 0
+
+
+# ---------------------------------------------------------------- #109 blind 対照（2026-11-15 事前登録）
+
+def test_blind_vector_is_spectrum_mean_without_renorm():
+    rng = np.random.default_rng(5)
+    g = rng.normal(size=(10, 4)); g /= np.linalg.norm(g, axis=1, keepdims=True)
+    b, n = T.blind_vector([g[:3], g[3:3], g[3:]])
+    assert n == 10 and np.allclose(b, g.mean(0)) and np.linalg.norm(b) < 1   # 平均のあと正規化しない
+    with pytest.raises(ValueError):
+        T.blind_vector([np.zeros((0, 4))])
+
+
+def test_blind_vectors_same_molecules_and_inner_product():
+    vec = {"m1": np.array([1.0, 0.0]), "m2": np.array([0.0, 1.0])}
+    b = np.array([0.2, 0.1])
+    bv = AL.blind_vectors(vec, b)
+    assert sorted(bv) == ["m1", "m2"] and all(np.allclose(v, b) for v in bv.values())
+    h = np.array([[1, 0], [0, 1], [0.6, 0.8]], np.float16)
+    assert np.allclose(AL.window_scores(np.array([0, 2]), bv["m1"], h), [0.2, 0.2], atol=1e-3)
+    for bad in (np.zeros(2), np.array([np.nan, 1.0])):
+        with pytest.raises(ValueError):
+            AL.blind_vectors(vec, bad)
+
+
+def test_run_alignblind_stage_and_exclusivity():
+    src = (ROOT / "scripts/local_eval/run.py").read_text()
+    assert 'if "alignblind" in stages:' in src and "align_blind_scores.npz" in src
+    assert "rows = sanpier_mix(rows, bscores.get(mid, {}))" in src
+    import run as R
+    R.check_stages(["score", "alignblind", "prior", "frag"])
+    for other in ("align", "pmi", "nbz", "sanpier"):
+        with pytest.raises(AssertionError):
+            R.check_stages(["score", other, "alignblind", "prior", "frag"])
+    assert "--blind" in (ROOT / "scripts/local_eval/align.py").read_text()
+
+
+def test_blind_reading_rule():
+    ok = {h: {"lo": 0.001} for h in AC.REQUIRED}
+    r = AC.blind_reading(ok)
+    assert r["spectral"] and r["proceed_to_0487_diagnostic"] and r["missing"] == []
+    assert not AC.blind_reading(dict(ok, v3_c1={"lo": 0.0}))["spectral"]          # ちょうど 0 は「言えない」
+    assert not AC.blind_reading(dict(ok, v3_c1={"lo": -0.1}, v3_c2={"lo": 0.5}))["proceed_to_0487_diagnostic"]
+    r = AC.blind_reading({h: v for h, v in ok.items() if h != "v3_c1"})
+    assert not r["spectral"] and r["missing"] == ["v3_c1"]                         # 測れない = 進まない
+    assert AC.BLIND_TAG == "score+alignblind+prior+frag"
+
+
+def test_align_v3_check_main_writes_blind_section(tmp_path, monkeypatch):
+    import mrr25
+    rr = {"ctrl": [0.0, 0.5, 1.0, 0.0], "new": [1.0, 1.0, 1.0, 0.5], "blind": [0.0, 0.5, 1.0, 0.0]}
+    for h in AC.REQUIRED:
+        (tmp_path / f"outputs/holdouts/{h}").mkdir(parents=True)
+        (tmp_path / f"outputs/holdouts/{h}/truth.csv").write_text("x")
+        d = tmp_path / f"outputs/local_eval/{h}"; d.mkdir(parents=True)
+        for tag, name in ((AC.CTRL_TAG, "ctrl"), (AC.NEW_TAG, "new"), (AC.BLIND_TAG, "blind")):
+            if h == "v3_c2n" and name == "blind":
+                continue                                                           # blind が欠けた集合
+            (d / f"submission_{tag}.csv").write_text(name)
+    (tmp_path / "outputs/align_train").mkdir(parents=True)
+    (tmp_path / "outputs/align_train/train_report.json").write_text(json.dumps({"blind": {"status": "ok", "n_spectra": 7, "norm": 0.3}}))
+    monkeypatch.setattr(AC, "ROOT", tmp_path)
+    monkeypatch.setattr(mrr25, "read_truth", lambda p: {f"m{i}": "t" for i in range(4)})
+    monkeypatch.setattr(mrr25, "read_submission", lambda p: Path(p).read_text())
+    monkeypatch.setattr(AC, "per_molecule_rr", lambda truth, pred: {f"m{i}": v for i, v in enumerate(rr[pred])})
+    out = tmp_path / "check.json"
+    monkeypatch.setattr(sys, "argv", ["align_v3_check.py", "--out", str(out)])
+    AC.main()
+    res = json.loads(out.read_text())
+    bl = res["blind"]
+    assert sorted(bl["full_minus_blind"]) == ["enveda_v1", "v3_c1", "v3_c2"]
+    assert bl["full_minus_blind"]["v3_c1"]["diff"] == 0.5 and bl["full_minus_blind"]["v3_c1"]["blind"] == 0.375
+    assert bl["blind_minus_ctrl_reference"]["v3_c1"]["diff"] == 0.0
+    assert bl["reading"]["missing"] == ["v3_c2n"] and bl["reading"]["spectral"] is True
+    assert bl["g_blind"] == {"status": "ok", "n_spectra": 7, "norm": 0.3}
+    assert res["judge"] == AC.judge(res["diffs"])                                  # judge は blind に関わらない

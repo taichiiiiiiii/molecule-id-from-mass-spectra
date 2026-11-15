@@ -9,6 +9,9 @@
 - 点 a = cos( normalize(その分子の全スペクトルの g の平均), h[候補] )（文書 §(e)）。torch も RDKit も要らない（CPU、数秒）
 - 問い合わせのスペクトルが 1 本も無い分子は点無し（NaN）→ run.py の align 段では s のまま
 - 出力: outputs/local_eval/<holdout>/align_scores.npz（mids, offsets, idx, n。sanpier.py と同じ形）と align_scores.json
+- --blind（#109 の blind 対照、2026-11-15 事前登録）: 分子ごとの g の平均の代わりに、学習スペクトルの g の平均 b
+  （align_train.py が書く g_blind.npy）を、full で点が付く分子すべてに使う。点 = <b, h[候補]>。分子・窓は full と同じ。
+  出力は align_blind_scores.npz / align_blind_scores.json
 """
 from __future__ import annotations
 
@@ -41,6 +44,14 @@ def molecule_vectors(g: np.ndarray, holdout_col, mid_col, holdout: str) -> dict[
     return vec
 
 
+def blind_vectors(vec: dict[str, np.ndarray], b: np.ndarray) -> dict[str, np.ndarray]:
+    """full で点が付く分子（vec のキー）すべてに同じ b を割り当てる（b は正規化しない。分子ごとの z 化で尺度は消える）。"""
+    b = np.asarray(b, np.float64).reshape(-1)
+    if not np.all(np.isfinite(b)) or not np.any(b):
+        raise ValueError("g_blind is not finite or all zero")
+    return {m: b for m in vec}
+
+
 def window_scores(idx: np.ndarray, v: np.ndarray | None, h_sorted) -> np.ndarray:
     """候補（ソート後の pool 行）の点。v が無ければ NaN。"""
     if v is None or len(idx) == 0:
@@ -60,6 +71,7 @@ def main() -> None:
     ap = argparse.ArgumentParser()
     ap.add_argument("--holdout", required=True)
     ap.add_argument("--src", default=str(SRC), help="casmi26-align-train の出力を置いたディレクトリ")
+    ap.add_argument("--blind", action="store_true", help="#109 blind 対照: 点を <b, h>（b = g_blind.npy）にする")
     args = ap.parse_args()
     import pandas as pd
     sys.path.insert(0, str(ROOT / "scripts/local_eval"))
@@ -87,6 +99,8 @@ def main() -> None:
     hidden = L.drop_keys(args.holdout) if rule.get("pool") == "remove" else set()
     truth = read_truth(ROOT / f"outputs/holdouts/{args.holdout}/truth.csv")
     vec = molecule_vectors(g, qi.holdout.values, qi.molecule_id.values, args.holdout)
+    if args.blind:
+        vec = blind_vectors(vec, np.load(src / "g_blind.npy"))
     per_mol, n_cand, n_nospec = {}, 0, 0
     for mid in [m for m in truth if m in targets]:
         idx = pool.window(targets[mid])
@@ -96,13 +110,16 @@ def main() -> None:
         n_nospec += v is None
         per_mol[mid] = (idx, window_scores(order[idx], v, h_pool))
         n_cand += len(idx)
-    out = ROOT / f"outputs/local_eval/{args.holdout}/align_scores.npz"
+    name = "align_blind_scores" if args.blind else "align_scores"
+    out = ROOT / f"outputs/local_eval/{args.holdout}/{name}.npz"
     out.parent.mkdir(parents=True, exist_ok=True)
     np.savez_compressed(out, **SP.pack(per_mol))
     rep = dict(holdout=args.holdout, molecules=len(per_mol), candidates=n_cand, molecules_without_spectra=n_nospec,
                query_spectra=int((qi.holdout == args.holdout).sum()), hidden_keys=len(hidden), src=str(src),
-               g_sha256=sha256(src / "g_query.npy"), secs=round(time.time() - t0, 1))
-    (out.parent / "align_scores.json").write_text(json.dumps(rep, indent=2))
+               g_sha256=sha256(src / "g_query.npy"), secs=round(time.time() - t0, 1), blind=bool(args.blind))
+    if args.blind:
+        rep["g_blind_sha256"] = sha256(src / "g_blind.npy")
+    (out.parent / f"{name}.json").write_text(json.dumps(rep, indent=2))
     print(json.dumps(rep))
 
 

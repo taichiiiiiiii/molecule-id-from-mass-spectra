@@ -14,7 +14,10 @@ casmi26-align-embed の出力）を読み、MSAlign と同じ形の MLP を**内
   ステップ番号から決まるので、途中で止めても同じ列になる）
 - 精度: MPS/CPU は fp32。CUDA のときだけ MLP を fp16 autocast＋GradScaler（Kaggle で回す場合。数値は fp32 と同じにならない）
 - 出力（--out）: model_best.pt、mol_mlp_best.pt、align_config.json、g_query.npy、query_index.parquet、h_pool.npy、
-  train_log.jsonl、learning_curve.csv（.png は matplotlib があれば）、train_report.json
+  g_blind.npy（#109 blind 対照の b）、train_log.jsonl、learning_curve.csv（.png は matplotlib があれば）、train_report.json
+- blind 対照（#109、2026-11-15 事前登録）: 学習が終わった後の出力の段で、最良の重み・評価モードで学習スペクトル
+  （内部検証を除く、keep の後）すべての normalize(encode_spectrum) のスペクトル単位の平均 b を g_blind.npy に書く。
+  学習のループ・止め方には関わらない。失敗しても学習の status は変えず、report の blind 節に error を残す
 
 torch はモジュールの先頭で import しない（CI は純粋な関数だけをテストする）。
 """
@@ -222,6 +225,21 @@ def free_gb() -> dict:
     # avail_gb = free + speculative + inactive（inactive は macOS が回収して使える）。起動・実行中の判定はこれを使う。
     # free_gb だけで判定すると、この Mac では inactive が 14〜19 GB あっても free が 1 GB 未満で常に止まる（#109、11/14 実測）
     return {"free_gb": round(fr, 2), "inactive_gb": round(ina, 2), "avail_gb": round(fr + ina, 2)}
+
+
+def blind_vector(chunks) -> tuple[np.ndarray, int]:
+    """normalize 済みの g の行のバッチの列 → スペクトル単位の平均（float64 で足す。平均のあと正規化しない）と本数。"""
+    tot, n = None, 0
+    for c in chunks:
+        c = np.asarray(c, np.float64)
+        if len(c) == 0:
+            continue
+        s = c.sum(0)
+        tot = s if tot is None else tot + s
+        n += len(c)
+    if n == 0:
+        raise ValueError("no spectra for the blind vector")
+    return tot / n, n
 
 
 def unpack_bits_np(packed: np.ndarray, nbits: int = FP_BITS) -> np.ndarray:
@@ -620,6 +638,23 @@ def train(root=".", embed_dir=None, out_dir=None, holdout_keys=None, device="aut
                 h = model.encode_molecule(mols_for(rows).float()).float()
                 hp[rows] = torch.nn.functional.normalize(h, dim=-1).cpu().numpy()
             hp.flush(); del hp
+            # #109 blind 対照の b（学習スペクトル = tr_i、内部検証を除く。スペクトル単位の平均）
+            try:
+                tb = time.time()
+
+                def g_train_chunks():
+                    for i in range(0, len(tr_i), 4096):
+                        sl = tr_i[i:i + 4096]
+                        gx = model.encode_spectrum(torch.from_numpy(emb.take(shard[sl], posv[sl])).to(dev),
+                                                   torch.from_numpy(ce[sl]).to(dev), torch.from_numpy(aid[sl]).to(dev))
+                        yield torch.nn.functional.normalize(gx.float(), dim=-1).cpu().numpy()
+
+                b, nb = blind_vector(g_train_chunks())
+                np.save(out / "g_blind.npy", b.astype(np.float32))
+                rep["blind"] = {"status": "ok", "n_spectra": int(nb), "norm": float(np.linalg.norm(b)),
+                                "seconds": round(time.time() - tb, 1)}
+            except Exception as e:  # noqa: BLE001  学習の結果は残す（b は model_best.pt から作り直せる）
+                rep["blind"] = {"status": "error", "error": f"{type(e).__name__}: {e}"}
         log = [json.loads(x) for x in logp.read_text().splitlines() if x.strip()]
         pd.DataFrame([{k: r[k] for k in ("step", "train_loss", "val_loss", "lr")} for r in log]).to_csv(
             out / "learning_curve.csv", index=False)
