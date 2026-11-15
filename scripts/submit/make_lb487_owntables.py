@@ -226,7 +226,7 @@ def split_frozen(c12: str) -> tuple[int, int, bytes]:
 
 
 def build(sim_sha: str, rt_sha: str, sim_rel: str = "own_sim_rank_rows.npz", rt_rel: str = "own_rank_train.npz",
-          slug: str = "casmi26-lb487-owntables") -> tuple[dict, dict, dict]:
+          slug: str = "casmi26-lb487-owntables", smoke_n: int | None = None) -> tuple[dict, dict, dict]:
     """(notebook, kernel-metadata, build_info) を返す。ファイルには書かない。"""
     check_args(sim_sha, rt_sha, sim_rel, rt_rel)
     raw_nb = (SRC / SRC_NB).read_bytes()
@@ -239,11 +239,18 @@ def build(sim_sha: str, rt_sha: str, sim_rel: str = "own_sim_rank_rows.npz", rt_
     assert f"FROZEN_SHA256 = '{old_sha}'" in c12
     frozen0 = json.loads(raw)
     frozen, changed = patch_frozen(json.loads(raw), sim_sha, rt_sha, sim_rel, rt_rel)
+    # 時間を測るだけの版（提出しない）: 凍結セル 30 の SMOKE_N を変え、commit で見える test の先頭 smoke_n 分子を通す
+    timing_cells = set()
+    if smoke_n is not None:
+        assert smoke_n > 12 and "timing" in slug, "時間測定の版は slug に timing を入れる（提出用の slug と分ける）"
+        c30 = "".join(frozen["cells"][30]["source"])
+        frozen["cells"][30]["source"] = replace_once(c30, "SMOKE_N = 12", f"SMOKE_N = {int(smoke_n)}", "smoke n")
+        timing_cells.add(30)
     # 変更セル以外は sha256 で一致、全セル compile
     assert len(frozen["cells"]) == len(frozen0["cells"]) == FROZEN_CELLS
     for k, (a, b) in enumerate(zip(frozen0["cells"], frozen["cells"])):
         ha = hashlib.sha256("".join(a["source"]).encode()).hexdigest(); hb = hashlib.sha256("".join(b["source"]).encode()).hexdigest()
-        assert (ha == hb) == (k != changed), k
+        assert (ha == hb) == (k != changed and k not in timing_cells), k
         if b["cell_type"] == "code":
             compile("".join(b["source"]), f"frozen_{k}", "exec")
     new_raw = json.dumps(frozen, ensure_ascii=False).encode()
@@ -274,6 +281,8 @@ def build(sim_sha: str, rt_sha: str, sim_rel: str = "own_sim_rank_rows.npz", rt_
     rep = dict(frozen_sha_old=old_sha, frozen_sha_new=new_sha, changed_frozen_cell=changed,
                changed_outer_cells=list(CHANGED_OUTER), changed_metadata=meta_changed,
                sim_rel=sim_rel, sim_sha=sim_sha, rt_rel=rt_rel, rt_sha=rt_sha, dataset_sources=meta["dataset_sources"])
+    if smoke_n is not None:
+        rep.update(timing_only=True, smoke_n=int(smoke_n), do_not_submit="時間測定の版。提出しない（凍結セル 30 が提出版と違う）")
     return nb, meta, rep
 
 
@@ -299,8 +308,9 @@ def main() -> None:
     ap.add_argument("--slug", default="casmi26-lb487-owntables")
     ap.add_argument("--out-dir", default=str(ROOT / "kernels" / "lb487_owntables"))
     ap.add_argument("--provisional", action="store_true", help="仮の sha256 で作る（kernels/ の下には書けない）")
+    ap.add_argument("--smoke-n", type=int, default=None, help="時間測定の版: commit で通す分子数（提出しない。slug に timing が要る）")
     args = ap.parse_args()
-    nb, meta, rep = build(args.sim_sha, args.rt_sha, args.sim_rel, args.rt_rel, args.slug)
+    nb, meta, rep = build(args.sim_sha, args.rt_sha, args.sim_rel, args.rt_rel, args.slug, args.smoke_n)
     out = write(Path(args.out_dir), nb, meta, rep, args.provisional)
     print(json.dumps(dict(rep, out_dir=str(out), provisional=args.provisional), indent=1))
 
