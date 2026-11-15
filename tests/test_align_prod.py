@@ -559,3 +559,42 @@ def test_align_v3_check_main_writes_blind_section(tmp_path, monkeypatch):
     assert bl["reading"]["missing"] == ["v3_c2n"] and bl["reading"]["spectral"] is True
     assert bl["g_blind"] == {"status": "ok", "n_spectra": 7, "norm": 0.3}
     assert res["judge"] == AC.judge(res["diffs"])                                  # judge は blind に関わらない
+
+
+# ---------------------------------------------------------------- 形の決まった候補の行（MPS の確保の増加を抑える、11/15）
+
+def test_padded_layout_matches_masked_rows():
+    rng = np.random.default_rng(7)
+    mask = rng.random((5, 6)) < 0.5; mask[:, 0] = True
+    cand = rng.integers(1, 100, (5, 6))
+    rows, owner, slot = T.padded_layout(cand, mask, pad_to=8)
+    n = int(mask.sum())
+    assert len(rows) % 8 == 0 and len(rows) >= n and len(rows) - n < 8
+    assert (rows[:n] == cand[mask]).all() and (owner[:n] == np.nonzero(mask)[0]).all()
+    assert (slot[:n] == np.flatnonzero(mask.reshape(-1))).all()
+    assert (rows[n:] == 0).all() and (owner[n:] == 0).all() and (slot[n:] == mask.size).all()
+    assert len(T.padded_layout(cand, np.zeros_like(mask), pad_to=8)[0]) == 8      # 最低 1 区切り
+
+
+def test_forward_padded_equals_forward_values_and_grads():
+    torch = pytest.importorskip("torch")
+    torch.manual_seed(0)
+    m = T.build_model(4, [1, -1, 0, 0], d_ms=16, d_mol=40).eval()       # eval: dropout 無しで両経路を比べる
+    rng = np.random.default_rng(1)
+    mask = rng.random((3, 5)) < 0.6; mask[:, 0] = True
+    cand = rng.integers(0, 30, (3, 5))
+    bits = torch.rand(30, 40)
+    x, ce, ad = torch.rand(3, 16), torch.tensor([20.0, float("nan"), 35.0]), torch.tensor([0, 3, 1])
+    tgt = torch.zeros(3, dtype=torch.long)
+    s1 = m(x, ce, ad, bits[torch.from_numpy(cand[mask])], torch.from_numpy(mask))
+    l1 = torch.nn.functional.cross_entropy(s1, tgt); l1.backward()
+    g1 = {n: p.grad.clone() for n, p in m.named_parameters() if p.grad is not None}
+    m.zero_grad()
+    rows, own, slt = T.padded_layout(cand, mask, pad_to=8)
+    s2 = m.forward_padded(x, ce, ad, bits[torch.from_numpy(rows)], torch.from_numpy(own), torch.from_numpy(slt), mask.shape)
+    l2 = torch.nn.functional.cross_entropy(s2, tgt); l2.backward()
+    assert torch.equal(torch.isinf(s1), torch.isinf(s2)) and torch.allclose(s1[torch.from_numpy(mask)], s2[torch.from_numpy(mask)], atol=1e-6)
+    assert abs(l1.item() - l2.item()) < 1e-6
+    for n, p in m.named_parameters():
+        if n in g1:
+            assert torch.allclose(g1[n], p.grad, atol=1e-6), n

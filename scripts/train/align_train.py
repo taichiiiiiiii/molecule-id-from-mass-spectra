@@ -58,6 +58,7 @@ N_QUERY = 4_756
 LOG_EVERY = 100
 NUMERICS_NOTE = {"cuda": "MLP trained with torch.autocast(fp16) + GradScaler; numerics differ from fp32.",
                  "mps": "fp32 on Apple MPS.", "cpu": "fp32 on CPU."}
+PAD_ROWS = 2_048   # 実装の定数（モデル・学習の定義ではない）: 候補の行数をこの倍数に詰めて MPS の形の数を抑える（#109、11/15）
 MIN_RUN_FREE_GB = 2.0      # 学習中に空き（free+speculative）がこれを下回ったら state を書いて止める
 ADDUCT_ALIASES = {"[M+CH3COO]-": "[M+CH3COOH-H]-", "[M+FA-H]-": "[M+HCOOH-H]-", "[M+HCOO]-": "[M+HCOOH-H]-"}
 
@@ -129,6 +130,20 @@ def sample_candidates(rng: np.random.Generator, pos: np.ndarray, csr_id: np.ndar
         cand[i, 1:1 + m] = sel
         mask[i, 1:1 + m] = True
     return cand, mask
+
+
+def padded_layout(cand: np.ndarray, mask: np.ndarray, pad_to: int = PAD_ROWS):
+    """有効な候補（mask True）を行に並べ、PAD_ROWS の倍数まで詰め物を足す（MPS は形が変わるたびに確保が増えるため、
+    11/15 実測: 有効数が毎ステップ変わると driver の確保が約 0.19 GiB/ステップ増え、固定なら横ばい）。
+    返り値: rows（pool の行。詰め物は 0）、owner（スペクトルの番号。詰め物は 0）、slot（b*K + k。詰め物は b*K の外の 1 つ）。
+    有効な行の並びは cand[mask] と同じ（行優先）。"""
+    b, k = mask.shape
+    vi, vk = np.nonzero(mask)
+    n = len(vi)
+    p = max(pad_to, -(-n // pad_to) * pad_to)
+    rows = np.zeros(p, np.int64); owner = np.zeros(p, np.int64); slot = np.full(p, b * k, np.int64)
+    rows[:n] = cand[vi, vk]; owner[:n] = vi; slot[:n] = vi * k + vk
+    return rows, owner, slot
 
 
 _PERM_CACHE: dict = {}
@@ -339,6 +354,17 @@ def build_model(n_adducts: int, adduct_signs, d_ms: int = D_EMB, d_mol: int = FP
             scores[mask] = ((g[vi[:, 0]] * h).sum(-1) / self.log_temperature.exp()).float()
             return scores.masked_fill(~mask, float("-inf"))
 
+        def forward_padded(self, x, ce, adduct, mols, owner, slot, shape):
+            """forward と同じ点（有効な候補は同じ値、ほかは -inf）を、形の決まった（PAD_ROWS の倍数の）行で計算する。
+            mols・owner・slot は padded_layout の順。詰め物の行は b*K の外の 1 つの枠に書かれ、捨てられる。"""
+            b, k = shape
+            g = nn.functional.normalize(self.encode_spectrum(x, ce, adduct), dim=-1)
+            h = nn.functional.normalize(self.encode_molecule(mols), dim=-1)
+            vals = ((g[owner] * h).sum(-1) / self.log_temperature.exp()).float()
+            flat = torch.full((b * k + 1,), float("-inf"), dtype=torch.float32, device=x.device)
+            flat = flat.index_put((slot,), vals)
+            return flat[:b * k].view(b, k)
+
     return Align()
 
 
@@ -544,9 +570,10 @@ def train(root=".", embed_dir=None, out_dir=None, holdout_keys=None, device="aut
                 for i in range(0, len(va_i), BATCH):
                     sl = slice(i, i + BATCH)
                     m = va_mask[sl]
-                    sc = model(torch.from_numpy(va_emb[sl]).to(dev), torch.from_numpy(ce[va_i[sl]]).to(dev),
-                               torch.from_numpy(aid[va_i[sl]]).to(dev), mols_for(va_cand[sl][m]).float(),
-                               torch.from_numpy(m).to(dev))
+                    rows, own, slt = padded_layout(va_cand[sl], m, PAD_ROWS)
+                    sc = model.forward_padded(torch.from_numpy(va_emb[sl]).to(dev), torch.from_numpy(ce[va_i[sl]]).to(dev),
+                                              torch.from_numpy(aid[va_i[sl]]).to(dev), mols_for(rows).float(),
+                                              torch.from_numpy(own).to(dev), torch.from_numpy(slt).to(dev), m.shape)
                     l = torch.nn.functional.cross_entropy(sc.float(), torch.zeros(len(m), dtype=torch.long, device=dev),
                                                           reduction="sum")
                     tot += float(l); n += len(m)
@@ -568,10 +595,11 @@ def train(root=".", embed_dir=None, out_dir=None, holdout_keys=None, device="aut
             cand, mask = sample_candidates(step_rng(step), D["pos_row"][bi], D["cid_tr"][li],
                                            D["off_tr"], D["flat_tr"], K_CAND)
             x = torch.from_numpy(emb.take(shard[bi], posv[bi])).to(dev)
-            m_d = torch.from_numpy(mask).to(dev)
+            rows, own, slt = padded_layout(cand, mask, PAD_ROWS)
             with torch.autocast("cuda", dtype=torch.float16, enabled=amp):
-                scores = model(x, torch.from_numpy(ce[bi]).to(dev), torch.from_numpy(aid[bi]).to(dev),
-                               mols_for(cand[mask]), m_d)
+                scores = model.forward_padded(x, torch.from_numpy(ce[bi]).to(dev), torch.from_numpy(aid[bi]).to(dev),
+                                              mols_for(rows), torch.from_numpy(own).to(dev), torch.from_numpy(slt).to(dev),
+                                              mask.shape)
             loss = torch.nn.functional.cross_entropy(scores.float(), torch.zeros(len(bi), dtype=torch.long, device=dev))
             opt.zero_grad(set_to_none=True)
             scaler.scale(loss).backward()
