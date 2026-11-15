@@ -5,12 +5,15 @@
 段（それぞれ別のプロセスで動かし、`/usr/bin/time -l` で peak RSS を測る）:
 
   count   : #109 と同じ DROP・内部検証で学習の正解構造と ±10 ppm 窓の負例を作り、和集合の構造数を数える。
+            負例は 2 通り: design = train 由来の構造（train_structs のキー）だけ（#120 レビュー 1 回目 major の直し、
+            train とプールの非対称の近道を断つ）、allpool = #109 と同じ使えるプール全体（参考、保守的な判定に使う）。
             seed 0 で正解構造から 1,000 構造の切片を選び、切片の窓の負例と一緒に書く（slice.npz）
   frag    : 切片の 1,000 構造（a）と、その窓の負例すべて（b）の断片を、既存の frag_rescore.fragment_levels で
             列挙する（コードは変えない）。秒/構造とバイト/構造（frag_a.npz / frag_b.npz）
   spectra : train.parquet を row group ごとに 1 回読み、切片のスペクトルの強度の上位 32 本を取る（spectra.npz）
-  step    : 切片の実際のスペクトル・実際の窓の負例で、batch 128 × 候補 128 の 1 ステップ（CPU の特徴作り＋MPS の
-            順・逆伝播）を空回し 5 回のあと 50 回測る。順伝播だけの秒/バッチも測る
+  step    : 切片の実際のスペクトル・実際の窓の負例（design と allpool の 2 通り）で、batch 128 × 候補 128 の
+            1 ステップ（CPU の特徴作り＋MPS の順・逆伝播。組の数は #109 の padded_layout と同じく PAD_ROWS の倍数に
+            詰める）を空回し 5 回のあと 50 回測る。順伝播だけの秒/バッチも測る
   report  : 外挿の式（#120）で合計の時間を出し、64 時間で判定する（bench_report.json）
 
 純粋な関数（CI でテストする）は torch・rdkit を import しない。numba の関数は cache=False（キャッシュを書かない）。
@@ -49,6 +52,9 @@ EXPECTED_VAL_STRUCTS = 4_383
 EXPECTED_POOL_ALLOWED = 655_670
 EXPECTED_DROP = 55_369
 EXPECTED_DROP_KEY = 55_038
+EXPECTED_TRAIN_SPECTRA = 1_942_968
+PAD_ROWS = 2_048                           # #109 と同じ実装の定数（MPS の形の数を抑える。モデルの定義ではない）
+HOLDOUTS = ("v3_c1", "v3_c2", "enveda_v1", "v3_c2n")
 PPM = 10.0
 VAL_FRAC, VAL_SEED = 0.02, 0
 H = 1.00782503207
@@ -115,6 +121,11 @@ def sample_candidates(rng, pos, csr_id, offsets, flat, k: int = K_CAND):
         cand[i, 1:1 + m] = sel
         mask[i, 1:1 + m] = True
     return cand, mask
+
+
+def padded_pairs(n: int, pad_to: int = PAD_ROWS) -> int:
+    """組の数 n を pad_to の倍数（最低 pad_to）に切り上げる（#109 padded_layout と同じ考え方）。"""
+    return max(pad_to, -(-n // pad_to) * pad_to)
 
 
 def union_count(pos_rows, flat) -> int:
@@ -300,14 +311,17 @@ def pack_spectra(rows: list) -> dict:
 
 def extrapolate(n_union: int, sec_per_struct: float, sec_spectra: float, sec_per_step: float, sec_fwd_batch: float,
                 steps: int = STEPS_JUDGE, n_val: int = N_VAL_SPECTRA, eval_every: int = EVAL_EVERY,
-                limit_h: float = LIMIT_HOURS) -> dict:
-    """#120 の外挿の式。前計算 = N_union × 秒/構造、読み込み = 1 回、学習 = steps × 秒/ステップ、
-    評価 = (steps / eval_every) × ceil(n_val / BATCH) × 順伝播の秒/バッチ。合計 ≤ limit_h → 本番へ。"""
+                limit_h: float = LIMIT_HOURS, sec_pack_per_spectrum: float = 0.0,
+                n_spectra: int = EXPECTED_TRAIN_SPECTRA + N_VAL_SPECTRA) -> dict:
+    """#120 の外挿の式。前計算 = N_union × 秒/構造、読み込み = 1 回の全体の読み込み ＋ 1 本の詰めの秒 × 全スペクトル数、
+    学習 = steps × 秒/ステップ、評価 = (steps / eval_every) × ceil(n_val / BATCH) × 順伝播の秒/バッチ。
+    合計 ≤ limit_h → 本番へ。"""
     pre = n_union * sec_per_struct
+    spec = sec_spectra + sec_pack_per_spectrum * n_spectra
     tr = steps * sec_per_step
     ev = (steps // eval_every) * math.ceil(n_val / BATCH) * sec_fwd_batch
-    tot = pre + sec_spectra + tr + ev
-    return dict(steps=steps, precompute_h=pre / 3600, spectra_h=sec_spectra / 3600, train_h=tr / 3600,
+    tot = pre + spec + tr + ev
+    return dict(steps=steps, n_union=n_union, precompute_h=pre / 3600, spectra_h=spec / 3600, train_h=tr / 3600,
                 eval_h=ev / 3600, total_h=tot / 3600, limit_h=limit_h,
                 verdict="本番へ" if tot / 3600 <= limit_h else "減らす案へ")
 
@@ -363,6 +377,12 @@ def phase_count(root: Path, out: Path) -> dict:
     assert len(drop_key) == EXPECTED_DROP_KEY, len(drop_key)
     allowed = ~meta.key.isin(drop_key).values
     assert int(allowed.sum()) == EXPECTED_POOL_ALLOWED, int(allowed.sum())
+    # #117 で作り直した 4 集合の drop_keys（正準キー＋別名）がすべて DROP ∪ DROP_KEY に入っていること
+    h117 = {h: set((root / f"data/holdouts/{h}/drop_keys.txt").read_text().split()) for h in HOLDOUTS}
+    h117_missing = {h: len(ks - drop_key - drop_raw) for h, ks in h117.items()}
+    assert all(v == 0 for v in h117_missing.values()), h117_missing
+    train_key = set(ts.key.values)
+    is_trainstruct = meta.key.isin(train_key).values
     erep = json.loads((P["embed"] / "embed_report.json").read_text())
     tr = []
     for k in range(erep["n_shards"]):
@@ -379,19 +399,31 @@ def phase_count(root: Path, out: Path) -> dict:
     val_rows = meta.key.isin(val_keys).values
     up_tr = np.unique(pos_row[~is_val]); up_va = np.unique(pos_row[is_val])
     assert len(up_tr) == EXPECTED_TRAIN_STRUCTS and len(up_va) == EXPECTED_VAL_STRUCTS, (len(up_tr), len(up_va))
-    off_tr, flat_tr = negative_csr(up_tr, meta.mass.values.astype(np.float64), allowed & ~val_rows)
-    off_va, flat_va = negative_csr(up_va, meta.mass.values.astype(np.float64), allowed)
+    assert int((~is_val).sum()) == EXPECTED_TRAIN_SPECTRA and int(is_val.sum()) == N_VAL_SPECTRA, \
+        (int((~is_val).sum()), int(is_val.sum()))
+    mass = meta.mass.values.astype(np.float64)
+    # allpool（#109 と同じ）と design（train 由来の構造だけ）
+    off_tr, flat_tr = negative_csr(up_tr, mass, allowed & ~val_rows)
+    off_va, flat_va = negative_csr(up_va, mass, allowed)
+    doff_tr, dflat_tr = negative_csr(up_tr, mass, allowed & ~val_rows & is_trainstruct)
+    doff_va, dflat_va = negative_csr(up_va, mass, allowed & is_trainstruct)
     leak = sf.leak_audit(set(tr.inchikey14), zip(split.inchikey14, split.fold), hk)
     leak_key = sf.leak_audit(set(tr.key), zip(split.key, split.fold), hk)
     leak_all = dict(raw=leak["total"], key=leak_key["total"],
                     neg_in_drop=int(pd.Series(meta.key.values[np.concatenate([flat_tr, flat_va])]).isin(drop_key).sum()),
-                    pos_in_drop=int(tr.key.isin(drop_key).sum()), train_neg_in_val=int(val_rows[flat_tr].sum()))
+                    pos_in_drop=int(tr.key.isin(drop_key).sum()), train_neg_in_val=int(val_rows[flat_tr].sum()),
+                    design_neg_not_trainstruct=int((~is_trainstruct[np.concatenate([dflat_tr, dflat_va])]).sum()))
     assert all(v == 0 for v in leak_all.values()), leak_all
     n_union = union_count(up_tr, flat_tr)
     n_union_val = union_count(np.concatenate([up_tr, up_va]), np.concatenate([flat_tr, flat_va]))
-    neg_len = np.diff(off_tr)
+    dn_union = union_count(up_tr, dflat_tr)
+    dn_union_val = union_count(np.concatenate([up_tr, up_va]), np.concatenate([dflat_tr, dflat_va]))
+    neg_len = np.diff(off_tr); dneg_len = np.diff(doff_tr)
     form = meta.formula.values
-    same = np.array([int((form[flat_tr[off_tr[i]:off_tr[i + 1]]] == form[up_tr[i]]).sum()) for i in range(len(up_tr))])
+
+    def same_formula(off, flat):
+        return np.array([int((form[flat[off[i]:off[i + 1]]] == form[up_tr[i]]).sum()) for i in range(len(up_tr))])
+    same, dsame = same_formula(off_tr, flat_tr), same_formula(doff_tr, dflat_tr)
     # 切片: 学習の正解構造（内部検証を除く）の正準キーから seed 0 で 1,000
     tr_keys = meta.key.values[up_tr]
     sl_keys = select_slice(tr_keys)
@@ -400,17 +432,27 @@ def phase_count(root: Path, out: Path) -> dict:
     assert np.all(up_tr[ci] == sl_rows)
     sl_off = np.concatenate([[0], np.cumsum(neg_len[ci])])
     sl_flat = np.concatenate([flat_tr[off_tr[i]:off_tr[i + 1]] for i in ci])
+    dsl_off = np.concatenate([[0], np.cumsum(dneg_len[ci])])
+    dsl_flat = np.concatenate([dflat_tr[doff_tr[i]:doff_tr[i + 1]] for i in ci])
+    assert np.isin(dsl_flat, sl_flat).all()   # design の負例は allpool の負例の部分集合
     sl_neg_u = np.setdiff1d(np.unique(sl_flat), sl_rows)
     spec_sel = tr[~is_val & np.isin(pos_row, sl_rows)]
     np.savez(out / "slice.npz", sl_rows=sl_rows, sl_off=sl_off, sl_flat=sl_flat, sl_neg_u=sl_neg_u,
+             dsl_off=dsl_off, dsl_flat=dsl_flat,
              spec_train_row=spec_sel.row.values.astype(np.int64),
              spec_pool_row=np.array([key_to_row[k] for k in spec_sel.key.values], np.int64),
              spec_ik=spec_sel.inchikey14.values.astype(str))
     rep = dict(n_train_spectra=int((~is_val).sum()), n_val_spectra=int(is_val.sum()), n_train_structs=len(up_tr),
                n_val_structs=len(up_va), drop=len(drop_raw), drop_key=len(drop_key), pool_allowed=int(allowed.sum()),
-               n_union=n_union, n_union_val=n_union_val, neg_median=float(np.median(neg_len)),
-               neg_zero=int((neg_len == 0).sum()), same_formula_neg_median=float(np.median(same)),
-               same_formula_neg_share=float(same.sum() / max(1, neg_len.sum())), leak=leak_all,
+               h117_missing=h117_missing, pool_trainstruct_rows=int(is_trainstruct.sum()),
+               pool_allowed_trainstruct=int((allowed & is_trainstruct).sum()),
+               allpool=dict(n_union=n_union, n_union_val=n_union_val, neg_median=float(np.median(neg_len)),
+                            neg_zero=int((neg_len == 0).sum()), same_formula_neg_median=float(np.median(same)),
+                            same_formula_neg_share=float(same.sum() / max(1, neg_len.sum()))),
+               design=dict(n_union=dn_union, n_union_val=dn_union_val, neg_median=float(np.median(dneg_len)),
+                           neg_zero=int((dneg_len == 0).sum()), same_formula_neg_median=float(np.median(dsame)),
+                           same_formula_neg_share=float(dsame.sum() / max(1, dneg_len.sum()))),
+               leak=leak_all,
                slice_structs=len(sl_rows), slice_neg_unique=len(sl_neg_u), slice_spectra=len(spec_sel),
                seconds=round(time.time() - t0, 1))
     return rep
@@ -476,12 +518,16 @@ def phase_spectra(root: Path, out: Path) -> dict:
     assert not miss, miss[:5]
     bad_ik = sum(got[int(r)]["ik"] != ik for r, ik in zip(order, s["spec_ik"]))
     assert bad_ik == 0, bad_ik
+    t1 = time.time()
     pk = pack_spectra([got[int(r)] for r in order])
+    sec_pack = time.time() - t1
     np.savez(out / "spectra.npz", **pk)
-    return dict(seconds=round(sec, 1), n_rows_scanned=base, n_spectra=len(order), peaks_median=float(np.median(pk["n"])))
+    return dict(seconds=round(sec, 1), n_rows_scanned=base, n_spectra=len(order), peaks_median=float(np.median(pk["n"])),
+                pack_seconds=round(sec_pack, 3), sec_pack_per_spectrum=sec_pack / max(1, len(order)))
 
 
-def phase_step(root: Path, out: Path, steps: int = 50, warm: int = 5, fwd_batches: int = 20, device: str = "mps") -> dict:
+def phase_step(root: Path, out: Path, steps: int = 50, warm: int = 5, fwd_batches: int = 20, device: str = "mps",
+               negs: str = "design") -> dict:
     import torch
     torch.manual_seed(SEED)
     s = np.load(out / "slice.npz"); sp = dict(np.load(out / "spectra.npz"))
@@ -494,8 +540,9 @@ def phase_step(root: Path, out: Path, steps: int = 50, warm: int = 5, fwd_batche
     sl_idx = {int(r): i for i, r in enumerate(sl_rows)}
     spec_csr = np.array([sl_idx[int(r)] for r in s["spec_pool_row"]], np.int64)
     pos_struct = np.array([struct_of_row[int(r)] for r in s["spec_pool_row"]], np.int64)
-    flat_struct = np.array([struct_of_row[int(r)] for r in s["sl_flat"]], np.int64)
-    sl_off = s["sl_off"]
+    pre = "dsl_" if negs == "design" else "sl_"
+    flat_struct = np.array([struct_of_row[int(r)] for r in s[pre + "flat"]], np.int64)
+    sl_off = s[pre + "off"]
     dev = torch.device(device)
     model = build_model().to(dev)
     opt = torch.optim.AdamW(model.parameters(), lr=LR, weight_decay=WD)
@@ -507,10 +554,16 @@ def phase_step(root: Path, out: Path, steps: int = 50, warm: int = 5, fwd_batche
         bi = np.random.default_rng([SEED, 0, step]).choice(n_spec, size=BATCH, replace=False)
         cand, mask = sample_candidates(rng, pos_struct[bi], spec_csr[bi], sl_off, flat_struct)
         vi, vk = np.nonzero(mask)
+        n = len(vi)
         t = time.time()
-        feats, fs = batch_features(masses, off, cand[vi, vk], bi[vi], sp)
+        f0, fs0 = batch_features(masses, off, cand[vi, vk], bi[vi], sp)
         tf = time.time() - t
-        return bi, vi, vk, feats, fs, tf
+        p = padded_pairs(n)   # 詰め物の組は特徴 0・slot は b*K の外（捨てる）
+        feats = np.zeros((p, TOP_PEAKS, F_PEAK), np.float32); feats[:n] = f0
+        fs = np.zeros(p, np.float32); fs[:n] = fs0
+        vi_p = np.zeros(p, np.int64); vi_p[:n] = vi
+        slot = np.full(p, BATCH * K_CAND, np.int64); slot[:n] = vi * K_CAND + vk
+        return bi, vi_p, slot, n, feats, fs, tf
 
     def sync():
         if dev.type == "mps":
@@ -518,18 +571,21 @@ def phase_step(root: Path, out: Path, steps: int = 50, warm: int = 5, fwd_batche
 
     def run_step(step, train=True):
         t0 = time.time()
-        bi, vi, vk, feats, fs, tf = make_batch(step)
-        valid = torch.from_numpy(np.arange(TOP_PEAKS)[None, :] < sp["n"][bi[vi]][:, None]).to(dev)
+        bi, vi, slot_np, n, feats, fs, tf = make_batch(step)
+        vmask = np.arange(TOP_PEAKS)[None, :] < sp["n"][bi[vi]][:, None]
+        vmask[n:] = False
+        valid = torch.from_numpy(vmask).to(dev)
         x = torch.from_numpy(feats).to(dev)
         pair = torch.from_numpy(fs[:, None]).to(dev)
         sf = spec_feat[bi[vi]].to(dev)
-        slot = torch.from_numpy(vi * K_CAND + vk).to(dev)
+        slot = torch.from_numpy(slot_np).to(dev)
         t1 = time.time()
         if train:
             model.train()
             logit = model(x, valid, pair, sf)
-            flat = torch.full((BATCH * K_CAND,), float("-inf"), device=dev).index_put((slot,), logit)
-            loss = torch.nn.functional.cross_entropy(flat.view(BATCH, K_CAND), torch.zeros(BATCH, dtype=torch.long, device=dev))
+            flat = torch.full((BATCH * K_CAND + 1,), float("-inf"), device=dev).index_put((slot,), logit)
+            loss = torch.nn.functional.cross_entropy(flat[:BATCH * K_CAND].view(BATCH, K_CAND),
+                                                     torch.zeros(BATCH, dtype=torch.long, device=dev))
             opt.zero_grad(set_to_none=True); loss.backward()
             torch.nn.utils.clip_grad_norm_(model.parameters(), CLIP); opt.step()
             lv = float(loss.detach().cpu())
@@ -540,16 +596,17 @@ def phase_step(root: Path, out: Path, steps: int = 50, warm: int = 5, fwd_batche
             lv = float(logit.mean().cpu())
         sync()
         t2 = time.time()
-        return dict(total=t2 - t0, feat=tf, prep=t1 - t0 - tf, gpu=t2 - t1, n_pairs=len(vi), loss=lv)
+        return dict(total=t2 - t0, feat=tf, prep=t1 - t0 - tf, gpu=t2 - t1, n_pairs=n, n_padded=len(vi), loss=lv)
 
     for i in range(warm):
         run_step(10_000 + i)
     rec = [run_step(i) for i in range(steps)]
     fwd = [run_step(20_000 + i, train=False) for i in range(fwd_batches)]
     mean = lambda xs, k: float(np.mean([x[k] for x in xs]))  # noqa: E731
-    return dict(device=str(dev), steps=steps, warm=warm, sec_per_step=mean(rec, "total"),
+    return dict(device=str(dev), negs=negs, steps=steps, warm=warm, sec_per_step=mean(rec, "total"),
                 sec_feat=mean(rec, "feat"), sec_prep=mean(rec, "prep"), sec_gpu=mean(rec, "gpu"),
                 sec_per_step_sd=float(np.std([x["total"] for x in rec])), pairs_per_step=mean(rec, "n_pairs"),
+                padded_shapes=sorted({x["n_padded"] for x in rec}),
                 sec_fwd_batch=mean(fwd, "total"), loss_first=rec[0]["loss"], loss_last=rec[-1]["loss"],
                 numba_threads=int(os.environ.get("NUMBA_NUM_THREADS", "0")) or None,
                 mps_driver_allocated_gb=(round(torch.mps.driver_allocated_memory() / 1e9, 2) if dev.type == "mps" else None))
@@ -558,35 +615,45 @@ def phase_step(root: Path, out: Path, steps: int = 50, warm: int = 5, fwd_batche
 def phase_report(out: Path) -> dict:
     c = json.loads((out / "count.json").read_text())
     fa, fb = json.loads((out / "frag_a.json").read_text()), json.loads((out / "frag_b.json").read_text())
-    sp, st = json.loads((out / "spectra.json").read_text()), json.loads((out / "step.json").read_text())
+    sp = json.loads((out / "spectra.json").read_text())
+    assert c["n_val_spectra"] == N_VAL_SPECTRA and c["n_train_spectra"] == EXPECTED_TRAIN_SPECTRA
     sps = max(fa["sec_per_struct"], fb["sec_per_struct"])
     bps = max(fa["bytes_per_struct"], fb["bytes_per_struct"])
     res = {}
-    for name, n in (("union", c["n_union"]), ("union_val", c["n_union_val"])):
-        res[name] = {str(k): extrapolate(n, sps, sp["seconds"], st["sec_per_step"], st["sec_fwd_batch"], steps=k)
-                     for k in (STEPS_JUDGE, STEPS_MIN)}
-    j = res["union"][str(STEPS_JUDGE)]; jv = res["union_val"][str(STEPS_JUDGE)]
-    verdict = j["verdict"] if j["verdict"] == jv["verdict"] else (jv["verdict"] if jv["total_h"] > j["total_h"] else j["verdict"])
+    for negs in ("design", "allpool"):
+        st = json.loads((out / f"step_{negs}.json").read_text())
+        for name in ("n_union", "n_union_val"):
+            n = c[negs][name]
+            res[f"{negs}/{name}"] = {str(k): extrapolate(n, sps, sp["seconds"], st["sec_per_step"], st["sec_fwd_batch"],
+                                                         steps=k, sec_pack_per_spectrum=sp["sec_pack_per_spectrum"])
+                                     for k in (STEPS_JUDGE, STEPS_MIN)}
+    # 判定: 28,000 ステップの 4 通り（design/allpool × union/union_val）の合計の最大で決める（保守的）
+    worst = max((v[str(STEPS_JUDGE)] for v in res.values()), key=lambda r: r["total_h"])
     return dict(issue=ISSUE, sec_per_struct_used=sps, bytes_per_struct_used=bps,
-                frag_disk_gb_union=c["n_union"] * bps / 1e9, extrapolation=res, verdict=verdict)
+                frag_disk_gb_design=c["design"]["n_union_val"] * bps / 1e9,
+                frag_disk_gb_allpool=c["allpool"]["n_union_val"] * bps / 1e9,
+                extrapolation=res, worst_total_h=worst["total_h"], verdict=worst["verdict"],
+                wallclock_cap_h=min(1.5 * worst["total_h"], 96.0))
 
 
 def main() -> None:
     import argparse
     ap = argparse.ArgumentParser(description="#120 fragnn の速度測定（学習しない）")
-    ap.add_argument("phase", choices=["count", "frag_a", "frag_b", "spectra", "step", "report"])
+    ap.add_argument("phase", choices=["count", "frag_a", "frag_b", "spectra", "step_design", "step_allpool", "report"])
     ap.add_argument("--root", default=str(Path(__file__).resolve().parents[2]))
     ap.add_argument("--out", required=True)
     ap.add_argument("--device", default="mps")
     a = ap.parse_args()
     root, out = Path(a.root), Path(a.out); out.mkdir(parents=True, exist_ok=True)
-    if a.phase == "step":
+    if a.phase.startswith("step"):
         for k, v in (("PYTORCH_MPS_HIGH_WATERMARK_RATIO", "0.6"), ("PYTORCH_MPS_LOW_WATERMARK_RATIO", "0.5")):
             if os.environ.get(k) != v:
                 raise SystemExit(f"set {k}={v}")
     fn = {"count": lambda: phase_count(root, out), "frag_a": lambda: phase_frag(root, out, "a"),
           "frag_b": lambda: phase_frag(root, out, "b"), "spectra": lambda: phase_spectra(root, out),
-          "step": lambda: phase_step(root, out, device=a.device), "report": lambda: phase_report(out)}[a.phase]
+          "step_design": lambda: phase_step(root, out, device=a.device, negs="design"),
+          "step_allpool": lambda: phase_step(root, out, device=a.device, negs="allpool"),
+          "report": lambda: phase_report(out)}[a.phase]
     r = fn()
     (out / f"{a.phase}.json").write_text(json.dumps(r, ensure_ascii=False, indent=1, default=str))
     print(json.dumps(r, ensure_ascii=False, indent=1, default=str))

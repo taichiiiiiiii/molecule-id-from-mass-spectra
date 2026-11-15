@@ -123,3 +123,9 @@ def test_model_forward_shape():
     out = m(x, valid, torch.rand(6, 1), torch.rand(6, 3))
     assert out.shape == (6,)
     assert sum(p.numel() for p in m.parameters()) < 200_000
+
+
+def test_padded_pairs_and_pack_term():
+    assert fb.padded_pairs(1) == 2048 and fb.padded_pairs(2048) == 2048 and fb.padded_pairs(2049) == 4096
+    r = fb.extrapolate(0, 0.0, 100.0, 0.0, 0.0, steps=2000, sec_pack_per_spectrum=1e-3, n_spectra=1_000_000)
+    assert math.isclose(r["spectra_h"], (100.0 + 1000.0) / 3600)
