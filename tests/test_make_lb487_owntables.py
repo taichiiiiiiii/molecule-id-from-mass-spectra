@@ -89,7 +89,8 @@ def test_a_frozen_cells_identical_except_32(built):
     old32 = _src(f0["cells"][32]); new32 = _src(f1["cells"][32])
     assert new32.replace(M.PATCH.format(own_ds_name=M.OWN_DS_NAME, sim_sha=SIM_SHA, rt_sha=RT_SHA,
                                         sim_rel="own_sim_rank_rows.npz", rt_rel="own_rank_train.npz",
-                                        runner=M.OWN_RUNNER), "", 1).replace(M.EXC_ADD, "", 1) == old32
+                                        runner=M.OWN_RUNNER), "", 1).replace(M.EXC_ADD, "", 1) \
+        .replace(M.RUN_MARK + M.RUN_ADD, M.RUN_MARK, 1) == old32
 
 
 # ------------------------------------------------------------------------------------------------
@@ -171,7 +172,7 @@ def _exec_loader(cell32, inp, tmp_path, monkeypatch):
     monkeypatch.setattr(glob, "glob", fake_glob)
     monkeypatch.delenv("E2_OWN", raising=False)
     eng = tmp_path / "eng"; eng.mkdir(exist_ok=True)
-    g = {"os": os, "ENG_DIR": str(eng), "__name__": "frozen_cell_32"}
+    g = {"os": os, "ENG_DIR": str(eng), "IS_RERUN": False, "__name__": "frozen_cell_32"}   # commit（止める側）
     exec(compile(loader, "frozen_cell_32_loader", "exec"), g)
     return g, eng
 
@@ -276,3 +277,258 @@ def test_f_timing_variant_differs_only_in_smoke_n(built):
     assert "timing_only" not in built[2]
     with pytest.raises(AssertionError):
         M.build(SIM_SHA, RT_SHA, smoke_n=400)
+
+
+# ------------------------------------------------------------------------------------------------
+# (g) #77（#108 09:19Z の 2）: Engine 2 が時間切れ・失敗したとき、commit では止め、再実行では v4g のリストに戻る
+#     セル 32 全体を、偽の Engine 2（subprocess.run の差し替え）と偽の /kaggle で exec する
+# ------------------------------------------------------------------------------------------------
+import subprocess as _real_subprocess
+import textwrap
+import types
+
+import pandas as pd
+
+N_MOL = 12
+MIDS = [f"M{k:03d}" for k in range(N_MOL)]
+
+
+def _fake_kaggle(tmp_path, tables_in="casmi26-engine2-own-tables"):
+    """偽の /kaggle/input（自前表など）・/kaggle/working・COMP（test.parquet 12 分子）。"""
+    inp, sh = _fake_input(tmp_path, tables_in=tables_in)
+    work = tmp_path / "working"; work.mkdir(exist_ok=True)
+    comp = tmp_path / "comp"; comp.mkdir(exist_ok=True)
+    rows = [dict(molecule_id=m, spectrum_id=f"{m}_s{j}") for m in MIDS for j in range(2)]
+    pd.DataFrame(rows).to_parquet(comp / "test.parquet")
+    return inp, sh, work, comp
+
+
+class FakeEngine2:
+    """Engine 2 のサブプロセスの代わり。mode ごとに eng_lists.json・report を書き、returncode を返すか例外を出す。"""
+
+    def __init__(self, work, mode):
+        self.work, self.mode, self.calls = work, mode, 0
+
+    def _lists(self, mids):
+        return {m: dict(smiles=[f"C{'C' * (i % 5)}N"], keys=[f"K{m}"]) for i, m in enumerate(mids)}
+
+    def run(self, args, **kw):
+        self.calls += 1
+        assert kw.get("timeout") == 4 * 3600
+        rp = self.work / "engine2_owntables_report.json"; out = self.work / "eng_lists.json"
+        own = json.loads(kw["env"]["E2_OWN"])
+        rp.write_text(json.dumps(dict(status="started", own=own)))
+        m = self.mode
+        if m == "timeout":
+            raise _real_subprocess.TimeoutExpired(args, kw["timeout"])
+        if m == "crash_no_lists":            # returncode != 0 で eng_lists.json が無い
+            return types.SimpleNamespace(returncode=1, stdout="", stderr="Traceback ...")
+        if m == "crash_after_lists":         # eng_lists.json を書いた後に落ちて status = started のまま
+            out.write_text(json.dumps(self._lists(MIDS)))
+            return types.SimpleNamespace(returncode=1, stdout="", stderr="AssertionError CALLS")
+        if m == "rc_nonzero_only":           # report も lists もそろっているのに returncode != 0
+            out.write_text(json.dumps(self._lists(MIDS)))
+            rp.write_text(json.dumps(dict(status="ok", own=own, tables_sha256={"sim": own["sim_sha"], "rt": own["rt_sha"]})))
+            return types.SimpleNamespace(returncode=3, stdout="", stderr="")
+        if m == "partial_cover":             # status ok だが ENG が active な分子を覆わない
+            out.write_text(json.dumps(self._lists(MIDS[:-2])))
+            rp.write_text(json.dumps(dict(status="ok", own=own)))
+            return types.SimpleNamespace(returncode=0, stdout="", stderr="")
+        if m == "no_report":                 # lists はあるが report が消えた（読めない）
+            out.write_text(json.dumps(self._lists(MIDS)))
+            rp.unlink()
+            return types.SimpleNamespace(returncode=0, stdout="", stderr="")
+        assert m == "ok", m
+        out.write_text(json.dumps(self._lists(MIDS)))
+        rp.write_text(json.dumps(dict(status="ok", own=own, tables_sha256={"sim": own["sim_sha"], "rt": own["rt_sha"]},
+                                      zlog_fs_molecules=N_MOL, base_fs_molecules=N_MOL)))
+        return types.SimpleNamespace(returncode=0, stdout="engine lists 12", stderr="")
+
+
+def _exec_cell32(cell32, inp, work, comp, tmp_path, monkeypatch, is_rerun, fake):
+    """セル 32 全体を exec（/kaggle/working を tmp に、/kaggle/input を glob で偽の入力に、subprocess を偽の Engine 2 に）。"""
+    src = cell32.replace("/kaggle/working", str(work))
+    real_glob = glob.glob
+
+    def fake_glob(pat, recursive=False):
+        assert pat.startswith("/kaggle/input/"), pat
+        return real_glob(str(inp) + pat[len("/kaggle/input"):], recursive=recursive)
+    monkeypatch.setattr(glob, "glob", fake_glob)
+    monkeypatch.delenv("E2_OWN", raising=False)
+    fake_sp = types.SimpleNamespace(run=fake.run, TimeoutExpired=_real_subprocess.TimeoutExpired)
+    g = {"os": os, "sys": sys, "json": json, "time": __import__("time"), "pd": pd, "subprocess": fake_sp,
+         "COMP": str(comp), "IS_RERUN": is_rerun, "__name__": "frozen_cell_32"}
+    exec(compile(src, "frozen_cell_32_full", "exec"), g)
+    return g
+
+
+FAIL_MODES = ["timeout", "crash_no_lists", "crash_after_lists", "sha_mismatch", "rc_nonzero_only", "partial_cover",
+              "no_report"]
+EXPECT_REASON = {"timeout": "exception", "crash_no_lists": "returncode", "crash_after_lists": "report status",
+                 "sha_mismatch": "own tables", "rc_nonzero_only": "returncode",
+                 "partial_cover": "ENG does not cover active molecules", "no_report": "report unreadable"}
+
+
+def _cell_for(mode, sh):
+    s, r = sh["own_sim_rank_rows.npz"], sh["own_rank_train.npz"]
+    return _cell32_with("0" * 64 if mode == "sha_mismatch" else s, r)
+
+
+@pytest.mark.parametrize("mode", FAIL_MODES)
+def test_g_commit_stops_on_engine2_failure(tmp_path, monkeypatch, mode):
+    """commit（IS_RERUN = False）: どの失敗でも例外で止まる（smoke で見逃さない）。"""
+    inp, sh, work, comp = _fake_kaggle(tmp_path)
+    fake = FakeEngine2(work, mode)
+    if mode == "sha_mismatch":
+        with pytest.raises(RuntimeError, match="sha256 mismatch"):
+            _exec_cell32(_cell_for(mode, sh), inp, work, comp, tmp_path, monkeypatch, False, fake)
+        assert fake.calls == 0                               # Engine 2 は起動しない
+    else:
+        with pytest.raises(AssertionError, match="did not finish") as ei:
+            _exec_cell32(_cell_for(mode, sh), inp, work, comp, tmp_path, monkeypatch, False, fake)
+        assert EXPECT_REASON[mode] in str(ei.value)
+        assert fake.calls == 1
+
+
+@pytest.mark.parametrize("mode", FAIL_MODES)
+def test_g_rerun_falls_back_on_engine2_failure(tmp_path, monkeypatch, mode):
+    """再実行（IS_RERUN = True）: 止めずに、active な全分子に空のリストを入れ、report に fallback: true と理由。"""
+    inp, sh, work, comp = _fake_kaggle(tmp_path)
+    fake = FakeEngine2(work, mode)
+    g = _exec_cell32(_cell_for(mode, sh), inp, work, comp, tmp_path, monkeypatch, True, fake)
+    assert fake.calls == (0 if mode == "sha_mismatch" else 1)
+    assert g["ENG"] == {m: dict(smiles=[], keys=[]) for m in MIDS}       # Engine 2 の出力は使わない（一部も残さない）
+    rep = json.loads((work / "engine2_owntables_report.json").read_text())
+    assert rep["fallback"] is True and rep["fallback_molecules"] == N_MOL
+    assert "#108 09:19Z" in rep["fallback_note"] and "do not read" in rep["fallback_note"]
+    assert any(EXPECT_REASON[mode] in json.dumps(r) for r in rep["fallback_reasons"]), rep["fallback_reasons"]
+
+
+@pytest.mark.parametrize("is_rerun", [False, True])
+def test_g_normal_run_keeps_engine2_lists(tmp_path, monkeypatch, is_rerun):
+    """正常: ENG は Engine 2 の出力のまま、report に fallback: false（commit でも再実行でも）。"""
+    inp, sh, work, comp = _fake_kaggle(tmp_path)
+    fake = FakeEngine2(work, "ok")
+    g = _exec_cell32(_cell_for("ok", sh), inp, work, comp, tmp_path, monkeypatch, is_rerun, fake)
+    assert fake.calls == 1
+    assert g["ENG"] == json.loads((work / "eng_lists.json").read_text()) and set(g["ENG"]) == set(MIDS)
+    rep = json.loads((work / "engine2_owntables_report.json").read_text())
+    assert rep["fallback"] is False and rep["status"] == "ok" and "fallback_reasons" not in rep
+    assert rep["tables_sha256"] == {"sim": sh["own_sim_rank_rows.npz"], "rt": sh["own_rank_train.npz"]}
+
+
+def test_g_cell32_changes_are_additions_only(cell32):
+    """セル 32 は元の行を順番どおりすべて残し、足すのは PATCH・try の先頭の 1 行（RUN_ADD）・except の後（EXC_ADD）だけ。"""
+    nb = json.load(open(SRC_NB, encoding="utf-8"))
+    old32 = _src(_frozen(nb)["cells"][M.CHANGED_FROZEN])
+    assert cell32.count(M.RUN_MARK + M.RUN_ADD) == 1 and cell32.count(M.EXC_OLD + M.EXC_ADD) == 1
+    # 時間切れの上限は元のまま
+    assert cell32.count("timeout=4 * 3600") == 1 and old32.count("timeout=4 * 3600") == 1
+    # 再実行の守りは commit で止める形を残す
+    assert "if _e2why and not IS_RERUN:\n    raise AssertionError" in M.EXC_ADD
+    assert "    if not IS_RERUN:\n        raise\n" in M.PATCH
+
+
+# ------------------------------------------------------------------------------------------------
+# (h) 戻った後の ENG（全分子が空のリスト）で、ENG を読む後段（凍結セル 41 の ICE_UNION、45、47・48、49、50、51、52、
+#     53、54）の assert と枝が IS_RERUN = True の偽のスコープ・12 分子で通る。依存の多いセルは ENG を読む行を
+#     凍結コードから一字一句そのまま抜き出して（存在を assert してから）実行する
+# ------------------------------------------------------------------------------------------------
+def _lines(src, first, last):
+    """凍結セルの src から、first で始まる行から last を含む行までを取り出し dedent する（どちらも 1 回だけ現れる）。"""
+    assert src.count(first) == 1, first
+    a = src.index(first); a = src.rindex("\n", 0, a) + 1
+    assert src.count(last, a) >= 1, last
+    b = src.index(last, a); b = src.find("\n", b); b = len(src) if b < 0 else b
+    return textwrap.dedent(src[a:b]) + "\n"
+
+
+SMI = ["CCN", "CCCN", "CCCCN", "CCCCCN", "CCCCCCN", "CC(C)N", "CC(C)CN", "c1ccccc1N", "c1ccccc1O", "CCOC", "CCCOC", "OCCN"]
+
+
+def test_h_downstream_cells_pass_with_fallback_eng(tmp_path, monkeypatch):
+    pytest.importorskip("rdkit")
+    nb = json.load(open(SRC_NB, encoding="utf-8"))
+    F = [_src(c) for c in _frozen(nb)["cells"]]
+    # 戻りの ENG はセル 32 の EXC_ADD と同じ式で作る
+    ENG = {m: dict(smiles=[], keys=[]) for m in MIDS}
+    monkeypatch.chdir(tmp_path)
+    te = pd.DataFrame(dict(molecule_id=MIDS, nm=[100.0 + k for k in range(N_MOL)], adduct="[M+H]+"))
+    sub0 = pd.DataFrame(dict(molecule_id=MIDS, smiles=[";".join([SMI[k], SMI[(k + 1) % N_MOL]]) for k in range(N_MOL)]))
+    sub0.to_csv("submission.csv", index=False)
+    comp = tmp_path / "comp"; comp.mkdir()
+    sub0[["molecule_id"]].assign(smiles="CCO").to_csv(comp / "sample_submission.csv", index=False)
+    for d in ("ice_work", "gl_work"):
+        os.makedirs(d); (tmp_path / d / f"{d[:-5]}_out.json.meta.json").write_text(json.dumps({"status": "ok"}))
+    chem = types.SimpleNamespace(score_key=lambda s: s)
+    g = {"__name__": "frozen", "os": os, "json": json, "glob": glob, "np": __import__("numpy"), "pd": pd,
+         "time": __import__("time"), "te": te, "ENG": ENG, "IS_RERUN": True, "SMOKE_N": 12, "COMP": str(comp),
+         "chem": chem, "ICE_SCORES": {}, "n_err": 0, "PC": {}, "BASE_TAIL_CANDIDATES": {}, "T0": 0.0,
+         "rdkit": types.SimpleNamespace(__version__="2026.03.3"), "display": lambda *a, **k: None,
+         "gl_of": lambda m: {}, "sha256": lambda p: hashlib.sha256(open(p, "rb").read()).hexdigest()}
+
+    # セル 41（ICE_UNION）: 空のリストの分子は飛ばされ、足される候補は 0
+    ice_union = _lines(F[41], "    if ENG:                              # ADDED (ICE_UNION)",
+                       "print('ICE_UNION: engine candidates added to ICE input:', n_add, flush=True)")
+    g41 = dict(g, mids=list(MIDS), BASE={m: ([SMI[0]], ["k"], 0.5, None, ["C2H7N"]) for m in MIDS}, TOPN=10,
+               cands={m: [] for m in MIDS}, ice_fuse=types.SimpleNamespace(ice_candidates=lambda *a: pytest.fail("called")))
+    exec(compile(ice_union, "frozen_41_ice_union", "exec"), g41)
+    assert g41["n_add"] == 0 and g41["cands"] == {m: [] for m in MIDS}
+
+    # セル 45 全体: if ENG: の枝に入るが、どの分子も空なので v4g のリストのまま書き直される
+    exec(compile(F[45], "frozen_45", "exec"), g)
+    sub45 = pd.read_csv("submission.csv")
+    assert sub45.equals(sub0) and g["FUSION_OVERFLOW"] == {}
+    assert g["PREFUSION_LISTS"] == {m: s.split(";") for m, s in zip(sub0.molecule_id, sub0.smiles)}
+
+    # セル 47・48 全体: 凍結セル 48 の assert _active <= set(map(str, ENG)) と IS_RERUN の守りを通る
+    exec(compile(F[47], "frozen_47", "exec"), g)
+    assert "assert _active <= set(map(str, ENG)), 'Engine 2 did not cover all active molecules'" in F[48]
+    exec(compile(F[48], "frozen_48", "exec"), g)
+    sub48 = pd.read_csv("submission.csv")
+    assert list(sub48.molecule_id) == MIDS and sub48.smiles.str.split(";").map(len).between(1, 25).all()
+    assert [s.split(";")[:2] for s in sub48.smiles] == [s.split(";") for s in sub0.smiles]   # 元の順は保たれる
+
+    # セル 49 全体: Engine 2 が空なので融合の枝に入らず、変化 0
+    exec(compile(F[49], "frozen_49", "exec"), g)
+    assert g["_report"]["changed_molecules"] == 0
+
+    # セル 50（E004 postflight）の ENG を読む行（再実行の側）
+    e50 = (_lines(F[50], "base, eng, pc = scope['BASE'], scope['ENG'], scope['PC']",
+                  "assert processed <= set(map(str, eng))")
+           + _lines(F[50], "if not full:\n        assert all(v[0] for v in base.values())",
+                    "assert all(eng[mid]['smiles'] and pc.get(mid, {}).get('pc') for mid in processed)")
+           + "engine2 = {mid: eng[mid] for mid in sorted(processed)}\n"
+           + "n2 = sum(bool(eng[mid]['smiles']) for mid in processed)\n")
+    assert "'engine2': {mid: eng[mid] for mid in sorted(processed)}," in F[50]
+    assert "engine2_nonempty=sum(bool(eng[mid]['smiles']) for mid in processed)," in F[50]
+    g50 = dict(scope=dict(g, BASE={m: ([SMI[0]],) for m in MIDS}), processed=set(MIDS), full=True, pc={})
+    exec(compile(e50, "frozen_50_eng", "exec"), g50)
+    assert g50["n2"] == 0 and len(g50["engine2"]) == N_MOL
+
+    # セル 51（FRAG_GAP）: ENG を読む 2 行
+    e51 = _lines(F[51], "_e = ENG.get(_mid) or {}", "_c = [s for s in dict.fromkeys(list(_lst) + list(_e.get('smiles', []))) if s and s != 'CCO']")
+    for mid, lst in g["PREFUSION_LISTS"].items():
+        g51 = dict(ENG=ENG, _mid=mid, _lst=lst); exec(compile(e51, "frozen_51_eng", "exec"), g51)
+        assert g51["_c"] == lst
+
+    # セル 52（factorial overlay）: ENG が空なら元のリストを返す枝
+    e52 = ("def _f(scope, mid, original):\n"
+           + textwrap.indent(_lines(F[52], 'engine = scope["ENG"].get(mid)',
+                                    'if mid not in scope["PREFUSION_LISTS"] or not engine or not engine.get("smiles"):'), "    ")
+           + "        return 'original'\n    return 'fused'\n")
+    g52 = {}; exec(compile(e52, "frozen_52_eng", "exec"), g52)
+    assert all(g52["_f"](g, m, []) == "original" for m in MIDS)
+
+    # セル 53 全体（rank-2 の挿入）: Engine 2 の先頭が無いので挿入 0、status ok、ファイルは変わらない
+    before53 = open("submission.csv", "rb").read()
+    exec(compile(F[53], "frozen_53", "exec"), g)
+    assert g["RANK2_REPORT"]["status"] == "ok" and g["RANK2_REPORT"]["inserted"] == 0
+    assert open("submission.csv", "rb").read().replace(b"\r\n", b"\n") == before53.replace(b"\r\n", b"\n")
+
+    # セル 54（receipt）の ENG を読む 2 つの式
+    assert "engine2_lists=len(scope['ENG'])" in F[54]
+    assert "engine2_nonempty=sum(bool(scope['ENG'].get(mid, {}).get('smiles')) for mid in processed)," in F[54]
+    scope = g; processed = set(MIDS)
+    assert len(scope['ENG']) == N_MOL
+    assert sum(bool(scope['ENG'].get(mid, {}).get('smiles')) for mid in processed) == 0

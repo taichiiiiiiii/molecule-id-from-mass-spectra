@@ -14,7 +14,10 @@
      (b) prvsiyan ランカーの base を base_fs.blk_base_fs に替える（score_molecules の ["base"], use_fp=True の呼び出しだけを
          base_fs.score_base_fs に置き換え。zlog_fs は fold-safe FPNet 5 本のロジットの平均〈CPU〉、cfp_fs は 10,226 ビット）
      (c) レポート /kaggle/working/engine2_owntables_report.json（status、読んだ表のパスと sha256、blk_base_fs を通った分子数）
-   - Engine 2 が落ちたら、元のように v4g のリストへ黙って戻らず止める（レポートの status が ok でなければ例外）
+   - Engine 2 が落ちたとき（自前表の確認の失敗・例外〈時間切れを含む〉・returncode != 0・レポートが読めない・
+     status != ok・ENG が active な分子を覆わない）: commit では止める（smoke で失敗を見逃さない）。再実行（IS_RERUN）では
+     オーナー判断 #108 09:19Z の 2 により止めずに、Engine 2 の出力を使わない v4g のリストに戻る（active な全分子に
+     空のリスト。#62 と同じ形で、凍結セル 48 の assert を通す）。レポートに fallback: true と理由を書く（正常時は false）
    - base_fs.py は生成コードの dataset（taichiiiii/casmi26-engine2-build-code）から ENG_DIR に写す
    - 凍結コードの宣言 sha256（外側セル 12 の FROZEN_SHA256、notebook メタデータ casmi.frozen_source_sha256）を新しい値にする
 2. 採点に影響しない: 外側セル 5 の COMMIT_MODE = 'fast' を 'smoke' にする（commit で見える 12 分子が全段を通る）
@@ -163,22 +166,71 @@ def _e2own(rel, sha):
     if _s != sha:
         raise RuntimeError(('#77 own table sha256 mismatch', _h[0], _s, sha))
     return _h[0]
-_E2_OWN = dict(sim=_e2own('{sim_rel}', '{sim_sha}'), sim_sha='{sim_sha}',
-               rt=_e2own('{rt_rel}', '{rt_sha}'), rt_sha='{rt_sha}',
+# #77（#108 09:19Z の 2）: 再実行では自前表の確認の失敗も Engine 2 の失敗と同じく v4g のリストへの戻りにする。commit では止める
+_E2_FAIL = None
+try:
+    _E2_SIM = _e2own('{sim_rel}', '{sim_sha}')
+    _E2_RT = _e2own('{rt_rel}', '{rt_sha}')
+except Exception as _e2x:
+    if not IS_RERUN:
+        raise
+    _E2_FAIL = ('own tables', repr(_e2x)); _E2_SIM = _E2_RT = None
+_E2_OWN = dict(sim=_E2_SIM, sim_sha='{sim_sha}',
+               rt=_E2_RT, rt_sha='{rt_sha}',
                casmi_code=os.path.dirname(os.path.dirname(_e2one('casmi/chem.py', 'casmi26-v3-models/code'))),
                fs_models=[_e2one(f'fpnet_fold{{_k}}.pt', 'casmi26-fold-safe-fpnet') for _k in range(5)],
                fs_bits=os.path.join(os.path.dirname(_e2one('fpnet_fold0.pt', 'casmi26-fold-safe-fpnet')), 'fp_bits.npy'))
 _e2s.copy2(_e2one('base_fs.py', 'casmi26-engine2-build-code'), os.path.join(ENG_DIR, 'base_fs.py'))
 open(os.path.join(ENG_DIR, 'eng_runner.py'), 'w').write({runner!r})
 os.environ['E2_OWN'] = _e2j.dumps(_E2_OWN)
+_E2_EXC = None   # 下の except で Engine 2 の例外の repr を残す
+rr = None        # subprocess が終わらなかった（時間切れ・起動の失敗）ときは None のまま
 ''' + PATCH_END
 
+# try の先頭に足す 1 行: 再実行で自前表の確認に失敗していたら Engine 2 を起動せずに except に入る
+RUN_ADD = ("    if _E2_FAIL is not None:\n"
+           "        raise RuntimeError(('#77 own tables not verified; Engine 2 not started', _E2_FAIL))\n")
 
 EXC_OLD = "except Exception as e:\n    print('ENGINE FAILED -> v4g lists kept:', repr(e))"
-# 自前表の診断では、Engine 2 が落ちて v4g のリストに黙って戻ることを許さない（commit でも再実行でも止める）
-EXC_ADD = ("\n_e2rep = _e2j.load(open('/kaggle/working/engine2_owntables_report.json'))\n"
-           "assert _e2rep.get('status') == 'ok' and ENG, ('#77 own-table Engine 2 did not finish', _e2rep.get('status'))\n"
-           "print('Engine 2 own tables report:', {_k: _e2rep.get(_k) for _k in ('status', 'tables_sha256', 'base_fs_molecules', 'zlog_fs_molecules')}, flush=True)")
+# 自前表の診断: commit では Engine 2 の失敗を見逃さず止める。再実行（IS_RERUN）では #108 09:19Z の 2 により止めずに、
+# Engine 2 の出力を使わない v4g のリストに戻る。元の失敗時の動き（ENG = {}）は凍結セル 48 の
+# assert _active <= set(map(str, ENG)) で落ちるので、#62 と同じく active な全分子に空のリストを入れる。
+# 戻りの条件: 自前表の確認の失敗・例外（時間切れを含む）・returncode != 0・report が読めない・status != 'ok'・ENG の欠け
+FALLBACK_NOTE = "fallback to v4g lists (Engine 2 output unused); do not read this run as the #77 diagnostic (#108 09:19Z item 2)"
+EXC_ADD = ("\n    _E2_EXC = repr(e)\n"
+           "# ── #77: Engine 2 の結果の確認。commit では止める。再実行では v4g のリストに戻る（#108 09:19Z の 2）──\n"
+           "_E2_RP = '/kaggle/working/engine2_owntables_report.json'\n"
+           "_e2why = []\n"
+           "if _E2_FAIL is not None:\n"
+           "    _e2why.append(_E2_FAIL)\n"
+           "if _E2_EXC is not None:\n"
+           "    _e2why.append(('exception', _E2_EXC))\n"
+           "if rr is not None and rr.returncode != 0:\n"
+           "    _e2why.append(('returncode', rr.returncode))\n"
+           "try:\n"
+           "    _e2rep = _e2j.load(open(_E2_RP))\n"
+           "    assert isinstance(_e2rep, dict), type(_e2rep)\n"
+           "except Exception as _e2x:\n"
+           "    _e2rep = {}\n"
+           "    _e2why.append(('report unreadable', repr(_e2x)))\n"
+           "if _e2rep.get('status') != 'ok':\n"
+           "    _e2why.append(('report status', _e2rep.get('status')))\n"
+           "_e2act = sorted(set(pd.read_parquet(os.path.join(COMP, 'test.parquet'), columns=['molecule_id']).molecule_id.astype(str)))\n"
+           "_e2have = set(map(str, ENG)) if isinstance(ENG, dict) else set()\n"
+           "_e2miss = [_m for _m in _e2act if _m not in _e2have]\n"
+           "if _e2miss:\n"
+           "    _e2why.append(('ENG does not cover active molecules', len(_e2miss), len(_e2act)))\n"
+           "if _e2why and not IS_RERUN:\n"
+           "    raise AssertionError(('#77 own-table Engine 2 did not finish', _e2why))\n"
+           "if _e2why:\n"
+           "    ENG = {_m: dict(smiles=[], keys=[]) for _m in _e2act}\n"
+           "    _e2rep.update(fallback=True, fallback_reasons=_e2why, fallback_molecules=len(ENG),\n"
+           f"                  fallback_note={FALLBACK_NOTE!r})\n"
+           "    print('ENGINE 2 FALLBACK (#77, rerun) -> v4g lists kept, empty Engine 2 lists for', len(ENG), 'molecules:', _e2why, flush=True)\n"
+           "else:\n"
+           "    _e2rep['fallback'] = False\n"
+           "_e2j.dump(_e2rep, open(_E2_RP, 'w'), indent=1, default=str)\n"
+           "print('Engine 2 own tables report:', {_k: _e2rep.get(_k) for _k in ('status', 'fallback', 'tables_sha256', 'base_fs_molecules', 'zlog_fs_molecules')}, flush=True)")
 
 HEX64 = re.compile(r"[0-9a-f]{64}")
 REL_OK = re.compile(r"[A-Za-z0-9_./-]+")
@@ -210,7 +262,7 @@ def patch_frozen(frozen: dict, sim_sha: str, rt_sha: str, sim_rel: str, rt_rel: 
     assert s.count(WRITE_MARK) == 1
     patch = PATCH.format(own_ds_name=OWN_DS_NAME, sim_sha=sim_sha, rt_sha=rt_sha, sim_rel=sim_rel, rt_rel=rt_rel,
                          runner=OWN_RUNNER)
-    s = replace_once(s, RUN_MARK, patch + RUN_MARK, "engine 2 run")
+    s = replace_once(s, RUN_MARK, patch + RUN_MARK + RUN_ADD, "engine 2 run")
     s = replace_once(s, EXC_OLD, EXC_OLD + EXC_ADD, "engine 2 except")
     compile(s, "frozen_cell_32", "exec")
     compile(OWN_RUNNER, "eng_runner_own", "exec")
