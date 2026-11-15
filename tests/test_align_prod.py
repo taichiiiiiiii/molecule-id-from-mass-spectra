@@ -598,3 +598,32 @@ def test_forward_padded_equals_forward_values_and_grads():
     for n, p in m.named_parameters():
         if n in g1:
             assert torch.allclose(g1[n], p.grad, atol=1e-6), n
+
+
+def test_mid_interval_checkpoint_resume_matches_uninterrupted(tmp_path, monkeypatch):
+    """評価の間の state.pt（CKPT_EVERY）から再開しても、止めずに回したのと同じログ（val・train の損失）になる。"""
+    pytest.importorskip("torch")
+    root, hk = _synthetic_train_inputs(tmp_path, monkeypatch)
+    monkeypatch.setattr(T, "CKPT_EVERY", 3)
+    kw = dict(root=root, holdout_keys=hk, device="cpu", eval_every=4, max_steps=12)
+    T._PERM_CACHE.clear()
+    T.train(out_dir=tmp_path / "e", **kw)
+    orig = T.atomic_torch_save
+
+    def killing_save(obj, path):   # step 6（評価の間の再開点）を書いた直後に止められた想定
+        orig(obj, path)
+        if isinstance(obj, dict) and obj.get("step") == 6:
+            raise RuntimeError("simulated kill")
+    monkeypatch.setattr(T, "atomic_torch_save", killing_save)
+    T._PERM_CACHE.clear()
+    r1 = T.train(out_dir=tmp_path / "f", **kw)
+    assert r1["status"] == "error" and "simulated kill" in r1["error"]
+    monkeypatch.setattr(T, "atomic_torch_save", orig)
+    T._PERM_CACHE.clear()
+    r2 = T.train(out_dir=tmp_path / "f", resume=True, **kw)
+    assert r2["status"] == "ok" and r2["resumed_from_step"] == 6
+    le = [json.loads(x) for x in (tmp_path / "e/train_log.jsonl").read_text().splitlines()]
+    lf = [json.loads(x) for x in (tmp_path / "f/train_log.jsonl").read_text().splitlines()]
+    assert [r["step"] for r in lf] == [r["step"] for r in le] == [4, 8, 12]
+    for a, b in zip(le, lf):
+        assert round(a["val_loss"], 5) == round(b["val_loss"], 5) and round(a["train_loss"], 5) == round(b["train_loss"], 5)

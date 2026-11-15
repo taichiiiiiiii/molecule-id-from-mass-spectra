@@ -58,6 +58,7 @@ N_QUERY = 4_756
 LOG_EVERY = 100
 NUMERICS_NOTE = {"cuda": "MLP trained with torch.autocast(fp16) + GradScaler; numerics differ from fp32.",
                  "mps": "fp32 on Apple MPS.", "cpu": "fp32 on CPU."}
+CKPT_EVERY = 200   # 実装の定数: 評価の間にも state.pt を書く間隔（memguard に止められても進みを失わない。止め方には関わらない、11/15）
 PAD_ROWS = 2_048   # 実装の定数（モデル・学習の定義ではない）: 候補の行数をこの倍数に詰めて MPS の形の数を抑える（#109、11/15）
 MIN_RUN_FREE_GB = 2.0      # 学習中に空き（free+speculative）がこれを下回ったら state を書いて止める
 ADDUCT_ALIASES = {"[M+CH3COO]-": "[M+CH3COOH-H]-", "[M+FA-H]-": "[M+HCOOH-H]-", "[M+HCOO]-": "[M+HCOOH-H]-"}
@@ -546,12 +547,14 @@ def train(root=".", embed_dir=None, out_dir=None, holdout_keys=None, device="aut
         scaler = torch.amp.GradScaler("cuda", enabled=amp)
         stopper = EarlyStop(STOP_REL, STOP_PATIENCE)
         fp_d = torch.from_numpy(D["pool_fp"]).to(dev) if dev == "cuda" else None
-        step, acc, n_acc = 0, 0.0, 0
+        step, acc, n_acc, since_eval = 0, 0.0, 0, 0.0
         if resume and statep.exists():
             st = torch.load(statep, map_location="cpu", weights_only=False)
             model.load_state_dict(st["model"]); opt.load_state_dict(st["opt"]); plateau.load_state_dict(st["plateau"])
             scaler.load_state_dict(st["scaler"]); stopper.load(st["stopper"]); step = st["step"]
             torch.set_rng_state(st["torch_rng"])
+            # 評価の間の state なら、直前の評価からの train の損失の和・数・経過秒も戻す（ログの train_loss を同じ定義に保つ）
+            acc, n_acc, since_eval = float(st.get("acc", 0.0)), int(st.get("n_acc", 0)), float(st.get("since_eval", 0.0))
             rep["resumed_from_step"] = step
             rep["log_rows_trimmed_on_resume"] = trim_log(logp, step)
         rep["data"]["params"] = int(sum(p.numel() for p in model.parameters()))
@@ -580,8 +583,13 @@ def train(root=".", embed_dir=None, out_dir=None, holdout_keys=None, device="aut
             model.train()
             return tot / n
 
+        def state_dict_all() -> dict:
+            return {"model": model.state_dict(), "opt": opt.state_dict(), "plateau": plateau.state_dict(),
+                    "scaler": scaler.state_dict(), "stopper": stopper.state(), "step": step,
+                    "torch_rng": torch.get_rng_state(), "acc": acc, "n_acc": n_acc, "since_eval": time.time() - ts}
+
         model.train()
-        ts = time.time()
+        ts = time.time() - since_eval
         # 収束（または上限）の後、出力の段の途中で止められた学習を再開したときは、学習を続けずに出力の段へ進む
         # （止め方をずらさない。#109 起動前レビューの軽微指摘、2026-11-15）
         stop_reason = "converged" if stopper.bad >= stopper.patience else None
@@ -613,10 +621,10 @@ def train(root=".", embed_dir=None, out_dir=None, holdout_keys=None, device="aut
                 if fg is not None and fg < MIN_RUN_FREE_GB:
                     stop_reason = f"paused_low_memory free={fg}GB"
             if stop_reason:   # 空きが足りない: 評価せずに state だけ書いて止める（止め方の数え方を変えない）
-                atomic_torch_save({"model": model.state_dict(), "opt": opt.state_dict(), "plateau": plateau.state_dict(),
-                                   "scaler": scaler.state_dict(), "stopper": stopper.state(), "step": step,
-                                   "torch_rng": torch.get_rng_state()}, statep)
+                atomic_torch_save(state_dict_all(), statep)
                 break
+            if step % CKPT_EVERY == 0 and step % eval_every != 0 and step != max_steps:
+                atomic_torch_save(state_dict_all(), statep)   # 評価の間の再開点（評価・止め方の数え方には入らない）
             if step % eval_every == 0 or step == max_steps:
                 vl = val_loss()
                 if step >= WARMUP:
@@ -632,9 +640,7 @@ def train(root=".", embed_dir=None, out_dir=None, holdout_keys=None, device="aut
                     f.write(json.dumps(row) + "\n")
                 print("EVAL", json.dumps(row), flush=True)
                 acc, n_acc, ts = 0.0, 0, time.time()
-                atomic_torch_save({"model": model.state_dict(), "opt": opt.state_dict(), "plateau": plateau.state_dict(),
-                                   "scaler": scaler.state_dict(), "stopper": stopper.state(), "step": step,
-                                   "torch_rng": torch.get_rng_state()}, statep)
+                atomic_torch_save(state_dict_all(), statep)
                 save()
                 if u["stop"]:
                     stop_reason = "converged"
