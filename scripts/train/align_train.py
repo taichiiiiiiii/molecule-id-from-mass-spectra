@@ -555,8 +555,11 @@ def train(root=".", embed_dir=None, out_dir=None, holdout_keys=None, device="aut
 
         model.train()
         ts = time.time()
-        stop_reason = None
-        while step < max_steps:
+        # 収束（または上限）の後、出力の段の途中で止められた学習を再開したときは、学習を続けずに出力の段へ進む
+        # （止め方をずらさない。#109 起動前レビューの軽微指摘、2026-11-15）
+        stop_reason = "converged" if stopper.bad >= stopper.patience else None
+        rep["skipped_training_on_resume"] = bool(resume and stop_reason is not None)
+        while step < max_steps and stop_reason is None:
             if step < WARMUP:
                 for gr in opt.param_groups:
                     gr["lr"] = warmup_lr(step, LR, WARMUP)

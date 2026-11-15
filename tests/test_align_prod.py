@@ -446,6 +446,19 @@ def test_train_end_to_end_resume_and_rule(tmp_path, monkeypatch):
     log_b = [json.loads(x) for x in (tmp_path / "b/train_log.jsonl").read_text().splitlines()]
     n = len(log)
     assert [round(r["val_loss"], 5) for r in log_b[:n]] == [round(r["val_loss"], 5) for r in log]
+    # 収束した state のまま（出力の段の途中で止められた想定）再開しても、学習を続けずに出力の段へ進む
+    import torch
+    T._PERM_CACHE.clear()
+    T.train(out_dir=tmp_path / "c", max_steps=6, **kw)
+    st = torch.load(tmp_path / "c/state.pt", weights_only=False)
+    st["stopper"]["bad"] = T.STOP_PATIENCE
+    torch.save(st, tmp_path / "c/state.pt")
+    (tmp_path / "c/train_report.json").unlink()
+    n_c = len((tmp_path / "c/train_log.jsonl").read_text().splitlines())
+    rep_c = T.train(out_dir=tmp_path / "c", max_steps=12, resume=True, **kw)
+    assert rep_c["status"] == "ok" and rep_c["skipped_training_on_resume"] is True
+    assert rep_c["train"]["stop_reason"] == "converged" and rep_c["train"]["steps"] == 6
+    assert len((tmp_path / "c/train_log.jsonl").read_text().splitlines()) == n_c and (tmp_path / "c/g_blind.npy").exists()
 
 
 def test_own_heavy_jobs_ignores_shell_and_time_wrappers(monkeypatch):
