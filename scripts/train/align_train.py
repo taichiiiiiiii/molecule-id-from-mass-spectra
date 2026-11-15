@@ -616,7 +616,7 @@ def train(root=".", embed_dir=None, out_dir=None, holdout_keys=None, device="aut
             scaler.step(opt); scaler.update()
             step += 1
             acc += float(loss.detach()); n_acc += 1
-            if step % 200 == 0:
+            if step % 200 == 0 and step % eval_every != 0 and step != max_steps:   # 評価の step では止めない（評価を飛ばさない）
                 fg = free_gb().get("avail_gb")
                 if fg is not None and fg < MIN_RUN_FREE_GB:
                     stop_reason = f"paused_low_memory free={fg}GB"

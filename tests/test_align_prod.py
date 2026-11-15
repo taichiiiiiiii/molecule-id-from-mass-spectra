@@ -627,3 +627,18 @@ def test_mid_interval_checkpoint_resume_matches_uninterrupted(tmp_path, monkeypa
     assert [r["step"] for r in lf] == [r["step"] for r in le] == [4, 8, 12]
     for a, b in zip(le, lf):
         assert round(a["val_loss"], 5) == round(b["val_loss"], 5) and round(a["train_loss"], 5) == round(b["train_loss"], 5)
+
+
+def test_low_memory_pause_never_skips_an_eval(tmp_path, monkeypatch):
+    """空きの確認（200 ステップごと）が評価の step に重なっても止めない（評価を飛ばさない）。間の step では止める。"""
+    pytest.importorskip("torch")
+    root, hk = _synthetic_train_inputs(tmp_path, monkeypatch)
+    monkeypatch.setattr(T, "free_gb", lambda: {"free_gb": 0.1, "inactive_gb": 0.1, "avail_gb": 0.2})
+    kw = dict(root=root, holdout_keys=hk, device="cpu")
+    T._PERM_CACHE.clear()
+    r = T.train(out_dir=tmp_path / "g", eval_every=200, max_steps=400, **kw)
+    log = [json.loads(x)["step"] for x in (tmp_path / "g/train_log.jsonl").read_text().splitlines()]
+    assert r["status"] == "ok" and log == [200, 400]
+    T._PERM_CACHE.clear()
+    r = T.train(out_dir=tmp_path / "h", eval_every=400, max_steps=600, **kw)
+    assert r["status"] == "paused" and r["train"]["steps"] == 200 and not (tmp_path / "h/train_log.jsonl").exists()
