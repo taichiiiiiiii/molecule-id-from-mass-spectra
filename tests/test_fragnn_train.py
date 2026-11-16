@@ -166,6 +166,20 @@ def test_no_data_root_scripts_on_sys_path(tmp_path, monkeypatch):
         ft.assert_code_data_separation(tmp_path)
 
 
+@pytest.mark.parametrize("cmd,exp", [
+    ("/Users/x/Molecule ID From Mass Spectra/.venv/bin/python /tmp/a/scripts/train/fragnn_train.py --resume", True),
+    ("python3 scripts/train/align_train.py", True),
+    ("/usr/local/bin/python3.12 scripts/train/fragnn_bench.py step_design --out o", True),
+    ("/usr/bin/time -l /x/.venv/bin/python /a/scripts/train/fragnn_train.py", False),
+    ("bash /a/scripts/train/fragnn_loop.sh logs/x outputs/r.json -- /x/bin/python /a/fragnn_train.py", False),
+    ("bash memguard_run.sh log /x/bin/python /a/fragnn_train.py", False),
+    ("grep fragnn_train.py", False),
+    ("tail -f outputs/fragnn_train/loop.log", False),
+])
+def test_is_heavy_python(cmd, exp):
+    assert ft.is_heavy_python(cmd) is exp
+
+
 def test_speed_report_sha_checked(tmp_path):
     src = tmp_path / "report.json"; src.write_text("{}")
     (tmp_path / "out").mkdir(); (tmp_path / "out2").mkdir()
@@ -548,5 +562,40 @@ def test_train_end_to_end_on_fake_roots(tmp_path, monkeypatch, isolated_frag_imp
     (out / "train_report.json").unlink()
     (code / ft.KEYS_REL).write_text(json.dumps({"v3_c1": ["R105", "R106"], "v3_c2": [], "enveda_v1": [],
                                                  "v3_c2n": []}, indent=1))
+    with pytest.raises(SystemExit, match="prep.npz"):
+        ft.train(data, out, device="cpu", resume=True, speed_src=sp, **kw)
+    (out / "prep.npz").unlink()           # prep を作り直しても、state の meta（DROP の json の sha256）で止まる
     with pytest.raises(SystemExit, match="meta"):
+        ft.train(data, out, device="cpu", resume=True, speed_src=sp, **kw)
+
+
+def test_prepare_stops_on_injected_leak(tmp_path, monkeypatch, isolated_frag_import):
+    """負例の CSR に DROP の行（split の構造）が混ざったら prepare が止まる（漏れの assert が本物の経路で効く）。"""
+    import pandas as pd
+    data, code, sp = _fake_roots(tmp_path)
+    _patch_expected(monkeypatch, code, sp)
+    keys = pd.read_parquet(data / "data/ext/v4g/casmi26-v2-pool/pool_meta.parquet").key.values
+    leak_row = int(np.flatnonzero(keys == "T100")[0])
+    real = ft.B.negative_csr
+
+    def leaky(pos_rows, mass, allowed, ppm=ft.PPM):
+        off, flat = real(pos_rows, mass, allowed, ppm)
+        return np.concatenate([off[:-1], [off[-1] + 1]]), np.concatenate([flat, [leak_row]])
+    monkeypatch.setattr(ft.B, "negative_csr", leaky)
+    with pytest.raises(AssertionError, match="neg_in_drop"):
+        ft.prepare(data, code / ft.KEYS_REL, tmp_path / "prep.npz")
+    assert not (tmp_path / "prep.npz").exists()
+
+
+def test_prep_reuse_checks_inputs(tmp_path, monkeypatch, isolated_frag_import):
+    pytest.importorskip("torch")
+    data, code, sp = _fake_roots(tmp_path)
+    _patch_expected(monkeypatch, code, sp)
+    out = tmp_path / "out"
+    kw = dict(max_steps=2, eval_every=2, mem_check=lambda: {"avail_gb": None})
+    with pytest.raises(ft._Abort):     # prep.npz だけ書いて、最初の state の前に落ちる
+        ft.train(data, out, device="cpu", resume=True, speed_src=sp, abort_at=1, **kw)
+    assert (out / "prep.npz").exists() and not (out / "state.pt").exists()
+    (data / "data/ext/frag/frag_rescore.py").write_text(FAKE_FRAG + "\n# changed\n")
+    with pytest.raises(SystemExit, match="prep.npz"):
         ft.train(data, out, device="cpu", resume=True, speed_src=sp, **kw)

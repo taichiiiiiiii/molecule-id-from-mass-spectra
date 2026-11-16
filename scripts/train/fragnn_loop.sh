@@ -13,7 +13,8 @@
 #     0 かつ report 無し・running・その他       → 終了 2（記録）
 #     1 かつ ログに ^vm_stat avail( の行 かつ 最後の行が memguard の exit=1 → WAIT_S 待って再開（起動時の空き不足）
 #     1 のそれ以外（set PYTORCH_MPS_ / another heavy job / status ok の再開拒否 / meta の不一致 / 例外）→ 終了 2（エラー）
-#     その他の終了コード（137 など）            → 終了 2（エラー）
+#     その他の終了コード（143 など）            → 終了 2（エラー）
+#     注: 子が SIGKILL（jetsam など）で死ぬと /usr/bin/time -l は 1 を返す（実測、#126 起動前レビュー）ので rc1_other で止まる
 #   再開は最大 MAX_RESTARTS 回（既定 12、超えたら終了 3）。判定は 1 回ごとに <logbase>.loop に 1 行。
 #   LOCK_FILE を渡すと、走っている間だけ pid を書く（生きた pid が持っていれば起動せず終了 4）。
 # 実行中のこのファイルを書き換えない（直すなら別名で作る）。

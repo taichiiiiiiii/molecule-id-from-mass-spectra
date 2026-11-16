@@ -306,12 +306,28 @@ def own_heavy_jobs() -> list[str]:
     out = []
     for line in txt.splitlines():
         pid, _, cmd = line.strip().partition(" ")
-        argv0 = os.path.basename(cmd.strip().split(" ")[0]) if cmd.strip() else ""
-        if pid.isdigit() and int(pid) != me and argv0.startswith("python") and any(
-                s in cmd for s in ("fragnn_train.py", "fragnn_bench.py", "align_local_embed.py", "align_train.py",
-                                   "local_fold0_logits.py")):
+        if pid.isdigit() and int(pid) != me and is_heavy_python(cmd):
             out.append(line.strip()[:160])
     return out
+
+
+HEAVY_SCRIPTS = ("fragnn_train.py", "fragnn_bench.py", "align_local_embed.py", "align_train.py", "local_fold0_logits.py")
+
+
+def is_heavy_python(cmd: str) -> bool:
+    """ps の command がこのリポジトリの重いジョブの python か。シェル・/usr/bin/time・memguard の行は数えない。
+    python のパスに空白があっても（元のフォルダの .venv）拾う（#126 起動前レビューの軽微指摘）。"""
+    cmd = cmd.strip()
+    for sname in HEAVY_SCRIPTS:
+        i = cmd.find(sname)
+        if i < 0:
+            continue
+        head = cmd[:i]
+        first = head.split(" ")[0]
+        if os.path.basename(first) in ("bash", "sh", "zsh", "time") or first == "/usr/bin/time":
+            return False
+        return os.path.basename(first).startswith("python") or "/bin/python" in head
+    return False
 
 
 # ---------------------------------------------------------------- 学習の核（torch はここで初めて読む）
@@ -381,6 +397,11 @@ def run_training(D: dict, out: Path, meta: dict, dev: str = "cpu", resume: bool 
         acc, n_acc = float(st.get("acc", 0.0)), int(st.get("n_acc", 0))
         elapsed0, since_eval = float(st["train_elapsed_s"]), float(st.get("since_eval", 0.0))
         rep["resumed_from_step"] = step
+        if rpath.exists():   # 前の回の report の再開の記録を引き継ぐ
+            try:
+                rep["resumes"] = list(json.loads(rpath.read_text()).get("resumes", []))
+            except ValueError:
+                pass
         rep.setdefault("resumes", []).append({"step": step, "train_elapsed_s": elapsed0, "at": time.strftime("%F %T")})
     rep["log_rows_trimmed_on_resume"] = trim_log(logp, step)
     rep["params"] = int(sum(p.numel() for p in model.parameters()))
@@ -528,7 +549,7 @@ def import_frag_rescore(data_root: Path):
     return fr
 
 
-def prepare(data_root: Path, keys_path: Path, prep_path: Path) -> dict:
+def prepare(data_root: Path, keys_path: Path, prep_path: Path, extra: dict | None = None) -> dict:
     """速度測定の count と同じ DROP・内部検証・design の負例を作り、漏れを assert し、断片を前計算する（prep.npz、再開で使い回す）。"""
     import pandas as pd
     import sanpier_fold0 as sf
@@ -604,7 +625,7 @@ def prepare(data_root: Path, keys_path: Path, prep_path: Path) -> dict:
                 n_val_structs=len(up_va), drop=len(drop_raw), drop_key=len(drop_key), pool_allowed=int(allowed.sum()),
                 h117_missing=h117_missing, n_structs=len(struct_rows), n_frag_none=sum(x is None for x in lv),
                 neg_median_train=float(np.median(np.diff(off_tr))), neg_zero_train=int((np.diff(off_tr) == 0).sum()),
-                leak=leak, frag_seconds=round(frag_s, 1), prepare_seconds=round(time.time() - t0, 1))
+                leak=leak, frag_seconds=round(frag_s, 1), prepare_seconds=round(time.time() - t0, 1), **(extra or {}))
     tmp = Path(str(prep_path) + ".tmp.npz")
     np.savez(tmp, struct_rows=struct_rows, masses=masses, off=off, spec_row=tr.row.values.astype(np.int64),
              spec_ik=tr.inchikey14.values.astype("S14"), is_val=is_val, pos_struct=sidx(pos_row), cid=cid,
@@ -698,9 +719,13 @@ def train(data_root: Path, out: Path, device: str = "mps", resume: bool = False,
         if prep_path.exists():
             z = np.load(prep_path)
             info = json.loads(str(z["info"]))
+            bad = {k: (info.get(k), meta[k]) for k in ("keys_json_sha256", "frag_rescore_sha256") if info.get(k) != meta[k]}
+            if bad:
+                raise SystemExit(f"prep.npz は今の入力と違う（使い回さない）: {bad}")
             rep["prep_reused"] = True
         else:
-            info = prepare(data_root, keys_path, prep_path)
+            info = prepare(data_root, keys_path, prep_path,
+                           extra={k: meta[k] for k in ("keys_json_sha256", "frag_rescore_sha256")})
             z = np.load(prep_path)
             rep["prep_reused"] = False
         rep["data"] = info
