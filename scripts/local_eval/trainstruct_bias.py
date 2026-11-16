@@ -119,10 +119,11 @@ def main() -> None:
     a = ap.parse_args()
     from casmi import chem
     T, tinfo = train_struct_keys()
-    assert tinfo["n_rows"] == EXPECTED_T, tinfo["n_rows"]
     t1 = time.time()
     mism = key_mismatch(tinfo["smiles"], tinfo["keys"], chem.score_key)
-    res = dict(T=dict(n_rows=tinfo["n_rows"], n_keys=tinfo["n_keys"], score_key_mismatch=mism,
+    # 事前登録は「#120 の数と照らして記録」なので止めずに記録する
+    res = dict(T=dict(n_rows=tinfo["n_rows"], n_keys=tinfo["n_keys"], expected_n_rows=EXPECTED_T,
+                      matches_expected=tinfo["n_rows"] == EXPECTED_T, score_key_mismatch=mism,
                       score_key_secs=round(time.time() - t1, 1)))
     res.update({h: run_holdout(h, T) for h in a.holdouts.split(",")})
     Path(a.out).write_text(json.dumps(res, indent=2, ensure_ascii=False))

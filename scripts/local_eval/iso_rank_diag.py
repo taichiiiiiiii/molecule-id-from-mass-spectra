@@ -233,11 +233,11 @@ def run_holdout(holdout: str) -> dict:
             sc = frag.score_molecule(spectra.get(mid, []), cd[k]["smiles_all"], cache=fcache)
             for v in sc:
                 cd[k]["f"] = _nanmax(cd[k]["f"], _num(v))
-            key_mismatch += sum(1 for s in cd[k]["smiles_all"] if to_key(s) != k)
+            key_mismatch += sum(1 for s in cd[k]["smiles_all"] if to_key(s) != k)   # 行単位で数える（記録だけ）
         per[mid] = dict(group_ranks(cd, G, tk), g_size=len(G))
     summ = summarize(per, excl)
     summ.update(holdout=holdout, read=holdout == READ_HOLDOUT, n_truth=len(truth), n_scored_molecules=len(cands),
-                key_vs_to_key_mismatch_in_G=key_mismatch,
+                key_vs_to_key_mismatch_rows_in_G=key_mismatch,
                 n_formula_none=sum(i["n_formula_none"] for i in info_all.values()),
                 n_formula_conflict=sum(i["n_formula_conflict"] for i in info_all.values()),
                 secs=round(time.time() - t0, 1))
