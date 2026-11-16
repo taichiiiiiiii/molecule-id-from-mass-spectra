@@ -282,19 +282,173 @@ def test_resume_refuses_meta_mismatch_and_missing_flag(tmp_path):
                         eval_every=3)
 
 
-def test_stops_on_the_rule(tmp_path):
+def test_stops_on_the_rule(tmp_path, monkeypatch):
+    """(t3 の端から端) 改善の無い評価が続くと 4 回ごとに学習率が半分になり、min_lr に達してから 5 回で止まる。"""
     pytest.importorskip("torch")
+    monkeypatch.setattr(ft, "WARMUP", 0)
     D = _synthetic()
-    vals = {1: 1.0, 2: 0.9, 3: 0.899, 4: 0.898, 5: 0.95, 6: 0.897, 7: 0.896, 8: 0.5}
-    r = ft.run_training(D, tmp_path, META, dev="cpu", max_steps=50, eval_every=1, mem_check=lambda: {"avail_gb": None},
-                        val_override=lambda s: vals[s])
-    # step 2 の改善は 10%（bad 0）、3〜7 は 0.5% 未満が 5 回 → step 7 で止まる。最良は step 7（0.896）
-    assert r["status"] == "ok" and r["train"]["stop_reason"] == "converged" and r["train"]["steps"] == 7
-    assert r["train"]["best_step"] == 7 and r["train"]["best_val_loss"] == pytest.approx(0.896)
+    r = ft.run_training(D, tmp_path, META, dev="cpu", max_steps=200, eval_every=1, mem_check=lambda: {"avail_gb": None},
+                        val_override=lambda s: 1.0)
     log = [json.loads(x) for x in (tmp_path / "train_log.jsonl").read_text().splitlines()]
-    assert [x["bad"] for x in log] == [0, 0, 1, 2, 3, 4, 5]
+    # 1 回目で best。その後 4 回ごとに半減（1e-3 → … → 1.95e-6 → 1e-6 の 10 回）、min_lr に達してから bad 5 で止まる
+    red = [x["step"] for x in log if x["lr_reduced"]]
+    assert red == [1 + 4 * k for k in range(1, 11)]
+    assert r["status"] == "ok" and r["train"]["stop_reason"] == "converged" and r["train"]["steps"] == 46
+    assert r["train"]["final_lr"] == ft.MIN_LR and r["train"]["stop_rule"] == ft.STOP_RULE
+    assert [x["stop"] for x in log] == [False] * 45 + [True]
+    assert all(x["bad"] <= ft.PLATEAU_PATIENCE for x in log if x["lr_used"] > ft.MIN_LR)
+    assert r["train"]["best_step"] == 1
     cfg = json.loads((tmp_path / "fragnn_config.json").read_text())
-    assert cfg["best_step"] == 7 and cfg["stop_reason"] == "converged"
+    assert cfg["best_step"] == 1 and cfg["stop_reason"] == "converged" and cfg["stop_rule"] == ft.STOP_RULE
+
+
+# ---------------------------------------------------------------- 止め方の版 unified_rel_bad_v2（#120 2026-11-17）
+
+def test_t1_one_improvement_definition():
+    """(t1) 学習率の調整は EarlyStop と同じ「改善」の定義（相対 0.5%）の bad で動く。torch の既定（rel 1e-4）では改善に
+    数える 0.1% の改善も bad に数え、4 回目で学習率を下げる。ReduceLROnPlateau は使わない。"""
+    import inspect
+    src = inspect.getsource(ft.run_training)
+    assert "ReduceLROnPlateau" not in src and "lr_scheduler" not in src
+    es, lr, hist = ft.EarlyStop(ft.STOP_REL, ft.STOP_PATIENCE), 1e-3, []
+    loss = 1.0
+    es.update(loss, 0)
+    for i in range(1, 9):
+        loss *= 1 - 0.001          # 0.1%: torch の threshold 1e-4 なら改善、STOP_REL 0.005 では改善でない
+        u = es.update(loss, i)
+        assert u["is_best"] and u["rel_improvement"] < ft.STOP_REL
+        lr, es.bad, red = ft.lr_rule(lr, es.bad)
+        hist.append((es.bad, red))
+    assert hist == [(1, False), (2, False), (3, False), (0, True), (1, False), (2, False), (3, False), (0, True)]
+    assert lr == pytest.approx(2.5e-4, rel=1e-12)
+    # 0.5% 以上の改善は bad を 0 に戻す（同じ 1 つの定義）
+    u = es.update(loss * 0.99, 9)
+    assert u["bad"] == 0
+
+
+def test_t1_end_to_end_bad_comes_from_earlystop(tmp_path, monkeypatch):
+    """(t1) 学習の中の bad（学習率を下げる前の値）は EarlyStop を同じ損失の列で回した値と一致する。"""
+    pytest.importorskip("torch")
+    monkeypatch.setattr(ft, "WARMUP", 0)
+    vals = [1.0, 0.999, 0.998, 0.997, 0.996, 0.95, 0.949, 0.96, 0.948, 0.947, 0.946]
+    r = ft.run_training(_synthetic(), tmp_path, META, dev="cpu", max_steps=len(vals), eval_every=1,
+                        mem_check=lambda: {"avail_gb": None}, val_override=lambda s: vals[s - 1])
+    log = [json.loads(x) for x in (tmp_path / "train_log.jsonl").read_text().splitlines()]
+    es, exp_bad = ft.EarlyStop(ft.STOP_REL, ft.STOP_PATIENCE), []
+    for i, v in enumerate(vals):
+        es.update(v, i + 1); exp_bad.append(es.bad)
+        es.bad = ft.lr_rule(1e-3, es.bad)[1]
+    assert [x["bad_eval"] for x in log] == exp_bad == [0, 1, 2, 3, 4, 0, 1, 2, 3, 4, 1]
+    assert [x["step"] for x in log if x["lr_reduced"]] == [5, 10]
+    assert r["train"]["stop_reason"] == "max_steps"
+
+
+def test_t2_lr_halves_at_bad_4_and_resets_bad():
+    """(t2) bad = 4（> patience 3）で学習率 0.5 倍・bad 0。bad ≤ 3 では変えない。下限は min_lr。"""
+    assert ft.lr_rule(1e-3, 3) == (1e-3, 3, False)
+    new_lr, bad, red = ft.lr_rule(1e-3, 4)
+    assert red and bad == 0 and new_lr == pytest.approx(5e-4, rel=1e-12)
+    assert ft.lr_rule(1.5e-6, 4) == (1e-6, 0, True)             # 下限で切り上げ
+    lr = 0.0009995000000000002 * 0.5
+    for _ in range(9):
+        lr = ft.lr_rule(lr, 4)[0]
+    assert lr == 1e-6                                              # 0.00049975 から 9 回目で 9.76e-7 → 1e-6
+    assert (ft.PLATEAU_FACTOR, ft.PLATEAU_PATIENCE, ft.MIN_LR) == (0.5, 3, 1e-6)
+
+
+def test_t3_stop_only_at_min_lr():
+    """(t3) min_lr で下げられないとき bad 5 で止まる。下げられる間は止まらない（bad 4 で 0 に戻る）。"""
+    assert ft.should_stop(1e-6, 5) and ft.should_stop(1e-6, 6)
+    assert not ft.should_stop(1e-6, 4)
+    assert not ft.should_stop(2e-6, 5) and not ft.should_stop(1e-3, 9)
+    assert ft.lr_rule(1e-6, 4) == (1e-6, 4, False) and ft.lr_rule(1e-6, 5) == (1e-6, 5, False)
+    # 下げられる間: bad は 4 で 0 に戻るので 5 に達しない
+    lr, bad = 1e-4, 0
+    for _ in range(20):
+        bad += 1
+        lr, bad, _r = ft.lr_rule(lr, bad)
+        assert not ft.should_stop(lr, bad) or lr <= ft.MIN_LR
+
+
+def _make_22k_like_state(tmp_path, meta_old):
+    """短く回した state を、今の 22k の state と同じ形（plateau あり・meta に stop_rule なし・best 1.2334927・bad 5・
+    lr 0.0009995・step ≥ warmup）に書き換える。"""
+    import torch
+    with pytest.raises(ft._Abort):
+        ft.run_training(_synthetic(), tmp_path, meta_old, dev="cpu", max_steps=50, eval_every=10, ckpt_every=2,
+                        mem_check=lambda: {"avail_gb": None}, abort_at=5)
+    st = torch.load(tmp_path / "state.pt", map_location="cpu", weights_only=False)
+    st["stopper"] = {"best": 1.2334927317125064, "bad": 5, "best_step": 22000}
+    for g in st["opt"]["param_groups"]:
+        g["lr"] = 0.0009995000000000002
+    st["plateau"] = {"factor": 0.5, "patience": 3, "num_bad_epochs": 2}
+    st.pop("stop_rule", None)
+    st["meta"] = dict(meta_old)
+    torch.save(st, tmp_path / "state.pt")
+    (tmp_path / "train_report.json").unlink(missing_ok=True)
+    return st
+
+
+def test_t4_resume_applies_rule_once(tmp_path, monkeypatch, capsys):
+    """(t4) 今の state（best 1.2334927・bad 5・lr 0.0009995）から再開すると、学習の前に lr 0.00049975・bad 0・best は
+    そのまま（best_step 22,000）になり、resumes と stdout に出る。"""
+    torch = pytest.importorskip("torch")
+    monkeypatch.setattr(ft, "WARMUP", 0)
+    meta_old = dict(META)                          # stop_rule の無い旧版の meta
+    st0 = _make_22k_like_state(tmp_path, meta_old)
+    meta_new = dict(META, stop_rule=ft.STOP_RULE)
+    kw = dict(dev="cpu", resume=True, max_steps=50, eval_every=1000, ckpt_every=1, mem_check=lambda: {"avail_gb": None})
+    with pytest.raises(ft._Abort):   # 続きを 1 ステップ（step 5）だけ進めて止める（評価はしない）
+        ft.run_training(_synthetic(), tmp_path, meta_new, abort_at=st0["step"] + 2, **kw)
+    r = json.loads((tmp_path / "train_report.json").read_text())
+    assert r["status"] == "running"
+    e = r["resumes"][-1]
+    assert e["step"] == st0["step"]
+    assert e["lr_before"] == pytest.approx(0.0009995, rel=1e-9) and e["bad_before"] == 5 and e["lr_reduced"]
+    assert e["lr"] == pytest.approx(0.00049975, rel=1e-9) and e["bad"] == 0
+    assert e["best"] == 1.2334927317125064 and e["best_step"] == 22000
+    assert e["meta_diff_allowed"] == {"stop_rule": [None, ft.STOP_RULE]}
+    assert e["plateau_state_ignored"] is True and e["stop_rule"] == ft.STOP_RULE
+    out = capsys.readouterr().out
+    line = [x for x in out.splitlines() if x.startswith("RESUME ")][-1]
+    j = json.loads(line[len("RESUME "):])
+    assert j["lr"] == pytest.approx(0.00049975, rel=1e-9) and j["bad"] == 0 and j["best_step"] == 22000
+    assert j["best"] == 1.2334927317125064
+    # 続きの 1 ステップは新しい学習率で進み、評価の行は足さない（train_log に評価以外の行を書かない）
+    st1 = torch.load(tmp_path / "state.pt", map_location="cpu", weights_only=False)
+    assert st1["step"] == st0["step"] + 1
+    assert st1["opt"]["param_groups"][0]["lr"] == pytest.approx(0.00049975, rel=1e-9)
+    assert st1["stopper"] == {"best": 1.2334927317125064, "bad": 0, "best_step": 22000}
+    assert st1["meta"]["stop_rule"] == ft.STOP_RULE and "plateau" not in st1
+    assert not (tmp_path / "train_log.jsonl").exists()
+    # 規則は state に 1 回だけ: もう一度再開しても lr は 0.00049975 のまま（bad 0 では下げない）。resumes は引き継ぐ
+    with pytest.raises(ft._Abort):
+        ft.run_training(_synthetic(), tmp_path, meta_new, abort_at=st0["step"] + 3, **kw)
+    r2 = json.loads((tmp_path / "train_report.json").read_text())
+    assert len(r2["resumes"]) == 2 and not r2["resumes"][-1]["lr_reduced"]
+    assert r2["resumes"][-1]["lr"] == pytest.approx(0.00049975, rel=1e-9) and r2["resumes"][-1]["meta_diff_allowed"] == {}
+
+
+def test_t5_meta_and_status_ok_gates(tmp_path):
+    """(t5) 止め方の版以外の meta が違えば再開を拒む。status ok の report が元の場所にあれば今までどおり拒む。"""
+    pytest.importorskip("torch")
+    bad, ok = ft.meta_diff(dict(META), dict(META, stop_rule=ft.STOP_RULE))
+    assert bad == {} and ok == {"stop_rule": (None, ft.STOP_RULE)}
+    bad, ok = ft.meta_diff(dict(META), dict(META, stop_rule=ft.STOP_RULE, keys_json_sha256="other"))
+    assert set(bad) == {"keys_json_sha256"} and set(ok) == {"stop_rule"}
+    bad, _ = ft.meta_diff(dict(META, config={"STOP_REL": 0.005}), dict(META, config={"STOP_REL": 0.01}))
+    assert set(bad) == {"config"}
+    _make_22k_like_state(tmp_path, dict(META))
+    with pytest.raises(SystemExit, match="meta"):
+        ft.run_training(_synthetic(), tmp_path, dict(META, stop_rule=ft.STOP_RULE, keys_json_sha256="other"),
+                        dev="cpu", resume=True, max_steps=10, eval_every=1000, mem_check=lambda: {"avail_gb": None})
+    with pytest.raises(SystemExit, match="meta"):
+        ft.run_training(_synthetic(), tmp_path, dict(META, stop_rule=ft.STOP_RULE, wallclock_cap_s=1.0),
+                        dev="cpu", resume=True, max_steps=10, eval_every=1000, mem_check=lambda: {"avail_gb": None})
+    (tmp_path / "train_report.json").write_text(json.dumps({"status": "ok", "train": {"steps": 22000}}))
+    with pytest.raises(SystemExit, match="status ok"):
+        ft.run_training(_synthetic(), tmp_path, dict(META, stop_rule=ft.STOP_RULE), dev="cpu", resume=True,
+                        max_steps=10, eval_every=1000, mem_check=lambda: {"avail_gb": None})
 
 
 def test_wallclock_cap_stops_and_survives_resume(tmp_path):

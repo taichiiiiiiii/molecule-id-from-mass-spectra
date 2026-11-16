@@ -9,8 +9,14 @@
   負例 = design: ±10 ppm 窓のうち DROP_KEY に無く、train_structs の正準キーを持つ行（train 由来の構造）だけ。
   内部検証 = 学習データの正準キーの 2%（seed 0）、学習の正解にも負例にも使わない。内部検証の候補は seed 1 で一度だけ固定
 - 最適化: AdamW lr 1e-3・wd 1e-5、warmup 2,000（線形）、clip 5.0、batch 128 スペクトル、seed 42、fp32
-- 止め方: 2,000 ステップごとに内部検証の損失。最良値からの相対改善 0.5% 未満が 5 回続いたら止める。上限 300,000 ステップ。
-  warmup の後 ReduceLROnPlateau（factor 0.5・patience 3・min_lr 1e-6）を評価ごとに。使う重み = 内部検証の損失が最良
+- 止め方（2026-11-17 の版 `STOP_RULE`、#120 の 2026-11-16T14:23Z のコメント。定数は #120 のまま）: 2,000 ステップごとに
+  内部検証の損失。「改善」の定義は EarlyStop の 1 つだけ（最良値からの相対改善が STOP_REL 0.005 未満なら bad + 1、
+  以上なら bad 0）。warmup の後、評価ごとに bad > PLATEAU_PATIENCE 3（= bad 4）なら学習率を PLATEAU_FACTOR 0.5 倍
+  （下限 MIN_LR 1e-6）にして bad を 0 に戻す（`lr_rule`）。学習率がすでに MIN_LR で下げられないまま bad が
+  STOP_PATIENCE 5 に達したら止める（`should_stop`）。上限 300,000 ステップ。使う重み = 内部検証の損失が最良。
+  旧版（22k で停止した回）は torch の ReduceLROnPlateau（threshold 既定 rel 1e-4）を使っていて、「改善」の定義が
+  止め方とずれて学習率が一度も下がらなかった。再開のときは今の state に lr_rule を 1 回当てる（過去の評価はなぞらない）。
+  meta の差が stop_rule だけなら記録して再開を許す（他の meta が違えば拒む）
 - 経過時間の上限: 速度測定の report.json（sha256 9778ea20…）の 4 通りの合計（28,000 ステップ）の最大 × 1.5 と 96 h の
   小さい方（= 10.04 h）。数えるのは学習のループ（ステップと評価）の秒で、再開をまたいで state に足していく
   （memguard に止められていた間・起動の前処理は数えない）。超えたら state を書いて止め、stop_reason = wallclock_cap
@@ -54,6 +60,9 @@ EVAL_EVERY = B.EVAL_EVERY           # 2,000
 STOP_REL, STOP_PATIENCE = 0.005, 5
 MAX_STEPS = 300_000
 PLATEAU_FACTOR, PLATEAU_PATIENCE, MIN_LR = 0.5, 3, 1e-6
+# 止め方の版（meta に入れる）。学習率の調整を EarlyStop と同じ「改善」の定義の bad で行う版（#120 2026-11-17）
+STOP_RULE = "unified_rel_bad_v2"
+META_RESUMABLE_KEYS = ("stop_rule",)   # 再開で違っていてもよい meta（記録はする）
 VAL_FRAC, VAL_SEED, VAL_CAND_SEED = B.VAL_FRAC, B.VAL_SEED, 1
 PPM = B.PPM
 CAP_FACTOR, CAP_MAX_H = 1.5, 96.0
@@ -126,8 +135,32 @@ class EarlyStop:
 
 
 def warmup_lr(step: int, base: float = LR, warmup: int = WARMUP) -> float:
-    """warmup の間の学習率（線形、#109 と同じ）。warmup の後は ReduceLROnPlateau が決める。"""
+    """warmup の間の学習率（線形、#109 と同じ）。warmup の後は lr_rule が決める。"""
     return base * min(1.0, step / max(1, warmup))
+
+
+def lr_rule(lr: float, bad: int, factor: float = PLATEAU_FACTOR, patience: int = PLATEAU_PATIENCE,
+            min_lr: float = MIN_LR) -> tuple[float, int, bool]:
+    """#120 2026-11-17 の止め方の 2: EarlyStop の bad が patience を超えたら（torch の num_bad > patience と同じ
+    数え方）学習率を factor 倍（下限 min_lr）にして bad を 0 に戻す。lr ≤ min_lr なら下げられないので何もしない。
+    返り値 = (新しい lr, 新しい bad, 下げたか)。"""
+    if bad > patience and lr > min_lr:
+        return max(lr * factor, min_lr), 0, True
+    return lr, bad, False
+
+
+def should_stop(lr: float, bad: int, min_lr: float = MIN_LR, stop_patience: int = STOP_PATIENCE) -> bool:
+    """#120 2026-11-17 の止め方の 3: 学習率がすでに min_lr で下げられない（lr ≤ min_lr）まま bad が stop_patience に
+    達したら止める。lr_rule の後に呼ぶ（下げられる間は bad が patience + 1 で 0 に戻るので止まらない）。"""
+    return lr <= min_lr and bad >= stop_patience
+
+
+def meta_diff(old: dict, new: dict) -> tuple[dict, dict]:
+    """再開の meta の照合。返り値 = (拒む差, 許す差)。許す差 = META_RESUMABLE_KEYS（止め方の版）だけ。"""
+    keys = set(old) | set(new)
+    diff = {k: (old.get(k), new.get(k)) for k in sorted(keys) if old.get(k) != new.get(k)}
+    allowed = {k: v for k, v in diff.items() if k in META_RESUMABLE_KEYS}
+    return {k: v for k, v in diff.items() if k not in META_RESUMABLE_KEYS}, allowed
 
 
 def wallclock_cap_hours(speed_report: dict, factor: float = CAP_FACTOR, max_h: float = CAP_MAX_H) -> float:
@@ -380,16 +413,21 @@ def run_training(D: dict, out: Path, meta: dict, dev: str = "cpu", resume: bool 
     torch.manual_seed(SEED)
     model = B.build_model().to(dev)
     opt = torch.optim.AdamW(model.parameters(), lr=LR, weight_decay=WD)
-    plateau = torch.optim.lr_scheduler.ReduceLROnPlateau(opt, mode="min", factor=PLATEAU_FACTOR,
-                                                         patience=PLATEAU_PATIENCE, min_lr=MIN_LR)
     stopper = EarlyStop(STOP_REL, STOP_PATIENCE)
+
+    def cur_lr() -> float:
+        return float(opt.param_groups[0]["lr"])
+
+    def set_lr(v: float) -> None:
+        for gr in opt.param_groups:
+            gr["lr"] = v
     step, acc, n_acc, elapsed0, since_eval = 0, 0.0, 0, 0.0, 0.0
     if resume and statep.exists():
         st = torch.load(statep, map_location="cpu", weights_only=False)
-        diff = {k: (st["meta"].get(k), v) for k, v in meta.items() if st["meta"].get(k) != v}
+        diff, allowed_diff = meta_diff(st["meta"], meta)
         if diff:
             raise SystemExit(f"state の meta が今の入力と違う（再開しない）: {diff}")
-        model.load_state_dict(st["model"]); opt.load_state_dict(st["opt"]); plateau.load_state_dict(st["plateau"])
+        model.load_state_dict(st["model"]); opt.load_state_dict(st["opt"])
         stopper.load(st["stopper"]); step = int(st["step"])
         torch.set_rng_state(st["torch_rng"])
         if dev == "mps" and st.get("mps_rng") is not None:
@@ -402,7 +440,19 @@ def run_training(D: dict, out: Path, meta: dict, dev: str = "cpu", resume: bool 
                 rep["resumes"] = list(json.loads(rpath.read_text()).get("resumes", []))
             except ValueError:
                 pass
-        rep.setdefault("resumes", []).append({"step": step, "train_elapsed_s": elapsed0, "at": time.strftime("%F %T")})
+        # 止め方の 5: 今の state に lr_rule を 1 回当てる（過去の評価はなぞらない。warmup の間は当てない）
+        lr0, bad0 = cur_lr(), stopper.bad
+        reduced = False
+        if step >= WARMUP:
+            new_lr, new_bad, reduced = lr_rule(lr0, bad0)
+            if reduced:
+                set_lr(new_lr); stopper.bad = new_bad
+        entry = {"step": step, "train_elapsed_s": elapsed0, "at": time.strftime("%F %T"), "stop_rule": STOP_RULE,
+                 "meta_diff_allowed": allowed_diff, "plateau_state_ignored": "plateau" in st,
+                 "lr_before": lr0, "bad_before": bad0, "lr_reduced": reduced,
+                 "lr": cur_lr(), "bad": stopper.bad, "best": stopper.best, "best_step": stopper.best_step}
+        rep.setdefault("resumes", []).append(entry)
+        print("RESUME", json.dumps(entry, default=str), flush=True)
     rep["log_rows_trimmed_on_resume"] = trim_log(logp, step)
     rep["params"] = int(sum(p.numel() for p in model.parameters()))
     t_run = time.time()
@@ -436,7 +486,7 @@ def run_training(D: dict, out: Path, meta: dict, dev: str = "cpu", resume: bool 
         return tot / max(n, 1)
 
     def state_all() -> dict:
-        return {"model": model.state_dict(), "opt": opt.state_dict(), "plateau": plateau.state_dict(),
+        return {"model": model.state_dict(), "opt": opt.state_dict(), "stop_rule": STOP_RULE,
                 "stopper": stopper.state(), "step": step, "torch_rng": torch.get_rng_state(),
                 "mps_rng": torch.mps.get_rng_state() if dev == "mps" else None, "acc": acc, "n_acc": n_acc,
                 "train_elapsed_s": elapsed(), "since_eval": time.time() - ts, "meta": meta,
@@ -448,7 +498,7 @@ def run_training(D: dict, out: Path, meta: dict, dev: str = "cpu", resume: bool 
     model.train()
     ts = time.time() - since_eval
     stop_reason = None
-    if stopper.bad >= stopper.patience:
+    if step >= WARMUP and should_stop(cur_lr(), stopper.bad):
         stop_reason = "converged"        # 収束の後、出力の段の途中で止められた学習の再開
     elif step >= max_steps:
         stop_reason = "max_steps"
@@ -485,12 +535,17 @@ def run_training(D: dict, out: Path, meta: dict, dev: str = "cpu", resume: bool 
                 break
         if is_eval:
             vl = float(val_override(step)) if val_override is not None else val_loss()
-            if step >= WARMUP:
-                plateau.step(vl)
             u = stopper.update(vl, step)
+            lr_used, bad_eval, reduced = cur_lr(), stopper.bad, False
+            if step >= WARMUP:   # 止め方の 2（同じ bad で学習率を下げる）
+                new_lr, new_bad, reduced = lr_rule(lr_used, stopper.bad)
+                if reduced:
+                    set_lr(new_lr); stopper.bad = new_bad
+            u.update(bad=stopper.bad, bad_eval=bad_eval, lr_used=lr_used, lr_reduced=reduced,
+                     stop=bool(step >= WARMUP and should_stop(cur_lr(), stopper.bad)))   # 止め方の 3
             if u["is_best"]:
                 atomic_torch_save(model.state_dict(), bestp)
-            row = {"step": step, "train_loss": acc / max(n_acc, 1), "val_loss": vl, "lr": opt.param_groups[0]["lr"],
+            row = {"step": step, "train_loss": acc / max(n_acc, 1), "val_loss": vl, "lr": cur_lr(),
                    **u, "best": stopper.best, "best_step": stopper.best_step, "train_elapsed_s": round(elapsed(), 1),
                    "steps_per_s": n_acc / max(time.time() - ts, 1e-9), "mem": mem_check()}
             with open(logp, "a") as f:
@@ -512,7 +567,8 @@ def run_training(D: dict, out: Path, meta: dict, dev: str = "cpu", resume: bool 
             stop_reason = "wallclock_cap"   # #120: 経過時間の上限。state を書いて止める（評価は足さない）
             atomic_torch_save(state_all(), statep)
     rep["train"] = {"steps": step, "stop_reason": stop_reason, "best_val_loss": stopper.best,
-                    "best_step": stopper.best_step, "train_elapsed_s": round(elapsed(), 1)}
+                    "best_step": stopper.best_step, "train_elapsed_s": round(elapsed(), 1),
+                    "stop_rule": STOP_RULE, "final_lr": cur_lr(), "final_bad": stopper.bad}
     if stop_reason.startswith("paused"):
         rep["status"] = "paused"
         save()
@@ -521,7 +577,8 @@ def run_training(D: dict, out: Path, meta: dict, dev: str = "cpu", resume: bool 
     rows = log_rows()
     atomic_write_text(out / "learning_curve.csv", curve_csv(rows))
     rep["curve_png"] = curve_png(rows, out / "learning_curve.png") if rows else None
-    cfg = dict(CONFIG, best_step=stopper.best_step, best_val_loss=stopper.best, stop_reason=stop_reason, meta=meta)
+    cfg = dict(CONFIG, best_step=stopper.best_step, best_val_loss=stopper.best, stop_reason=stop_reason, meta=meta,
+               stop_rule=STOP_RULE, final_lr=cur_lr())
     atomic_write_text(out / "fragnn_config.json", json.dumps(cfg, indent=1, default=str))
     rep["outputs"] = {p.name: {"bytes": p.stat().st_size, "sha256": sha256_file(p)}
                       for p in sorted(out.iterdir()) if p.suffix in (".pt", ".json", ".csv", ".png")
@@ -709,7 +766,8 @@ def train(data_root: Path, out: Path, device: str = "mps", resume: bool = False,
     cap_h = wallclock_cap_hours(sp)
     frag_py = data_paths(data_root)["frag"] / "frag_rescore.py"
     meta = {"keys_json_sha256": sha256_file(keys_path), "frag_rescore_sha256": sha256_file(frag_py),
-            "speed_report_sha256": SPEED_REPORT_SHA256, "wallclock_cap_s": cap_h * 3600, "config": CONFIG}
+            "speed_report_sha256": SPEED_REPORT_SHA256, "wallclock_cap_s": cap_h * 3600, "config": CONFIG,
+            "stop_rule": STOP_RULE}
     rep = {"code_root": str(CODE_ROOT), "data_root": str(data_root), "keys_json": str(keys_path),
            "mem_start": free_gb(), "numba_threads": os.environ.get("NUMBA_NUM_THREADS")}
     rpath = out / "train_report.json"
