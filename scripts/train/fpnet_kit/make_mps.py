@@ -90,7 +90,8 @@ rep("            json.dump(hist, open(f'{args.tag}_history.json', 'w'), indent=1
     m(["        if time.time() - t_ck >= args.ckpt_every_min * 60:",
        "            save_resume(ck_path, model, opt, scaler, step, time.time() - t0, hist, ema, dev)",
        "            t_ck = time.time()",
-       "    save_resume(ck_path, model, opt, scaler, step, time.time() - t0, hist, ema, dev)"], R) +
+       "    if all(math.isfinite(v) for v in ema.values()):",
+       "        save_resume(ck_path, model, opt, scaler, step, time.time() - t0, hist, ema, dev)"], R) +
     ["    ev = "])
 # macOS: multiprocessing.Queue.qsize() raises NotImplementedError (no sem_getvalue); the step log line calls it
 rep("def worker(wid, q):\n",

@@ -5,8 +5,8 @@
 #             (2) 入力の sha256 を <sha256 list>（shasum -a 256 -c の形式）で確かめる。合わなければ終了 2
 #             (3) vm_stat の空き（free+inactive+speculative）≥ MIN_AVAIL_GB（既定 10）まで 5 分おきに待つ。上限 WAIT_MAX_S（既定 3600）。超えたら終了 5
 #   各回: MIN_FREE_PCT=${GUARD_PCT:-15} memguard_run.sh <out>/train.log.<n> <cmd...>（PYTORCH_MPS_HIGH/LOW_WATERMARK_RATIO=0.6/0.5）
-#   判定: 終了コード 0 かつログに ALL_DONE → 終了 0
-#         ログに "non-finite loss" → 終了 2（再開しない）
+#   判定: ログに "non-finite loss" → 終了 2（再開しない。ALL_DONE より先に見る）
+#         終了コード 0 かつログに ALL_DONE → 終了 0
 #         それ以外（99 = memguard の停止、1 = /usr/bin/time の子が signal で死んだ、143 など）→ 再開
 #   再開は最大 MAX_RESTARTS 回（既定 5）。超えたら終了 3。判定は 1 回ごとに <out>/loop.log に 1 行。
 # 実行中のこのファイルを書き換えない（直すなら別名で作る）。
@@ -27,10 +27,10 @@ avail_gb() {
 }
 
 leftovers() {   # この run dir の学習の python（/usr/bin/time・bash の行は除く）
-  for p in $(pgrep -f "train_fpnet_mps.py.*--run $RUN"); do
+  for p in $(pgrep -f "train_fpnet_mps.py.*--run $RUN( |$)"); do
     c=$(ps -o command= -p "$p" 2>/dev/null)
     case "$c" in /usr/bin/time*|bash*|/bin/bash*|"") continue;; esac
-    echo "$p"
+    case "$c" in *bin/python*train_fpnet_mps.py*) echo "$p";; esac
   done
 }
 
@@ -62,8 +62,8 @@ while :; do
   say "round $n start"
   (cd "$RUN" && MIN_FREE_PCT=${GUARD_PCT:-15} bash "$GUARD" "$log" "$@")
   rc=$?
-  if [ "$rc" -eq 0 ] && grep -q 'ALL_DONE' "$log"; then d="done"
-  elif grep -q 'non-finite loss' "$log"; then d="stop non_finite_loss"
+  if grep -q 'non-finite loss' "$log"; then d="stop non_finite_loss"
+  elif [ "$rc" -eq 0 ] && grep -q 'ALL_DONE' "$log"; then d="done"
   else d="resume rc_$rc"; fi
   say "round $n rc=$rc decision=$d last_step=$(grep -o 'step [0-9]* lr' "$log" | tail -1) log=$log"
   case "$d" in

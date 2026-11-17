@@ -207,7 +207,8 @@ def main():
         if time.time() - t_ck >= args.ckpt_every_min * 60:  # [port:resume]
             save_resume(ck_path, model, opt, scaler, step, time.time() - t0, hist, ema, dev)  # [port:resume]
             t_ck = time.time()  # [port:resume]
-    save_resume(ck_path, model, opt, scaler, step, time.time() - t0, hist, ema, dev)  # [port:resume]
+    if all(math.isfinite(v) for v in ema.values()):  # [port:resume]
+        save_resume(ck_path, model, opt, scaler, step, time.time() - t0, hist, ema, dev)  # [port:resume]
     ev = {name: window_eval(model, D, PFP, ent, dtype) for name, ent in sets.items()}
     hist.append(dict(step=step, hours=(time.time() - t0) / 3600, final=True, **{f'{n}_{k}': v for n, e in ev.items() for k, v in e.items()}))
     log('EVAL', json.dumps(hist[-1]))
