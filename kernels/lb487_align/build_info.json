@@ -1,0 +1,17 @@
+{
+ "issue": 127,
+ "base_sha256": "380e2c820c2a47cfad268b75cdd0dfc564350b599b9b052a1915d292987113c5",
+ "added_index": 6,
+ "neural_cell_base": 15,
+ "embedded_sha256": {
+  "align0487_runner.py": "4d2eb16cc0557792fd0b13218648199b4355f61c5e15150a059038773c9042dc",
+  "align_speed_trial.py": "cf5d145a140ae2be12c6d0c6ffb48e5c66092f54a3f91e9bbfa51892cc4050a7",
+  "base_fs.py": "afdd386995fd9471bec72224d69ed61155acc7597b96ef8d61a7a1e64a83a404",
+  "align_train.py": "8e1e9dde20add0f7a7cce911f36835ea448311f84ea2f8806275a3aaca1966ef",
+  "align_config.json": "640a3ae49cb226c1e51397a83f9c6ed0acbf8a7bb62c2558912e33077586c283"
+ },
+ "dreams_zip_sha256": "b12ca24ae5f7d1fa072712001c73eb1335ee0b6bbac51508eb3c4e9790cac59f",
+ "dreams_commit": "dbec3a0b514a99e5056cfccde4559fda8cfe8129",
+ "align_train_ref": "origin/feat/109-align-local-train:scripts/train/align_train.py",
+ "notebook_sha256": "4b7becde669e908bdbb26174601a5ae6dc318d61e7d818246adcbe463001c5d3"
+}
