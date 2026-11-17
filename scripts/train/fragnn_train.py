@@ -20,6 +20,13 @@
 - 経過時間の上限: 速度測定の report.json（sha256 9778ea20…）の 4 通りの合計（28,000 ステップ）の最大 × 1.5 と 96 h の
   小さい方（= 10.04 h）。数えるのは学習のループ（ステップと評価）の秒で、再開をまたいで state に足していく
   （memguard に止められていた間・起動の前処理は数えない）。超えたら state を書いて止め、stop_reason = wallclock_cap
+- 上限の延長（#120 2026-11-17 昼の ② の決定、`--extend-cap`）: report が status ok・stop_reason wallclock_cap で
+  state.pt がある場合だけ、上限を 1 回だけ延ばして再開する。延長の秒 =（目標ステップ − state のステップ）÷
+  train_log.jsonl の直近 5 評価の steps_per_s の中央値 × CAP_FACTOR 1.5。目標ステップ = 最後の評価のステップ +
+  （STOP_PATIENCE − その評価の bad）× EVAL_EVERY（converged に要る残りの評価の数）。延長は state.pt の meta
+  （cap_base_s・cap_extension_s・cap_extension）に固定し、学習の前に state.pt を atomic に書き直す。その後の再開
+  （memguard・paused・作り直し）では計算し直さず記録した値を使い、延長の後にまた上限で止まった report は延ばさない。
+  止め方の定数・stopper・学習率はそのまま
 - 再開: state.pt を tmp → os.replace で評価ごとと 200 ステップごとに書く。バッチの順・負例の乱数はステップ番号から決まり、
   dropout の乱数は state に入れるので、止めても同じ列で続く
 - コードの root とデータの root は別: import はこのファイルのディレクトリ（git archive で固めた先）からだけ行う。
@@ -66,6 +73,11 @@ META_RESUMABLE_KEYS = ("stop_rule",)   # 再開で違っていてもよい meta�
 VAL_FRAC, VAL_SEED, VAL_CAND_SEED = B.VAL_FRAC, B.VAL_SEED, 1
 PPM = B.PPM
 CAP_FACTOR, CAP_MAX_H = 1.5, 96.0
+# 上限の延長（#120 2026-11-17 昼の決定。止め方の定数ではなく経過時間の上限だけに効く）
+CAP_EXT_MEDIAN_N = 5      # 直近 5 評価の steps_per_s の中央値
+CAP_EXT_EXPECT_TOL = 0.01  # --extend-cap-expect-s との相対の食い違いがこれ以上なら止める
+CAP_EXT_FORMULA = ("cap_extension_s = (target_step - state_step) / median(steps_per_s of last 5 evals) * CAP_FACTOR; "
+                   "target_step = last_eval_step + (STOP_PATIENCE - last_eval_bad) * EVAL_EVERY")
 SPEED_REPORT_SHA256 = "9778ea20f5243c2e10f3aaf41a8bca0e7f03607493c0ca045ba900ee02db36ec"
 SPEED_REPORT_SRC = "/Users/taichi/.hermes/profiles/massspec/cache/scratch/n1116x_fragnn/report.json"
 EXPECTED_DROP, EXPECTED_DROP_KEY = B.EXPECTED_DROP, B.EXPECTED_DROP_KEY          # 55,369 / 55,038
@@ -171,6 +183,98 @@ def wallclock_cap_hours(speed_report: dict, factor: float = CAP_FACTOR, max_h: f
         raise ValueError(f"speed report must have exactly the 4 extrapolations {sorted(want)}, got {sorted(ex)}")
     worst = max(float(v[str(B.STEPS_JUDGE)]["total_h"]) for v in ex.values())
     return min(factor * worst, max_h)
+
+
+def cap_extension_seconds(rows: list, state_step: int, eval_every: int = EVAL_EVERY, factor: float = CAP_FACTOR,
+                          stop_patience: int = STOP_PATIENCE, n: int = CAP_EXT_MEDIAN_N) -> dict:
+    """#120 2026-11-17 昼の延長の式（CAP_EXT_FORMULA）。rows = train_log.jsonl の行（評価の行）。
+    返り値 = 延長の記録（秒・中央値・使った行・目標ステップ）。計算できなければ ValueError。"""
+    ev = [r for r in rows if r.get("steps_per_s") is not None]
+    if len(ev) < n:
+        raise ValueError(f"steps_per_s のある評価の行が {len(ev)} < {n}")
+    last = ev[-1]
+    n_evals = int(stop_patience) - int(last["bad"])
+    if n_evals <= 0:
+        raise ValueError(f"最後の評価の bad {last['bad']} が stop_patience {stop_patience} 以上（延長の必要がない）")
+    target = int(last["step"]) + n_evals * int(eval_every)
+    remaining = target - int(state_step)
+    if int(state_step) < int(last["step"]) or remaining <= 0:
+        raise ValueError(f"state のステップ {state_step} と最後の評価 {last['step']}・目標 {target} が合わない")
+    sps = [float(r["steps_per_s"]) for r in ev[-n:]]
+    med = float(np.median(sps))
+    if not (med > 0 and math.isfinite(med)):
+        raise ValueError(f"steps_per_s の中央値が正でない: {med}")
+    return {"cap_extension_s": remaining / med * factor, "formula": CAP_EXT_FORMULA,
+            "median_steps_per_s": med, "steps_per_s": sps, "eval_steps": [int(r["step"]) for r in ev[-n:]],
+            "last_eval_step": int(last["step"]), "last_eval_bad": int(last["bad"]), "n_evals": n_evals,
+            "eval_every": int(eval_every), "target_step": target, "state_step": int(state_step),
+            "remaining_steps": remaining, "factor": factor}
+
+
+def resolve_cap(out: Path, meta: dict, extend: bool = False, expect_s: float | None = None,
+                eval_every: int = EVAL_EVERY) -> tuple[dict, dict | None]:
+    """--resume のときに上限を決める（学習の前に呼ぶ）。返り値 = (run_training に渡す meta, 今回延ばした記録 or None)。
+    - state.pt の meta に延長が記録済み → 計算し直さず、記録した延長を今の meta に足して返す（元の上限が今の
+      meta の wallclock_cap_s と一致し、記録の上限 = 元 + 延長のときだけ。違えば拒む）。--extend-cap の有無によらない
+    - 未延長で extend → report が status ok・stop_reason wallclock_cap・state.pt があり、state の meta が今の meta と
+      同じで、state が上限で止まった点のときだけ、延長を 1 回計算して state.pt を atomic に書き直す。それ以外は拒む
+    - 未延長で extend なし → meta をそのまま返す（今までどおり）"""
+    out = Path(out)
+    statep, rpath, logp = out / "state.pt", out / "train_report.json", out / "train_log.jsonl"
+    base = float(meta["wallclock_cap_s"])
+    if not statep.exists():
+        if extend:
+            raise SystemExit(f"--extend-cap: {statep} が無い（延長しない）")
+        return meta, None
+    import torch
+    st = torch.load(statep, map_location="cpu", weights_only=False)
+    smeta = st.get("meta") or {}
+    if "cap_extension_s" in smeta:   # 延長済み: 記録した値だけを使う（二重に延ばさない）
+        sbase, sext = float(smeta["cap_base_s"]), float(smeta["cap_extension_s"])
+        if sbase != base:
+            raise SystemExit(f"state の元の上限 {sbase} が今の上限 {base} と違う（再開しない）")
+        if float(smeta["wallclock_cap_s"]) != sbase + sext:
+            raise SystemExit(f"state の上限 {smeta['wallclock_cap_s']} が元 {sbase} + 延長 {sext} と違う（再開しない）")
+        return dict(meta, wallclock_cap_s=sbase + sext, cap_base_s=sbase, cap_extension_s=sext,
+                    cap_extension=smeta["cap_extension"]), None
+    if not extend:
+        return meta, None
+    if not rpath.exists():
+        raise SystemExit(f"--extend-cap: {rpath} が無い（延長しない）")
+    prev = json.loads(rpath.read_text())
+    tr = prev.get("train") or {}
+    if prev.get("status") != "ok" or tr.get("stop_reason") != "wallclock_cap":
+        raise SystemExit(f"--extend-cap: report が status ok・stop_reason wallclock_cap でない"
+                         f"（{prev.get('status')}・{tr.get('stop_reason')}）。延長しない")
+    diff, allowed = meta_diff(smeta, meta)
+    if diff or allowed:
+        raise SystemExit(f"--extend-cap: state の meta が今の入力と違う（延長しない）: {diff or allowed}")
+    if float((prev.get("meta") or {}).get("wallclock_cap_s", -1.0)) != base:
+        raise SystemExit("--extend-cap: report の上限が今の上限と違う（延長しない）")
+    step = int(st["step"])
+    if step != int(tr.get("steps", -1)):
+        raise SystemExit(f"--extend-cap: state のステップ {step} が report の {tr.get('steps')} と違う（延長しない）")
+    if float(tr.get("train_elapsed_s", -1.0)) + 0.05 < float(prev.get("wallclock_cap_h", math.inf)) * 3600:
+        raise SystemExit("--extend-cap: report の経過秒が上限に届いていない（延長しない）")
+    rows = [json.loads(x) for x in logp.read_text().splitlines() if x.strip()] if logp.exists() else []
+    if not rows or int(rows[-1]["bad"]) != int(st["stopper"]["bad"]):
+        raise SystemExit("--extend-cap: train_log.jsonl の最後の評価の bad が state の stopper と違う（延長しない）")
+    try:
+        rec = cap_extension_seconds(rows, step, eval_every=eval_every)
+    except ValueError as e:
+        raise SystemExit(f"--extend-cap: 延長を計算できない: {e}")
+    ext = float(rec["cap_extension_s"])
+    if expect_s is not None and abs(ext - float(expect_s)) / float(expect_s) >= CAP_EXT_EXPECT_TOL:
+        raise SystemExit(f"--extend-cap: 計算した延長 {ext:.1f} s が期待 {expect_s} s と相対 "
+                         f"{CAP_EXT_EXPECT_TOL:.0%} 以上違う（延長しない）")
+    rec.update(cap_base_s=base, wallclock_cap_s=base + ext, expect_s=expect_s, at=time.strftime("%F %T"),
+               report_train=tr)
+    new = dict(meta, wallclock_cap_s=base + ext, cap_base_s=base, cap_extension_s=ext, cap_extension=rec)
+    st["meta"] = new
+    st["wallclock_cap_s"] = base + ext
+    atomic_torch_save(st, statep)    # 学習の前に固定する（最初の ckpt の前に止められても延長は失われない）
+    print("CAP_EXTEND", json.dumps(rec, default=str), flush=True)
+    return new, rec
 
 
 def leak_counts(train_raw, train_key, split_rows_raw, split_rows_key, holdout_keys: dict, neg_keys, drop_key: set,
@@ -388,7 +492,14 @@ def run_training(D: dict, out: Path, meta: dict, dev: str = "cpu", resume: bool 
         except ValueError:
             prev = {}
         if prev.get("status") == "ok":
-            raise SystemExit(f"{rpath} は status ok（{prev.get('train')}）。やり直すなら出力先を変える")
+            ptr, pmeta = prev.get("train") or {}, prev.get("meta") or {}
+            # 上限の延長の後の最初の再開だけは許す（resolve_cap が state.pt に延長を固定済み。report はまだ延長の前の
+            # 上限で止まった回のもの）。延長の後にまた上限で止まった report（上限 = 元 + 延長）は今までどおり拒む
+            ext_resume = (resume and statep.exists() and "cap_extension_s" in meta
+                          and ptr.get("stop_reason") == "wallclock_cap"
+                          and float(pmeta.get("wallclock_cap_s", -1.0)) == float(meta["cap_base_s"]))
+            if not ext_resume:
+                raise SystemExit(f"{rpath} は status ok（{prev.get('train')}）。やり直すなら出力先を変える")
     if statep.exists() and not resume:
         raise SystemExit(f"{statep} がある。続けるなら --resume、やり直すなら出力先を変える")
     rep = dict(rep or {})
@@ -450,7 +561,10 @@ def run_training(D: dict, out: Path, meta: dict, dev: str = "cpu", resume: bool 
         entry = {"step": step, "train_elapsed_s": elapsed0, "at": time.strftime("%F %T"), "stop_rule": STOP_RULE,
                  "meta_diff_allowed": allowed_diff, "plateau_state_ignored": "plateau" in st,
                  "lr_before": lr0, "bad_before": bad0, "lr_reduced": reduced,
-                 "lr": cur_lr(), "bad": stopper.bad, "best": stopper.best, "best_step": stopper.best_step}
+                 "lr": cur_lr(), "bad": stopper.bad, "best": stopper.best, "best_step": stopper.best_step,
+                 "wallclock_cap_s": cap_s, "cap_base_s": meta.get("cap_base_s"),
+                 "cap_extension_s": meta.get("cap_extension_s"), "cap_extended_now": bool(rep.pop("cap_extended_now", False)),
+                 "cap_extension": meta.get("cap_extension")}
         rep.setdefault("resumes", []).append(entry)
         print("RESUME", json.dumps(entry, default=str), flush=True)
     rep["log_rows_trimmed_on_resume"] = trim_log(logp, step)
@@ -755,8 +869,10 @@ def assert_code_data_separation(data_root: Path) -> None:
 
 
 def train(data_root: Path, out: Path, device: str = "mps", resume: bool = False,
-          speed_src: str | Path = SPEED_REPORT_SRC, **run_kw) -> dict:
-    """本番の入口。run_kw はテスト用（max_steps・eval_every・mem_check など）で、main からは渡さない。"""
+          speed_src: str | Path = SPEED_REPORT_SRC, extend_cap: bool = False, extend_cap_expect_s: float | None = None,
+          **run_kw) -> dict:
+    """本番の入口。run_kw はテスト用（max_steps・eval_every・mem_check など）で、main からは渡さない。
+    extend_cap: 上限の延長（resolve_cap）。延長の計算と state.pt の書き直しは前処理より前に行う。"""
     t0 = time.time()
     data_root, out = Path(data_root).resolve(), Path(out)
     out.mkdir(parents=True, exist_ok=True)
@@ -770,6 +886,12 @@ def train(data_root: Path, out: Path, device: str = "mps", resume: bool = False,
             "stop_rule": STOP_RULE}
     rep = {"code_root": str(CODE_ROOT), "data_root": str(data_root), "keys_json": str(keys_path),
            "mem_start": free_gb(), "numba_threads": os.environ.get("NUMBA_NUM_THREADS")}
+    if extend_cap and not resume:
+        raise SystemExit("--extend-cap は --resume と一緒に使う")
+    if resume:
+        meta, ext_rec = resolve_cap(out, meta, extend=extend_cap, expect_s=extend_cap_expect_s,
+                                    eval_every=run_kw.get("eval_every", EVAL_EVERY))
+        rep["cap_extended_now"] = ext_rec is not None
     rpath = out / "train_report.json"
     try:
         prep_path = out / "prep.npz"
@@ -822,6 +944,11 @@ def main() -> None:
     ap.add_argument("--resume", action="store_true", help="out/state.pt があれば続ける（無ければ最初から）")
     ap.add_argument("--min-free-gb", type=float, default=10.0)
     ap.add_argument("--speed-report", default=SPEED_REPORT_SRC)
+    ap.add_argument("--extend-cap", action="store_true",
+                    help="#120 2026-11-17 昼: status ok・wallclock_cap で止まった学習の上限を 1 回だけ延ばして再開する"
+                         "（延長済みなら記録した上限を使い、計算し直さない）")
+    ap.add_argument("--extend-cap-expect-s", type=float, default=None,
+                    help="延長の秒の期待値（照合だけ。相対 1%% 以上違えば止まる）")
     a = ap.parse_args()
     for k, v in (("PYTORCH_MPS_HIGH_WATERMARK_RATIO", "0.6"), ("PYTORCH_MPS_LOW_WATERMARK_RATIO", "0.5")):
         if os.environ.get(k) != v:
@@ -832,7 +959,8 @@ def main() -> None:
     own = own_heavy_jobs()
     if own:
         raise SystemExit(f"another heavy job of this repo is running: {own}")
-    r = train(Path(a.data_root), Path(a.out), device=a.device, resume=a.resume, speed_src=a.speed_report)
+    r = train(Path(a.data_root), Path(a.out), device=a.device, resume=a.resume, speed_src=a.speed_report,
+              extend_cap=a.extend_cap, extend_cap_expect_s=a.extend_cap_expect_s)
     print(json.dumps({k: r.get(k) for k in ("status", "error", "device", "train", "elapsed_s", "wallclock_cap_h")},
                      indent=1, default=str, ensure_ascii=False))
 

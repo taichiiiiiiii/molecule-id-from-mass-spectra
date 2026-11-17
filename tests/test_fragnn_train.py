@@ -753,3 +753,237 @@ def test_prep_reuse_checks_inputs(tmp_path, monkeypatch, isolated_frag_import):
     (data / "data/ext/frag/frag_rescore.py").write_text(FAKE_FRAG + "\n# changed\n")
     with pytest.raises(SystemExit, match="prep.npz"):
         ft.train(data, out, device="cpu", resume=True, speed_src=sp, **kw)
+
+
+# ---------------------------------------------------------------- 上限の延長（#120 2026-11-17 昼の決定、--extend-cap）
+
+REAL_LAST5 = [(90000, 2.291361841184638, 1), (92000, 2.299301723843455, 2), (94000, 2.2698691405155436, 3),
+              (96000, 2.2793039111506523, 0), (98000, 2.31205451527964, 1)]
+
+
+def test_cap_extension_formula():
+    """延長 =（目標 − state のステップ）÷ 直近 5 評価の steps_per_s の中央値 × 1.5、目標 = 最後の評価 + (5 − bad) × 2,000。
+    今の学習の数（98,898・最後の評価 98,000 で bad 1）では 7,102 ÷ 2.29136 × 1.5 ≈ 4,649 s。"""
+    rows = [{"step": 88000, "steps_per_s": 3.0156914961513466, "bad": 0}]
+    rows += [{"step": s, "steps_per_s": v, "bad": b} for s, v, b in REAL_LAST5]
+    rec = ft.cap_extension_seconds(rows, 98898)
+    assert rec["target_step"] == 106000 and rec["n_evals"] == 4 and rec["remaining_steps"] == 7102
+    assert rec["median_steps_per_s"] == pytest.approx(2.291361841184638, rel=1e-12)
+    assert rec["eval_steps"] == [90000, 92000, 94000, 96000, 98000]
+    assert rec["cap_extension_s"] == pytest.approx(7102 / 2.291361841184638 * 1.5, rel=1e-12)
+    assert rec["cap_extension_s"] == pytest.approx(4649.2, abs=0.1)
+    assert (ft.CAP_FACTOR, ft.CAP_EXT_MEDIAN_N, ft.STOP_PATIENCE, ft.EVAL_EVERY) == (1.5, 5, 5, 2000)
+    # 延長の定数は CONFIG（= state の meta）に入れない（入れると今の state と meta が合わなくなる）
+    assert not any(k.startswith("CAP_EXT") for k in ft.CONFIG)
+    with pytest.raises(ValueError, match="< 5"):
+        ft.cap_extension_seconds(rows[-4:], 98898)
+    with pytest.raises(ValueError, match="stop_patience"):
+        ft.cap_extension_seconds(rows[:-1] + [dict(rows[-1], bad=5)], 98898)
+    with pytest.raises(ValueError, match="合わない"):
+        ft.cap_extension_seconds(rows, 97000)
+
+
+def test_cap_extension_on_the_real_log():
+    p = ROOT / "outputs/fragnn_train/run98k/train_log.jsonl"
+    if not p.exists():
+        pytest.skip("run98k の退避が無い環境（CI）")
+    rows = [json.loads(x) for x in p.read_text().splitlines() if x.strip()]
+    rec = ft.cap_extension_seconds(rows, 98898)
+    assert rec["target_step"] == 106000 and rec["cap_extension_s"] == pytest.approx(4649.2, abs=0.1)
+
+
+VALS = lambda s: 1.0  # noqa: E731  損失が一定（bad が 0,1,2,3,4→0,1,2 と進む）
+
+
+def _cap_stopped(tmp_path, monkeypatch):
+    """step 7 で経過時間の上限で止まった学習（status ok・stop_reason wallclock_cap）を作る。評価は毎ステップ。
+    （step 8 で落ちて state は step 7、再開すると上限 1e-9 を超えているので学習せずに wallclock_cap で終える）"""
+    monkeypatch.setattr(ft, "WARMUP", 0)
+    D = _synthetic()
+    kw = dict(dev="cpu", max_steps=100, eval_every=1, ckpt_every=1, mem_check=lambda: {"avail_gb": None},
+              val_override=VALS)
+    with pytest.raises(ft._Abort):
+        ft.run_training(D, tmp_path, META, abort_at=8, **kw)
+    r = ft.run_training(D, tmp_path, META, resume=True, cap_s=1e-9, **kw)
+    assert r["status"] == "ok" and r["train"]["stop_reason"] == "wallclock_cap" and r["train"]["steps"] == 7
+    return D
+
+
+def _state(p):
+    import torch
+    return torch.load(p / "state.pt", map_location="cpu", weights_only=False)
+
+
+def _no_recompute(monkeypatch):
+    def boom(*a, **k):
+        raise AssertionError("延長を計算し直した")
+    monkeypatch.setattr(ft, "cap_extension_seconds", boom)
+
+
+def test_extend_cap_first_time_only_from_cap_stop(tmp_path, monkeypatch):
+    """status ok・wallclock_cap・state.pt のときだけ最初の延長ができる。延長は state.pt に固定され、stopper・学習率は
+    そのまま引き継ぐ。resumes に延長の秒・式・中央値が出る。"""
+    pytest.importorskip("torch")
+    D = _cap_stopped(tmp_path, monkeypatch)
+    st0 = _state(tmp_path)
+    rows = [json.loads(x) for x in (tmp_path / "train_log.jsonl").read_text().splitlines()]
+    assert [x["step"] for x in rows] == list(range(1, 8)) and rows[-1]["bad"] == 2
+    med = float(np.median([x["steps_per_s"] for x in rows[-5:]]))
+    want = (7 + 3 * 1 - 7) / med * 1.5          # 目標 = 7 + (5 − 2) × 1
+    meta, rec = ft.resolve_cap(tmp_path, dict(META), extend=True, eval_every=1)
+    assert rec["cap_extension_s"] == pytest.approx(want, rel=1e-12) and rec["target_step"] == 10
+    assert meta["cap_base_s"] == META["wallclock_cap_s"] and meta["cap_extension_s"] == rec["cap_extension_s"]
+    assert meta["wallclock_cap_s"] == META["wallclock_cap_s"] + rec["cap_extension_s"]
+    assert meta["cap_extension"]["formula"] == ft.CAP_EXT_FORMULA
+    st1 = _state(tmp_path)                       # 学習の前に state.pt を書き直してある
+    assert st1["meta"] == meta and st1["wallclock_cap_s"] == meta["wallclock_cap_s"]
+    assert st1["stopper"] == st0["stopper"] and st1["step"] == st0["step"] == 7
+    assert st1["opt"]["param_groups"][0]["lr"] == st0["opt"]["param_groups"][0]["lr"]
+    r = ft.run_training(D, tmp_path, meta, dev="cpu", resume=True, max_steps=9, eval_every=1,
+                        mem_check=lambda: {"avail_gb": None}, val_override=VALS, rep={"cap_extended_now": True})
+    assert r["status"] == "ok" and r["train"]["stop_reason"] == "max_steps" and r["train"]["steps"] == 9
+    e = r["resumes"][-1]
+    assert e["step"] == 7 and e["cap_extended_now"] is True and e["cap_extension_s"] == rec["cap_extension_s"]
+    assert e["wallclock_cap_s"] == meta["wallclock_cap_s"] and e["cap_base_s"] == META["wallclock_cap_s"]
+    assert e["cap_extension"]["median_steps_per_s"] == pytest.approx(med) and "formula" in e["cap_extension"]
+    assert (e["best"], e["best_step"], e["bad"]) == (st0["stopper"]["best"], st0["stopper"]["best_step"],
+                                                     st0["stopper"]["bad"]) and not e["lr_reduced"]
+    assert r["wallclock_cap_h"] == pytest.approx(meta["wallclock_cap_s"] / 3600)
+    log = [json.loads(x) for x in (tmp_path / "train_log.jsonl").read_text().splitlines()]
+    assert [x["step"] for x in log] == list(range(1, 10)) and log[7]["bad_eval"] == 3   # stopper を引き継いで 2 → 3
+
+
+def test_extend_cap_refusals(tmp_path, monkeypatch):
+    """converged・max_steps・paused の report、state.pt が無い、report が無い、期待値と 1% 以上違う → 延長しない。
+    --extend-cap なしで status ok なら今までどおり拒む。"""
+    pytest.importorskip("torch")
+    _cap_stopped(tmp_path, monkeypatch)
+    rp = tmp_path / "train_report.json"
+    orig = rp.read_text()
+    with pytest.raises(SystemExit, match="status ok"):
+        ft.run_training(_synthetic(), tmp_path, dict(META), dev="cpu", resume=True, max_steps=9, eval_every=1)
+    assert ft.resolve_cap(tmp_path, dict(META), extend=False) == (dict(META), None)
+    for st, sr in (("ok", "converged"), ("ok", "max_steps"), ("paused", "paused_low_memory"), ("running", None)):
+        r = json.loads(orig); r["status"] = st; r["train"]["stop_reason"] = sr
+        rp.write_text(json.dumps(r))
+        with pytest.raises(SystemExit, match="wallclock_cap でない"):
+            ft.resolve_cap(tmp_path, dict(META), extend=True, eval_every=1)
+    rp.write_text(orig)
+    with pytest.raises(SystemExit, match="meta"):
+        ft.resolve_cap(tmp_path, dict(META, keys_json_sha256="other"), extend=True, eval_every=1)
+    rec = ft.cap_extension_seconds([json.loads(x) for x in (tmp_path / "train_log.jsonl").read_text().splitlines()],
+                                   7, eval_every=1)
+    with pytest.raises(SystemExit, match="期待"):
+        ft.resolve_cap(tmp_path, dict(META), extend=True, eval_every=1, expect_s=rec["cap_extension_s"] * 1.02)
+    assert "cap_extension_s" not in _state(tmp_path)["meta"]          # 拒んだときは state を書き換えない
+    rp.unlink()
+    with pytest.raises(SystemExit, match="report"):
+        ft.resolve_cap(tmp_path, dict(META), extend=True, eval_every=1)
+    rp.write_text(orig)
+    _, ok = ft.resolve_cap(tmp_path, dict(META), extend=True, eval_every=1, expect_s=rec["cap_extension_s"] * 1.005)
+    assert ok is not None                                              # 1% 未満の食い違いは通る
+    empty = tmp_path / "empty"; empty.mkdir()
+    with pytest.raises(SystemExit, match="state.pt"):
+        ft.resolve_cap(empty, dict(META), extend=True)
+
+
+def test_extend_cap_not_twice_after_memguard_and_paused(tmp_path, monkeypatch):
+    """延長の後の再開（memguard の kill・paused）では計算し直さず、上限は変わらない（--extend-cap を毎回渡しても
+    二重に延びない）。"""
+    pytest.importorskip("torch")
+    D = _cap_stopped(tmp_path, monkeypatch)
+    meta, rec = ft.resolve_cap(tmp_path, dict(META), extend=True, eval_every=1)
+    cap = meta["wallclock_cap_s"]
+    _no_recompute(monkeypatch)
+    kw = dict(dev="cpu", resume=True, max_steps=20, eval_every=1000, ckpt_every=1, val_override=VALS)
+    with pytest.raises(ft._Abort):       # memguard の kill の代わり（step 9 で state を書かずに落ちる）
+        ft.run_training(D, tmp_path, meta, abort_at=9, mem_check=lambda: {"avail_gb": None}, **kw)
+    m2, r2 = ft.resolve_cap(tmp_path, dict(META), extend=True, eval_every=1)
+    assert r2 is None and m2 == meta and _state(tmp_path)["meta"]["wallclock_cap_s"] == cap
+    monkeypatch.setattr(ft, "MEM_CHECK_EVERY", 2)
+    r = ft.run_training(D, tmp_path, m2, mem_check=lambda: {"avail_gb": 1.0}, **kw)
+    assert r["status"] == "paused"
+    m3, r3 = ft.resolve_cap(tmp_path, dict(META), extend=True, eval_every=1)
+    assert r3 is None and m3 == meta
+    r = ft.run_training(D, tmp_path, m3, mem_check=lambda: {"avail_gb": 50.0}, **kw)
+    assert r["status"] == "ok" and r["train"]["stop_reason"] == "max_steps"
+    caps = [(e["wallclock_cap_s"], e["cap_extension_s"]) for e in r["resumes"] if e.get("cap_extension_s")]
+    assert len(caps) == 3 and set(caps) == {(cap, rec["cap_extension_s"])}
+    assert _state(tmp_path)["meta"] == meta
+    # 記録を壊した state（上限 ≠ 元 + 延長）や元の上限が違う入力は拒む
+    import torch
+    st = _state(tmp_path); st["meta"] = dict(st["meta"], wallclock_cap_s=cap + 1.0); torch.save(st, tmp_path / "state.pt")
+    with pytest.raises(SystemExit, match="元"):
+        ft.resolve_cap(tmp_path, dict(META), extend=True)
+    with pytest.raises(SystemExit, match="元の上限"):
+        ft.resolve_cap(tmp_path, dict(META, wallclock_cap_s=5.0), extend=True)
+
+
+def test_no_reextension_after_second_cap_stop(tmp_path, monkeypatch):
+    """延長の後にまた上限で止まった report（上限 = 元 + 延長）は延ばさず、再開も拒む。"""
+    pytest.importorskip("torch")
+    D = _cap_stopped(tmp_path, monkeypatch)
+    meta, _ = ft.resolve_cap(tmp_path, dict(META), extend=True, eval_every=1)
+    r = ft.run_training(D, tmp_path, meta, dev="cpu", resume=True, max_steps=100, eval_every=1, cap_s=1e-9,
+                        mem_check=lambda: {"avail_gb": None}, val_override=VALS)
+    assert r["status"] == "ok" and r["train"]["stop_reason"] == "wallclock_cap"
+    assert r["meta"]["wallclock_cap_s"] == meta["wallclock_cap_s"]
+    _no_recompute(monkeypatch)
+    m2, r2 = ft.resolve_cap(tmp_path, dict(META), extend=True, eval_every=1)
+    assert r2 is None and m2 == meta
+    with pytest.raises(SystemExit, match="status ok"):
+        ft.run_training(D, tmp_path, m2, dev="cpu", resume=True, max_steps=100, eval_every=1,
+                        mem_check=lambda: {"avail_gb": None}, val_override=VALS)
+
+
+def test_extension_survives_stop_before_first_ckpt(tmp_path, monkeypatch):
+    """延長を state.pt に固定した直後（学習・最初の ckpt の前）に止められても、次の再開は記録した延長で続く。"""
+    pytest.importorskip("torch")
+    D = _cap_stopped(tmp_path, monkeypatch)
+    meta, rec = ft.resolve_cap(tmp_path, dict(META), extend=True, eval_every=1)
+    # ここで止められた（report はまだ延長の前の status ok・wallclock_cap のまま）
+    assert json.loads((tmp_path / "train_report.json").read_text())["status"] == "ok"
+    _no_recompute(monkeypatch)
+    m2, r2 = ft.resolve_cap(tmp_path, dict(META), extend=True, eval_every=1)
+    assert r2 is None and m2 == meta
+    with pytest.raises(ft._Abort):       # 1 ステップ目（ckpt の前）でまた止められる
+        ft.run_training(D, tmp_path, m2, dev="cpu", resume=True, max_steps=9, eval_every=1000, ckpt_every=1000,
+                        mem_check=lambda: {"avail_gb": None}, val_override=VALS, abort_at=8)
+    assert json.loads((tmp_path / "train_report.json").read_text())["status"] == "running"
+    st = _state(tmp_path)
+    assert st["step"] == 7 and st["meta"] == meta
+    m3, _ = ft.resolve_cap(tmp_path, dict(META), extend=True, eval_every=1)
+    r = ft.run_training(D, tmp_path, m3, dev="cpu", resume=True, max_steps=9, eval_every=1,
+                        mem_check=lambda: {"avail_gb": None}, val_override=VALS)
+    assert r["status"] == "ok" and r["train"]["steps"] == 9 and r["wallclock_cap_h"] == pytest.approx(
+        meta["wallclock_cap_s"] / 3600)
+
+
+def test_train_extend_cap_end_to_end_on_fake_roots(tmp_path, monkeypatch, isolated_frag_import):
+    """train()（本番の入口）で: 上限で止まった学習を --extend-cap で 1 回延ばして続ける。--resume なしは拒む。"""
+    pytest.importorskip("torch")
+    monkeypatch.setattr(ft, "WARMUP", 0)
+    data, code, sp = _fake_roots(tmp_path)
+    _patch_expected(monkeypatch, code, sp)
+    out = tmp_path / "out"
+    kw = dict(eval_every=1, mem_check=lambda: {"avail_gb": None}, val_override=VALS)
+    with pytest.raises(SystemExit, match="--resume"):
+        ft.train(data, out, device="cpu", resume=False, speed_src=sp, extend_cap=True, **kw)
+    with pytest.raises(ft._Abort):
+        ft.train(data, out, device="cpu", resume=True, speed_src=sp, max_steps=100, abort_at=8, **kw)
+    r = ft.train(data, out, device="cpu", resume=True, speed_src=sp, max_steps=100, cap_s=1e-9, **kw)
+    assert r["status"] == "ok" and r["train"]["stop_reason"] == "wallclock_cap" and r["train"]["steps"] == 7
+    with pytest.raises(SystemExit, match="status ok"):   # --extend-cap なしは今までどおり
+        ft.train(data, out, device="cpu", resume=True, speed_src=sp, max_steps=9, **kw)
+    r = ft.train(data, out, device="cpu", resume=True, speed_src=sp, max_steps=9, extend_cap=True, **kw)
+    assert r["status"] == "ok" and r["train"]["stop_reason"] == "max_steps" and r["train"]["steps"] == 9
+    e = r["resumes"][-1]
+    assert e["cap_extended_now"] is True and e["cap_base_s"] == pytest.approx(3.0 * 3600)
+    assert e["wallclock_cap_s"] == e["cap_base_s"] + e["cap_extension_s"] and "cap_extended_now" not in r
+    assert r["meta"]["cap_extension"]["target_step"] == 10
+
+
+def test_cli_has_extend_cap_args():
+    import inspect
+    src = inspect.getsource(ft.main)
+    assert '"--extend-cap"' in src and '"--extend-cap-expect-s"' in src and "extend_cap=a.extend_cap" in src
