@@ -217,7 +217,7 @@ def test_loop_resumes_then_done(tmp_path):
 
 @pytestmark_darwin
 def test_loop_stops_on_nonfinite_and_max_restarts(tmp_path):
-    rc, log, _, _ = _loop(tmp_path, "print('non-finite loss at step', 5)\nimport sys; sys.exit(0)\n")
+    rc, log, _, _ = _loop(tmp_path, "print('non-finite loss at step', 5)\nprint('ALL_DONE')\n")
     assert rc == 2 and "stop non_finite_loss" in log
     (tmp_path / "b").mkdir()
     rc, log, _, _ = _loop(tmp_path / "b", "import sys; sys.exit(99)\n")
