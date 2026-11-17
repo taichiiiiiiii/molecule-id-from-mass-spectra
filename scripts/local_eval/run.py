@@ -21,6 +21,9 @@
                   gl_fuse.rerank_multi、λ=0.5、学習なしなのでリーク無し）
   4b. elem      : （#90、指定時だけ）dedup 後の上位 TOPN で、C・H・N・O・P・S・F・Cl・Br・I 以外の元素を含む候補を
                   含まない候補の後ろへ回す（安定な分割、定数なし。scripts/local_eval/elem_rule.py）
+  2e. cos       : （#140、指定時だけ）score の代わりに、候補の点を cos(σ(z), fp) = (fp·p)/(‖fp‖·‖p‖ + 1e-12)、
+                  p = sigmoid(z) にする（z・fp・窓は score と同じ。全 0 の指紋は 0 点、fp が作れない候補は飛ばす）。
+                  score と cos はちょうど 1 つ指定する。cos と併用できるのは prior・frag だけ
   5. output     : InChIKey14 で重複除去した上位 25 → submission 形式 → MRR@25
 
     python scripts/local_eval/run.py --holdout np_v2
@@ -113,6 +116,30 @@ def score_window(idx: np.ndarray, pool: Pool, z: np.ndarray, fpc: FPCache):
     return rows
 
 
+# ---------------------------------------------------------------- 段 2e: cos（#140、予測確率と候補指紋の cosine）
+COS_ALLOWED = ("cos", "prior", "frag")   # #140 で測る組み合わせ（cos,prior,frag）の範囲
+
+
+def sigmoid(z: np.ndarray) -> np.ndarray:
+    """float64 の σ(z)。tanh の形で書いて、大きな |z| でも overflow しない。"""
+    z = np.asarray(z, np.float64)
+    return 0.5 * (1.0 + np.tanh(0.5 * z))
+
+
+def cos_window(idx: np.ndarray, pool: Pool, z: np.ndarray, fpc: FPCache):
+    """score_window と同じ候補・同じ並べ方で、点だけ (fp·p)/(‖fp‖·‖p‖ + 1e-12)、p = σ(z)（#140）。"""
+    p = sigmoid(z)
+    pn = float(np.linalg.norm(p))
+    rows = []
+    for i in idx:
+        fp = fpc(pool.smiles[i])
+        if fp is not None:
+            f = np.asarray(fp, np.float64)
+            rows.append((float(f @ p / (float(np.linalg.norm(f)) * pn + 1e-12)), int(i)))
+    rows.sort(key=lambda r: -r[0])
+    return rows
+
+
 # ---------------------------------------------------------------- 段 2a: pmi（#97、候補ごとの hubness 補正）
 PMI_EXCLUSIVE = ("joint", "pubchem")   # 生の z で score_window を呼び直す経路。pmi と併用しない
 
@@ -190,7 +217,8 @@ FRAGNN_ALLOWED = ("score", "prior", "frag")   # #120 で測る組み合わせ（
 
 def check_stages(stages: list[str]) -> None:
     """pmi（#97）・nbz（#103）と、それぞれ測っていない段の同時指定を止める。pmi と nbz の併用も止める。
-    fragnn・fragnnblind（#120）は同時に指定できず、併用できるのは FRAGNN_ALLOWED だけ。"""
+    fragnn・fragnnblind（#120）は同時に指定できず、併用できるのは FRAGNN_ALLOWED だけ。
+    score と cos（#140）はちょうど 1 つ要り、cos と併用できるのは COS_ALLOWED だけ。"""
     bad = [s for s in PMI_EXCLUSIVE if s in stages]
     assert not ("pmi" in stages and bad), f"pmi は {bad} と併用できない（#97 の範囲外）"
     bad = [s for s in NBZ_EXCLUSIVE if s in stages]
@@ -200,6 +228,9 @@ def check_stages(stages: list[str]) -> None:
     assert len(fn) <= 1, "fragnn と fragnnblind は同時に使えない（#120 は別々に 1 回ずつ採点する）"
     bad = [s for s in stages if fn and s not in FRAGNN_ALLOWED and s not in FRAGNN_STAGES]
     assert not bad, f"{fn} は {bad} と併用できない（#120 の範囲外。使えるのは {FRAGNN_ALLOWED}）"
+    assert ("score" in stages) + ("cos" in stages) == 1, "score と cos はちょうど 1 つ指定する（#140）"
+    bad = [s for s in stages if "cos" in stages and s not in COS_ALLOWED]
+    assert not bad, f"cos は {bad} と併用できない（#140 の範囲外。使えるのは {COS_ALLOWED}）"
 
 
 # ---------------------------------------------------------------- 段 2b: sanpier（#60、等重み）
@@ -349,7 +380,7 @@ def run(holdout: str, stages: list[str], logits_run: str | None = None) -> dict:
             continue
         idx = visible_window(pool, targets[mid], hidden)
         z = nbz_z[mid] if mid in nbz_z else zf[mid]
-        rows = score_window(idx, pool, stage_z(z, zbar), fpc)
+        rows = (cos_window if "cos" in stages else score_window)(idx, pool, stage_z(z, zbar), fpc)   # #140
         if "sanpier" in stages:
             rows = sanpier_mix(rows, nscores[mid])
         if fragnn_stage:   # #120: score の直後、prior・frag の前（npz に分子が無ければ KeyError で止まる）
@@ -441,7 +472,7 @@ def run(holdout: str, stages: list[str], logits_run: str | None = None) -> dict:
 def main() -> None:
     ap = argparse.ArgumentParser()
     ap.add_argument("--holdout", required=True)
-    ap.add_argument("--stages", default="score,prior", help="カンマ区切り: score[,pmi|,nbz][,sanpier|,fragnn|,fragnnblind][,prior][,frag][,elem][,lib][,reflast][,pubchem]")
+    ap.add_argument("--stages", default="score,prior", help="カンマ区切り: score|cos[,pmi|,nbz][,sanpier|,fragnn|,fragnnblind][,prior][,frag][,elem][,lib][,reflast][,pubchem]")
     ap.add_argument("--logits-run", default=None, help="outputs/holdout_eval/<run>/pc_logits.npz（既定 <holdout>_fold0）")
     args = ap.parse_args()
     print(json.dumps(run(args.holdout, args.stages.split(","), args.logits_run), indent=2))
