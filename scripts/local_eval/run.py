@@ -13,6 +13,10 @@
                   joint・pubchem・sanpier・lib・reflast とは併用しない
   2b. sanpier   : （#60、指定時だけ）fold-safe sanpier の点 n と s を分子ごとに z 化し、s' = μ_s + σ_s·(z_s+z_n)/2（等重み）。
                   点は scripts/local_eval/sanpier.py が outputs/local_eval/<h>/sanpier_scores.npz に作る
+  2d. fragnn     : （#120、指定時だけ）fold-safe fragnn の点 n（スペクトルごとの logit の平均）を sanpier と同じ等重みの
+                  z 合成で s に混ぜる。fragnnblind は同じ重み・同じ候補で、別の分子のスペクトルに入れ替えた点（対照）。
+                  点は scripts/local_eval/fragnn_score.py が outputs/local_eval/<h>/fragnn_scores.npz・
+                  fragnnblind_scores.npz に作る。fragnn と fragnnblind は同時に使えず、併用できるのは score・prior・frag だけ
   4. frag       : 上位 TOPN の同一組成式グループを MetFrag-lite 断片説明率で並べ替え（0.479 版 v7c と同じ:
                   gl_fuse.rerank_multi、λ=0.5、学習なしなのでリーク無し）
   4b. elem      : （#90、指定時だけ）dedup 後の上位 TOPN で、C・H・N・O・P・S・F・Cl・Br・I 以外の元素を含む候補を
@@ -180,13 +184,22 @@ def nbz_crosscheck(pairs: list, path: Path) -> str:
     return "match"
 
 
+FRAGNN_STAGES = ("fragnn", "fragnnblind")   # #120: 段の名前 = npz の名前（<段>_scores.npz）
+FRAGNN_ALLOWED = ("score", "prior", "frag")   # #120 で測る組み合わせ（score,fragnn[blind],prior,frag）の範囲
+
+
 def check_stages(stages: list[str]) -> None:
-    """pmi（#97）・nbz（#103）と、それぞれ測っていない段の同時指定を止める。pmi と nbz の併用も止める。"""
+    """pmi（#97）・nbz（#103）と、それぞれ測っていない段の同時指定を止める。pmi と nbz の併用も止める。
+    fragnn・fragnnblind（#120）は同時に指定できず、併用できるのは FRAGNN_ALLOWED だけ。"""
     bad = [s for s in PMI_EXCLUSIVE if s in stages]
     assert not ("pmi" in stages and bad), f"pmi は {bad} と併用できない（#97 の範囲外）"
     bad = [s for s in NBZ_EXCLUSIVE if s in stages]
     assert not ("nbz" in stages and bad), f"nbz は {bad} と併用できない（#103 の範囲外）"
     assert not ("pmi" in stages and "nbz" in stages), "pmi と nbz は併用できない（どちらの事前登録の範囲でもない）"
+    fn = [s for s in FRAGNN_STAGES if s in stages]
+    assert len(fn) <= 1, "fragnn と fragnnblind は同時に使えない（#120 は別々に 1 回ずつ採点する）"
+    bad = [s for s in stages if fn and s not in FRAGNN_ALLOWED and s not in FRAGNN_STAGES]
+    assert not bad, f"{fn} は {bad} と併用できない（#120 の範囲外。使えるのは {FRAGNN_ALLOWED}）"
 
 
 # ---------------------------------------------------------------- 段 2b: sanpier（#60、等重み）
@@ -313,6 +326,15 @@ def run(holdout: str, stages: list[str], logits_run: str | None = None) -> dict:
     if "sanpier" in stages:
         import sanpier as SP
         nscores = SP.load_scores(ROOT / f"outputs/local_eval/{holdout}/sanpier_scores.npz")
+    fragnn_stage = next((s for s in FRAGNN_STAGES if s in stages), None)
+    fragnn_diag = {}
+    if fragnn_stage:   # #120: 点は fragnn_score.py が書いた npz（sanpier と同じ形）
+        import hashlib
+        import sanpier as SP
+        fpath = ROOT / f"outputs/local_eval/{holdout}/{fragnn_stage}_scores.npz"
+        fscores = SP.load_scores(fpath)
+        fragnn_diag = {f"{fragnn_stage}_npz": str(fpath),
+                       f"{fragnn_stage}_npz_sha256": hashlib.sha256(fpath.read_bytes()).hexdigest()}
     nbz_z, nbz_diag = {}, {}
     if "nbz" in stages:   # #103: 集合ごとに 1 回だけ。z_j は同じ npz（zf）から取る
         pairs = nbz_pairs(query_spectra(holdout))
@@ -330,6 +352,8 @@ def run(holdout: str, stages: list[str], logits_run: str | None = None) -> dict:
         rows = score_window(idx, pool, stage_z(z, zbar), fpc)
         if "sanpier" in stages:
             rows = sanpier_mix(rows, nscores[mid])
+        if fragnn_stage:   # #120: score の直後、prior・frag の前（npz に分子が無ければ KeyError で止まる）
+            rows = sanpier_mix(rows, fscores[mid])
         if "prior" in stages:
             rows = rerank_with_prior(rows, pool)
         if "frag" in stages:
@@ -409,6 +433,7 @@ def run(holdout: str, stages: list[str], logits_run: str | None = None) -> dict:
     if zbar is not None:   # #97: z̄ を作った問い合わせ数と z̄ の要約（記録用）
         res.update(pmi_n_queries=len(zf.files) - 1, pmi_zbar_mean=round(float(zbar.mean()), 4), pmi_zbar_std=round(float(zbar.std()), 4))
     res.update(nbz_diag)   # #103: nbz の組の数・つながりのある分子（記録用）
+    res.update(fragnn_diag)   # #120: 読んだ npz のパスと sha256（記録用）
     (out_dir / f"result_{tag}.json").write_text(json.dumps(res, indent=2))
     return res
 
@@ -416,7 +441,7 @@ def run(holdout: str, stages: list[str], logits_run: str | None = None) -> dict:
 def main() -> None:
     ap = argparse.ArgumentParser()
     ap.add_argument("--holdout", required=True)
-    ap.add_argument("--stages", default="score,prior", help="カンマ区切り: score[,pmi|,nbz][,sanpier][,prior][,frag][,elem][,lib][,reflast][,pubchem]")
+    ap.add_argument("--stages", default="score,prior", help="カンマ区切り: score[,pmi|,nbz][,sanpier|,fragnn|,fragnnblind][,prior][,frag][,elem][,lib][,reflast][,pubchem]")
     ap.add_argument("--logits-run", default=None, help="outputs/holdout_eval/<run>/pc_logits.npz（既定 <holdout>_fold0）")
     args = ap.parse_args()
     print(json.dumps(run(args.holdout, args.stages.split(","), args.logits_run), indent=2))
