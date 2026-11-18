@@ -30,7 +30,7 @@
 6. GitHub のリポジトリの公開範囲: `gh repo view --json visibility` は `PUBLIC`（11/19 に確認）
 
 ## 2. 主催者の回答（判定に使うもの。原文の抜き書き）
-略号は表の「当たる回答」の列で使う。
+略号は表の「当たる回答」の列で使う。日付・時刻はどれも JSON に入っている UTC。
 
 - **R1** 748882 Marie Killian 2026-10-13: 「For the approved MassSpecGym, GLACIER/ICEBERG, and DreaMS checkpoints, it is sufficient to deliver the released checkpoint, a reference to the authors' original training code and permitted training data, and your own complete fine-tuning and inference code」「existing third-party weights may be used if the original training code and permitted training data needed to reproduce them are provided」。PubChem の CID-PMID・CID-Patent・CID-SID の件数は順位づけの特徴に使ってよい。LOTUS と NPAtlas は構造の出どころとして使ってよい
 - **R2** 748882 Marie Killian 2026-10-14: 「Third party weights that cannot be reproduced with the original training code and permitted training data are not allowed」。微調整した重みは、元のコードと許可データが無ければ使えない。公開データセットの中のコードは使ってよい。745072（10-14）も同じ趣旨
@@ -50,7 +50,7 @@
 - **R12** 757309 David Healey 2026-11-11: PubChem の CID-SMILES と CC0 の COCONUT から作った候補索引を private 入力として付けることに「Those are fine to use」
 - **R13** 745072 David Healey 2026-10-09: 「train.parquet should be considered open source」。PubChem と COCONUT も使ってよい
 
-**まだ答えの無い質問**（11/19 02:1x JST の取得時点。主催者の返答が見当たらない）
+**まだ答えの無い質問**（11/19 02:1x JST の取得時点。主催者の返答が見当たらない。なお 748882 には、本文も投稿者名も空のコメントが 3 件ある〈id 3538940・3550345・3548672〉。削除されたものとみられ、主催者の返答だったかどうかは分からない）
 - **Q-L** 756893 LeeDongHyuk 2026-11-17: 次の (a)(b)(c) のとき、作者の元の重みを読んでよいか、自分で学習し直す必要があるか
   - (a) seed が記録されていない
   - (b) 起動コマンドが記録された引数から作り直したもの、または補助スクリプトが学習の後に書かれた
@@ -62,7 +62,8 @@
   - (3) fe_D の元の DreaMS ckpt の config に NIST20+MoNA の probing 集合が書かれている点は問題か
 
 ## 3. 判定の決め方
-- **可（コード＋許可データ）**: 生成コード（学習・生成のスクリプト）と許可データの両方が公開されていて、未回答の質問のどれにも当たらない。R4 Q2 によりビット一致は要らない。承認済みのチェックポイント（R1・R5・R9・R11）もここに入れる
+- **可（コード＋許可データ）**: 生成コード（学習・生成のスクリプト）と許可データの両方が公開されていて、seed の欠落・コマンドの再構成・学習後の編集・入力の版の欠落のような実質の欠けが知られていない。R4 Q2 によりビット一致は要らない。承認済みのチェックポイント（R1・R5・R9・R11）もここに入れる
+  - 但し書き: 実質の欠けを挙げずに「この部品は同じ扱いでよいか」を確かめるだけの未回答の質問（Q-Y (1) のうち欠けの無い部品、Q-Y (2)）は、判定を止めない。その場合は「当たる回答」の列にその質問を書き、印を付ける
 - **未決（コードあり、Q-L 等に当たる）**: コードと許可データはあるが、seed の欠落、コマンドの再構成、学習後の編集、入力の版の欠落のどれかがある。R7 の原則には合う見込みが高い。ただし Q-L・Q-A・Q-Y に答えが無いので決められない
 - **説明あり（コードは見つからない）**: 手順の説明はあるが、生成コードが見つからない。R4 Q3 と R6 により、候補表や中間物では足りない見込み（推測）。例外はビットの添字の表で、R8 により説明と表そのもので足りる
 - **不可（生成コード無し・揃わない）**: 主催者の回答（R6）にそのまま当たる。生成コードが見つからない、または作者自身が「揃わない」と書いている
@@ -76,27 +77,27 @@
 
 | # | 部品 | 生成コードの所在（出典 URL） | ライセンス | 当たる回答 | 判定 | 未確認の点 |
 |---|---|---|---|---|---|---|
-| 1 | Engine 1 ランカー `ranker_v4b.pkl` | TC `fe_v4/simulate_v1ctx.py` → `build_feats.py` → `train_v4_ranker.py`（https://www.kaggle.com/datasets/ahmedberatozer/casmi26-training-code 、README §2.3） | TC は MIT。データセット `ahmedberatozer/casmi26-v4b-models` は other | R4 Q2、R7、Q-L (b)、Q-A | **未決**。README §5 によると、起動コマンドは再構成で、ブースターの学習ログが無い（記録は `ranker_v4b.json` だけ）。`simulate_v1ctx.py`・`ctxlib.py` は学習の後に編集されている。特徴量を作る FPNet B（3B）と fe_D（4）も未決なので、ここに連なる | Q-L・Q-A の答え |
+| 1 | Engine 1 ランカー `ranker_v4b.pkl` | TC `fe_v4/simulate_v1ctx.py` → `build_feats.py` → `train_v4_ranker.py`（https://www.kaggle.com/datasets/ahmedberatozer/casmi26-training-code 、README §2.3） | TC は MIT。データセット `ahmedberatozer/casmi26-v4b-models` は other | R4 Q2、R7、Q-L (b)、Q-A、Q-Y (1) | **未決**。README §5 によると、起動コマンドは再構成で、ブースターの学習ログが無い（記録は `ranker_v4b.json` だけ）。`simulate_v1ctx.py`・`ctxlib.py` は学習の後に編集されている。特徴量を作る FPNet B（3B）と fe_D（4）も未決なので、ここに連なる | Q-L・Q-A の答え |
 | 2 | `fpnet_full1.pt` | TC `scripts/06_train_fpnet.py`（README §2.1 の「full1 (reconstructed)」の行 `--steps 40000 --holdout "" --val_every 40000`） | MIT / other | R7、Q-L (a)(b)、Q-Y (1) | **未決**。README §5: seed と正確な `--holdout` の文字列が記録されておらず、コマンドは再構成。Q-L の (a)(b) そのもの | Q-L の答え |
-| 3A | FPNet A（`fpnet_0.pt` = `fe_A.pt`） | TC `06_train_fpnet.py`。README §2.1:「A (command from the script docstring; … seed 7). Best step 38,000」。ログは `logs/log_train_a.txt`（README §1 の表） | MIT / other | R4 Q2、R7 | **可**。seed 7 が記録され、コマンドはスクリプトの docstring にある。ビット一致はしないが、R4 Q2 でそれは足りる | ログの中身は読んでいない |
-| 3B | FPNet B（`fpnet_1.pt` = `fe_B.pt`） | 同上。README §2.1:「B: same recipe, different seed (not recorded …)」 | MIT / other | R7、Q-L (a) | **未決**（seed が記録されていない） | Q-L の答え |
-| 4 | `fe_D.pt`（DreaMS の微調整） | TC `dreams_ft/review_fixes/train_dreams_fp.py` → `extract_step20k_ema.py`（README §2.2、seed 11） | MIT。DreaMS の port も MIT | R1、R2、R9、Q-L (b)、Q-Y (3) | **未決**。README §5: 学習のコマンドは再構成。重みの取り出しは対話的に行い、`extract_step20k_ema.py` は後から書いたもので再実行していない。土台の DreaMS SSL は R9 で可だが、NIST の probing の点（Q-Y (3)）は未回答 | Q-L・Q-Y の答え |
-| 5 | fe_v4 の表（`prior_tables.pkl`、`fragnet/stageA.npz`・`stageB.txt`、`analog_struct/*`、`frag2/*`） | TC `class3_v2/priors_build.py`、`fe_v4/res_fragnet.py` ほか（README §2.4〜2.6） | MIT / other | R4 Q2、R6、Q-L (b)、Q-A | **未決**。README §5: `priors.py`・`res_fragnet.py`・`fams/fragnet.py`・`res_analog_struct.py` は出力の後に編集されている。fragnet の `sets`・`fitA` にはログが無い。`prior_tables.pkl` には作った時刻が入っている | Q-A の答え |
-| 6 | v2 プール（`pool_meta`・`pool_fp`・`pool_frag_*`・`train_structs`・`train_fp_sel`） | TC `scripts/01_build_train_structs.py`・`02_build_coconut.py`・`05_build_pool.py`（README §3） | MIT / other。出どころは train.parquet と COCONUT | R4 Q3、R10、R12、R13 | **可**。入力は train.parquet と COCONUT（R10・R13）で、生成コードがある（R4 Q3 の「手順のコード」に当たる） | 再生成してバイト一致するか（README §3 は「学習に使ったファイルと同じ」と主張） |
-| 7 | `fp_bits.npy`（10,226 ビット） | TC `scripts/04_make_split.py` の最後の 2 行 → `casmi/structs.select_bits`（§5 で確認） | MIT | R8 | **可**。選び方のコードと説明があり、表そのものも公開されている。R8 の「説明＋表」を超えて満たす | ビットの再計算（Vitalii の「ビット単位で再現」は主張のまま） |
+| 3A | FPNet A（`fpnet_0.pt` = `fe_A.pt`） | TC `06_train_fpnet.py`。README §2.1:「A (command from the script docstring; … seed 7). Best step 38,000」。ログは `logs/log_train_a.txt`（README §1 の表） | MIT / other | R4 Q2、R7、Q-Y (1)（確認の質問だけ） | **可**。seed 7 が記録され、コマンドはスクリプトの docstring にある。ビット一致はしないが、R4 Q2 でそれは足りる | ログの中身は読んでいない。Q-Y (1) の答え |
+| 3B | FPNet B（`fpnet_1.pt` = `fe_B.pt`） | 同上。README §2.1:「B: same recipe, different seed (not recorded …)」 | MIT / other | R7、Q-L (a)、Q-Y (1) | **未決**（seed が記録されていない） | Q-L の答え |
+| 4 | `fe_D.pt`（DreaMS の微調整） | TC `dreams_ft/review_fixes/train_dreams_fp.py` → `extract_step20k_ema.py`（README §2.2、seed 11） | MIT。DreaMS の port も MIT | R1、R2、R9、Q-L (b)、Q-Y (1)(3) | **未決**。README §5: 学習のコマンドは再構成。重みの取り出しは対話的に行い、`extract_step20k_ema.py` は後から書いたもので再実行していない。土台の DreaMS SSL は R9 で可だが、NIST の probing の点（Q-Y (3)）は未回答 | Q-L・Q-Y の答え |
+| 5 | fe_v4 の表（`prior_tables.pkl`、`fragnet/stageA.npz`・`stageB.txt`、`analog_struct/*`、`frag2/*`） | TC `class3_v2/priors_build.py`、`fe_v4/res_fragnet.py` ほか（README §2.4〜2.6） | MIT / other | R4 Q2、R6、Q-L (b)、Q-A、Q-Y (1) | **未決**。README §5: `priors.py`・`res_fragnet.py`・`fams/fragnet.py`・`res_analog_struct.py` は出力の後に編集されている。fragnet の `sets`・`fitA` にはログが無い。`prior_tables.pkl` には作った時刻が入っている | Q-A の答え |
+| 6 | v2 プール（`pool_meta`・`pool_fp`・`pool_frag_*`・`train_structs`・`train_fp_sel`） | TC `scripts/01_build_train_structs.py`・`02_build_coconut.py`・`05_build_pool.py`（README §3） | MIT / other。出どころは train.parquet と COCONUT | R4 Q3、R10、R12、R13、Q-Y (1)（確認の質問だけ） | **可**。入力は train.parquet と COCONUT（R10・R13）で、生成コードがある（R4 Q3 の「手順のコード」に当たる） | 再生成してバイト一致するか（README §3 は「学習に使ったファイルと同じ」と主張）。README の一覧に無い `pool_frag_*`・`train_fp_sel` をどのスクリプトが作るか（TC には `05b_build_frags.py` もあるが読んでいない） |
+| 7 | `fp_bits.npy`（10,226 ビット） | TC `scripts/04_make_split.py` の末尾（46〜48 行目）→ `casmi/structs.select_bits`（§6 で確認）。README §3 は `fp_bits.npy` を 01/02/05 が作ると書くが、実際に書き出すのは 04 | MIT | R8、Q-Y (1)（確認の質問だけ） | **可**。選び方のコードと説明があり、表そのものも公開されている。R8 の「説明＋表」を超えて満たす | ビットの再計算（Vitalii の「ビット単位で再現」は主張のまま） |
 | 8 | `rank_train.npz`（prvsiyan） | 一部だけ。cubres の回収した `make_ranker3.py` ほか（https://github.com/cubres/enveda-casmi-2026 ）、作者版 `prvsiyan/casmi26-generation-code`。作者自身が、FP ロジットのキャッシュの系統は「unresolved」で「not a full reproduction」と書く（元の表の行 8） | CC-BY-NC-SA-4.0 | R6（754292 はこの表を名指しした質問への答え） | **不可**（生成元が揃わない） | — |
 | 9 | `sim_rank_rows_nofp.npz`（megayak） | **見つからない**。データセットは README・npz 3 個・pt 2 個の 6 ファイルだけ（https://www.kaggle.com/datasets/megayak/casmi26-simulated-ranker-rows 、11/19 にファイル一覧で再確認） | CC0-1.0 | R6（754292・756893 の名指し） | **不可**（生成コードが無い） | — |
 | 10 | prvsiyan FP モデル（`fp_single_s2.pt`、`fp_merged_m1.pt`） | cubres に回収された `train_fp3.py`/`train_fp4.py` と起動引数。カードは「学習入力の版が固定されていない、seed は初期化の後に設定、公開重みとのバイト一致は未確立」 | CC-BY-NC-SA-4.0 | R7、Q-L (a)(c) | **未決**（学習入力の版が欠けている＝(c)、seed の扱い＝(a)） | Q-L の答え。#152 のローカルでの作り直しは関門 (b) で止まっている |
-| 11a | Engine 2 の COCONUT バンク（`prvsiyan/coconut-casmi26-candidates` の `coco_fp`・`coco_mass`・`coco_meta`） | **見つからない**。データセットは npy・pkl の 4 ファイルだけ（README も無い。https://www.kaggle.com/datasets/prvsiyan/coconut-casmi26-candidates 、11/19 に確認） | CC-BY-NC-SA-4.0 | R4 Q3、R10、R12 | **不可**（生成コード無し。COCONUT そのものは R10 で可だが、R4 Q3 により、指紋を付けて変えた表には手順のコードが要る。それが見つからない） | 作者の他のデータセット・カーネルに生成コードがあるか |
+| 11a | Engine 2 の COCONUT バンク（`prvsiyan/coconut-casmi26-candidates` の `coco_fp`・`coco_mass`・`coco_meta`） | 説明だけ。ファイルは npy・pkl の 4 個で、README も .py も無い。データセットのカード（`kaggle datasets metadata` の description）の「How it was produced」に、出どころ（COCONUT 2.0）、10,407 列の指紋の並び（Morgan 半径 2・3 各 4,096、RDKit 経路 2,048 maxPath 6、MACCS 167）、`fp_bits.npy` の sha256 a61e372f… がある。カード自身が「The download date and generation runtime are not recorded」と書く（https://www.kaggle.com/datasets/prvsiyan/coconut-casmi26-candidates 、11/19 に確認） | CC-BY-NC-SA-4.0 | R4 Q3、R10、R12 | **説明あり**（COCONUT そのものは R10 で可。ただし R4 Q3 により、指紋を付けて変えた表には手順のコードが要る。それが見つからない。COCONUT のダウンロード日も記録が無い） | 作者の他のデータセット・カーネルに生成コードがあるか |
 | 11b | ChEBI/LMSD バンク（`sergiomalv/casmi-chebi-lmsd-structures`） | 説明だけ。`ATTRIBUTION.md` に出どころ（ChEBI release 255、LMSD 2026-10-03）、標準化の手順、COCONUT との重複を除いたことが書かれている。コードは見つからない（ファイル 6 個に .py が無い） | CC BY 4.0 | R4 Q3 | **説明あり** | 作者の他の公開物にコードがあるか |
 | 11c | PubChemLite の指紋（`franciscoangulo/casmi26-pubchemlite-cc0-candidate-fingerprints`） | 説明だけ。`MANIFEST.json` に出どころ（`cosmicbe/casmi26-pubchemlite`、CC0）、入力 csv の sha256、`fp_bits` の sha256 a61e372f…、rdkit 2026.03.3、出力 3 ファイルの sha256 がある。コードは見つからない（ファイル 4 個〈MANIFEST.json と npy・pkl〉に .py が無い） | CC0-1.0 | R4 Q3、R12 | **説明あり** | 同上 |
 | 11d | Engine 2 の 6,930 ビット（`fp_bits.npy` a61e372f…） | 作者版 `prvsiyan/casmi26-generation-code` の `prepare_legacy_exports.select_fingerprints(low=.005, high=.995)`。我々の #84 `scripts/engine2/select_fp_bits.py` で再現し、`array_equal` を確かめた（元の表の行 11） | Apache-2.0（作者版） | R8 | **可**（こちらで再現済み） | — |
 | 12 | MetFrag-lite `frag_rescore.py` | ソースそのもの（学習しない）。凍結セル 51 のコメントに出どころ（ahmedberatozer/casmi26-v7c-e006-fraggap v1、Huseyin Emre Aksoy） | Apache-2.0（コメントの記載） | R5 | **可** | — |
 | 13 | ICEBERG の重み | ms-pred の公開 MassSpecGym `msg_all` 版を保存し直したもの（https://github.com/coleygroup/ms-pred 、`ahmedberatozer/casmi26-iceberg` の LICENSE-NOTICE） | ms-pred は MIT | R1（承認済みのチェックポイント）、R11 | **可**。推論ランナー（`ice_runner.py`・`fuse.py`）のライセンス表記は未確認 | ランナーのライセンス |
 | 14 | GLACIER の重み | 同上（`ahmedberatozer/casmi26-glacier`） | MIT | R1、R11 | **可**。ランナーのライセンスは 13 と同じく未確認 | 同上 |
-| 15 | PubChem 層（`pc_mass`・`pc_off`・`pc_smiles`） | TC `scripts/02c_build_pubchem.py`（元の表の行 15 で docstring を確認） | MIT / other。PubChem は NCBI の方針 | R4 Q3、R12、R13 | **可** | 入力の PubChem の版 |
+| 15 | PubChem 層（`pc_mass`・`pc_off`・`pc_smiles`） | TC `scripts/02c_build_pubchem.py`（元の表の行 15 で docstring を確認） | MIT / other。PubChem は NCBI の方針 | R4 Q3、R12、R13、Q-Y (1)（確認の質問だけ） | **可** | 入力の PubChem の版 |
 | 16 | 文献 prior（`pc_lsid` ほか、`pool_popularity.csv`） | データセットの `scripts/`（`build_pop.py`・`build_annot.py`・`build_delta.py`・`build_sources.py`・`download_sources.py` ほか、https://www.kaggle.com/datasets/dmitriigluzdov/casmi26-pubchem-popularity-prior ） | other（PubChem は NCBI、LOTUS は CC BY 4.0、NPAtlas は CC BY-NC 4.0） | R1（PubChem の件数、LOTUS・NPAtlas）、R4 Q3 | **可** | — |
-| 17 | fold-safe FPNet（5 本） | `train_fivefold.py`・`train_fpnet.py`・`make_split.py`・学習ログ（https://www.kaggle.com/datasets/dmitriigluzdov/casmi26-fold-safe-fpnet ） | other（スクリプトは Apache-2.0） | R7、Q-Y (2) | **可**。コード・ログ・許可データが揃い、R7 の原則に合う。個別の質問 Q-Y (2) には答えが無いので、そこには印を付ける | Q-Y (2) の答え |
+| 17 | fold-safe FPNet（5 本） | `train_fivefold.py`・`train_fpnet.py`・`make_split.py`・学習ログ（https://www.kaggle.com/datasets/dmitriigluzdov/casmi26-fold-safe-fpnet ） | other（スクリプトは Apache-2.0） | R7、Q-Y (2)（確認の質問だけ） | **可**。コード・ログ・許可データが揃い、R7 の原則に合う。実質の欠けは知られていない。個別の質問 Q-Y (2) には答えが無いので印を付ける（§3 の但し書き） | Q-Y (2) の答え |
 | 18 | sanpier のスペクトル–候補ニューラル v1 | `train.py`・`prepare.py`・`config.json`・分割の manifest・学習履歴（https://www.kaggle.com/datasets/sanpier/casmi-spectrum-model-v1 ） | apache-2.0 | R7、R13 | **可**。全 train で学習しているが、それは規則上は問題にならない | — |
 | 19 | 外部参照スペクトル（`external_reference_spectra/external_delta.parquet` ほか） | 説明だけ。`INTEGRATION.json`（pin の sha256、出どころの件数 MassBank 265・MoNA 258・GNPS 228、リンクの方針）・`DOWNLOADS.csv`・`SOURCE_MANIFESTS.json`・`LICENCES.md` がある。データセットの .py は `build_np.py`（LOTUS+NPAtlas の天然物の表を作る、外部スペクトルには触れない）と `sugar_and_acyl_units/sugarloss_units.py` だけ（https://www.kaggle.com/datasets/dmitriigluzdov/casmi26-natural-product-knowledge-table 、11/19 に確認） | other（各レコードは CC BY 4.0 / CC0 と凍結セル 58） | R4 Q3、R6 | **説明あり**（外部参照を作るコードは見つからない） | `TECHNICAL_NOTES.md`（36 KB）は読んでいない |
 | 20 | v80 スコアラー（`popwenman/casmi26-scorer-train-v80` の出力） | そのカーネル自体が学習コード（https://www.kaggle.com/code/popwenman/casmi26-scorer-train-v80 、元の表の行 20） | キットは apache-2.0。カーネルのライセンスは未確認 | R7、R13 | **可**。ただし `kernel_sources` は版を固定せず最新の出力を読む。最終提出のときに版が変わっていないかを確かめる必要がある | カーネルのライセンス |
@@ -112,21 +113,21 @@
 
 ### (A) のまとめ（表 A の 33 行の数え上げ。表の判定の列からスクリプトで数えて一致を確かめた）
 - 可: **13 行**（3A・6・7・11d・12・13・14・15・16・17・18・20・S5）
-- 未決: **6 行**（1・2・3B・4・5・10）。どれも Engine 1 と Engine 2 の学習した部品
-- 説明あり: **4 行**（11b・11c・19・22）
-- 不可: **4 行**（8・9・11a・21）
+- 未決: **6 行**（1・2・3B・4・5・10）。どれも Engine 1 と Engine 2 の学習・生成した部品
+- 説明あり: **5 行**（11a・11b・11c・19・22）
+- 不可: **3 行**（8・9・21）
 - 影響なし: **4 行**（23・S2・S3・S6）
 - 未確認: **1 行**（S1）
 - 8・9 に従う: **1 行**（S4）
-- 合計 13 + 6 + 4 + 4 + 4 + 1 + 1 = 33 行
+- 合計 13 + 6 + 5 + 3 + 4 + 1 + 1 = 33 行
 
-**結論: (A) は今のままでは最終提出の要件を満たさない。** 理由は、主催者が名指しで「再現できない」とした Engine 2 の 2 表（8・9）と、生成コードの無い ExtLib（21）を読むため。COCONUT バンク（11a）も R4 Q3 に照らすとコードが要る。Engine 1 の 6 行は Q-L の答えしだい。
+**結論: (A) は今のままでは最終提出の要件を満たさない。** 理由は、主催者が名指しで「再現できない」とした Engine 2 の 2 表（8・9）と、生成コードの無い ExtLib（21）を読むため。説明だけの 5 行（11a・11b・11c・19・22）も、R4 Q3 に照らすと手順のコードが要る見込み。Engine 1 の 6 行は Q-L の答えしだい。
 
 ## 5. 表 B: (B) #127 版で足した部品
 | # | 部品 | 生成コードの所在（出典 URL） | ライセンス | 当たる回答 | 判定 | 未確認の点 |
 |---|---|---|---|---|---|---|
-| B1 | DreaMS `ssl_model.ckpt`（`ahmedberatozer/casmi26-dreams-ssl-readiness-v1` の `weights/ssl_model.ckpt`） | 公式の重み。#127 の 11/18 夜の確認で、バイト列が手元の写しと同じ（1,392,710,212 B、md5 4deee91d…）、md5 が Zenodo 10997887 の値と一致（https://zenodo.org/records/10997887 、コード https://github.com/pluskal-lab/DreaMS ） | 重みは CC-BY-4.0、コードは MIT | R5、R9 | **可** | 他人のデータセットなので、最終提出のときにまだ公開されているか |
-| B2 | 整列モデル `model_best.pt`（private Kaggle Models `taichiiiii/casmi26-align0487/PyTorch/foldsafe-v1/1`、sha256 4e2a7cbe…cd51） | 自前のコード。PR #110 の `scripts/train/align_local_embed.py`（DreaMS の埋め込み）と `scripts/train/align_train.py`（学習）。止め方は #109 で事前登録。学習ログ `outputs/align_train/train_log.jsonl`（14 行、最良は step 24,000、step 28,000 で停止）と `align_config.json` はローカルにある（git の対象外）。リポジトリは PUBLIC（https://github.com/taichiiiiiiii/molecule-id-from-mass-spectra/pull/110 ） | 自前（Kaggle Models の licenseName は MIT） | R7、R9、R13 | **可（条件つき）**。入力は train.parquet（fold-safe の分割）と公式 DreaMS だけ。条件は 2 つ: (i) PR #110 は未マージで、コードは公開ブランチにしか無い。(ii) 学習ログと設定は公開していない。最終に使うなら、どちらも main に入れるか、提出物に同じものを付ける | — （`align_config.json` に `SEED` 42・`VAL_SEED` 0・`VAL_CAND_SEED` 1 が記録されている。バッチの順はステップ番号と seed から決まる〈PR #110〉） |
+| B1 | DreaMS `ssl_model.ckpt`（`ahmedberatozer/casmi26-dreams-ssl-readiness-v1` の `weights/ssl_model.ckpt`） | 公式の重み。#127 の本文（2026-11-18 夜のカード t_de2e4175 の確認）によると、バイト列が手元の写しと同じ（1,392,710,212 B、md5 4deee91d…）、md5 が Zenodo 10997887 の値と一致（https://zenodo.org/records/10997887 、コード https://github.com/pluskal-lab/DreaMS ） | Kaggle の表示は `other`。元のライセンスは、重みが CC-BY-4.0、コードが MIT（データセットの LICENSE-NOTICE.txt、#127 本文） | R5、R9 | **可** | 他人のデータセットなので、最終提出のときにまだ公開されているか |
+| B2 | 整列モデル `model_best.pt`（private Kaggle Models `taichiiiii/casmi26-align0487/PyTorch/foldsafe-v1/1`、sha256 4e2a7cbe…cd51） | 自前のコード。PR #110 の `scripts/train/align_local_embed.py`（DreaMS の埋め込み）と `scripts/train/align_train.py`（学習）。止め方は #109 で事前登録。学習ログ `outputs/align_train/train_log.jsonl`（14 行、最良は step 24,000、step 28,000 で停止）と `align_config.json` はローカルにある（git の対象外）。リポジトリは PUBLIC（https://github.com/taichiiiiiiii/molecule-id-from-mass-spectra/pull/110 ） | 自前（Kaggle Models の licenseName は MIT） | R7、R9、R13 | **可（条件つき）**。入力は 3 種類: train.parquet のスペクトル、公式 DreaMS（B1）、v2 プールの `pool_meta`・`pool_fp`・`train_structs`・`fp_bits`（sha256 で照合）。分割には fold-safe の `split.parquet`（行 17 のデータセット）と自前の `kernels/sanpier_fold0_drop/sanpier_fold0_holdout_keys.json` を使う（`align_train.py` の 373〜415 行目付近）。だから B2 の判定は行 6・7・17 に依存し、それらが可である限り可。条件は 2 つ: (i) PR #110 は未マージで、コードは公開ブランチにしか無い。(ii) 学習ログと設定は公開していない。最終に使うなら、どちらも main に入れるか、提出物に同じものを付ける | — （`align_config.json` に `SEED` 42・`VAL_SEED` 0・`VAL_CAND_SEED` 1 が記録されている。バッチの順はステップ番号と seed から決まる〈PR #110〉） |
 | B3 | 整列のセルと runner（`scripts/submit/align0487_runner.py`、`scripts/ship/strip_dreams_ckpt.py`、ノートの生成 `scripts/submit/make_lb487_align.py`） | 自前のコード。PR #128・#135（未マージ、公開ブランチ）。ノートにはソースが sha256 つきで埋め込まれている | 自前 | R5 | **可**（コードそのもの。B2 と同じく main には入っていない） | — |
 | B4 | 候補の h の計算（`scripts/engine2/base_fs.py` の `fs_fp` と 10,226 ビット） | main にある自前のコード。ビットは表 A の 7 | 自前 / MIT | R8 | **可** | — |
 
@@ -150,7 +151,7 @@
 
   - 同じスクリプトの分割の乱数は `default_rng(2026)` で、ビットの選び方の乱数（seed 0）とは別
 - **16,551 ビットの並び**: TC `casmi/chem.py` 264〜266 行目 `FP_BLOCKS = [("ecfp4", 4096), ("ecfp6", 4096), ("fcfp4", 2048), ("rdk6", 2048), ("ap", 2048), ("tt", 2048), ("maccs", 167)]`、`FP_RAW_BITS = sum(...)` = 16,551
-  - 生成器（274〜280 行目）は次のとおり
+  - 生成器（274〜280 行目と、MACCS は 295 行目）は次のとおり
     - Morgan 半径 2 と 3、各 4,096
     - FCFP は Morgan 半径 2 の特徴の不変量、2,048
     - RDKit の経路 maxPath 6、2,048
@@ -177,20 +178,21 @@
 3. **ExtLib（21）、外部参照（19）、MassBank harmonized（22）**（学習ではないが、外すか作り直す）
    - GNPS・MassBank・MoNA から自前で組み直す（CPU、ダウンロードあり）か、外す。**未測定**。21 を外したときの LB の差は測られていない（元の表の行 21）
 4. **Engine 1 FPNet full1（2）**（未決。Q-L が「学習し直しが要る」なら最優先に上がる）
-   - Kaggle T4 で 2 セッション、外挿は **14.36 h**（#82 の試走から）。週 30 h の約半分
-   - ローカル MPS は 93.6 h の見込みで、関門で不合格（#82）
+   - #82 の経路（fold-safe キットの `train_fpnet.py` で全 train を 82,855 ステップ）: Kaggle T4 で 2 セッション、外挿は **14.36 h**（#82 の試走から）。週 30 h の約半分。この経路は「自前の公開コードと許可データで同等のモデルを学習し直す」（745072、Marie Killian 2026-10-27）に当たる
+   - ローカル MPS は同じ経路で 93.6 h の見込みで、関門で不合格（#82）
+   - TC のレシピ（`06_train_fpnet.py --steps 40000`）での時間は**未測定**。1 ステップの速さが同じなら約半分になるが、これは推測
 5. **Engine 1 ranker_v4b（1）と fe_v4 の表（5）**（未決。Q-L (b)・Q-A しだい）
    - ranker の段 1（模擬クエリ 15,701 件）は T4 のセッション時間の見込みで、3 カーネル × 2 シャードなら合計 12.1 h（補正すると 8.7 h）、6 カーネル × 1 シャードなら合計 20.3 h（補正すると 14.5 h）（#88 の試走から。T4 × 2 のセッションの週の枠の数え方は未確認）
    - 段 2（特徴）・段 3（学習）は**未測定**
    - 注意: ranker の特徴は FPNet A/B と fe_D の出力から作る。3B・4 を作り直すなら、その後で ranker も作り直す必要がある（依存の鎖）
 6. **FPNet B（3B）と fe_D（4）**（未決。Q-L (a)(b) しだい）
-   - FPNet B は full1 と同じスクリプト（`--steps 40000`）。full1 と同じ桁の時間と見込むが、これは推測で**未測定**
+   - FPNet B は TC の full1 と同じスクリプト（`--steps 40000`）。時間は**未測定**（#82 の 14.36 h はキットの 82,855 ステップの値で、そのままは使えない）
    - fe_D（DreaMS の微調整）は**未測定**
 7. 作り直しは要らない: 3A・6・7・11d・12〜18・20 と、表 B の全部（B2・B3 はコードを main に入れるだけ）
 
 ### 読み（判断の材料。決定ではない）
 - 1〜3 は Q-L の答えを待たずに要る。どれも GPU は要らない（CPU とローカル）が、LB の下げが大きい（#77 の −0.052、#62）。最終の 2 本を「規則に合う形」にするなら、Engine 2 と外部ライブラリの扱いを先に決める必要がある
-- 4〜6 は Q-L・Q-A の答えしだい。全部やり直すと、GPU の見込みは T4 で少なくとも 14.36 + 8.7〜20.3 h ＋ 未測定の分（B・fe_D・ranker の段 2〜3）になる。週 30 h の枠に 1 週では収まらない見込み。答えが「元の重みでよい」なら 0 h
+- 4〜6 は Q-L・Q-A の答えしだい。全部やり直すと、GPU の見込みは T4 で少なくとも 14.36 h（full1 をキットの経路で）＋ 8.7〜20.3 h（ranker の段 1）＋ 未測定の分（B・fe_D・ranker の段 2〜3）になる。週 30 h の枠に 1 週では収まらない見込み。答えが「元の重みでよい」なら 0 h
 - 締切は 12/14。答えが出ないまま 12 月に入るなら、どの形を最終にするかを、残りの週の GPU の枠と合わせてオーナーに聞く（お願いに回す）
 
 ## 8. 不明・未確認の一覧
