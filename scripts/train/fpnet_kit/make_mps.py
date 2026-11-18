@@ -5,6 +5,7 @@ from pathlib import Path
 src = Path(sys.argv[1]).read_bytes().decode().replace('\r\n', '\n')
 D = '  # [port:device]'
 R = '  # [port:resume]'
+M = '  # [port:memory]'
 
 
 def rep(old, new_lines, tag=None):
@@ -25,7 +26,8 @@ rep('import argparse, json, math, os, sys, time\n',
 rep("ap.add_argument('--bias_init', type=int, default=0)\n",
     ["ap.add_argument('--bias_init', type=int, default=0)"] +
     m(["ap.add_argument('--device', default='mps')"], D) +
-    m(["ap.add_argument('--ckpt_every_min', type=float, default=30.0); ap.add_argument('--resume', type=int, default=1)"], R) + [''])
+    m(["ap.add_argument('--ckpt_every_min', type=float, default=30.0); ap.add_argument('--resume', type=int, default=1)"], R) +
+    m(["ap.add_argument('--accum', type=int, default=1)"], M) + [''])
 # worker: fresh RNG stream after a resume; exit when the parent is gone
 rep("    D.rng = np.random.default_rng(args.seed * 1000 + wid + 1)\n",
     m(["    s0 = G.get('start_step', 0)",
@@ -80,10 +82,58 @@ rep("    ema = {k: 0.0 for k in ('loss', 'rank', 'bce', 'el', 'acc')}\n",
        "        log('resumed from', ck_path, 'step', step, 'elapsed_s', round(ck['elapsed'], 1))",
        "        del ck",
        "    t_ck = time.time()"], R) + [''])
-# training forward on the chosen device, fp32 without autocast
-rep("        with torch.autocast('cuda', dtype=dtype):\n            z, el = model(*inp)\n",
-    m(["        with torch.autocast(dev, dtype=dtype, enabled=dtype != torch.float32):"], D) +
-    ["            z, el = model(*inp)", ''])
+# gradient accumulation (#82): the worker still sends bs samples; split them into `accum` equal contiguous parts,
+# backward each part's loss / accum, then one unscale/clip/step as before. Same gradient as one shot (all losses are means).
+rep("    target = torch.zeros(args.bs, dtype=torch.long, device=dev)\n",
+    m(["    assert args.bs % args.accum == 0, (args.bs, args.accum)",
+       "    target = torch.zeros(args.bs // args.accum, dtype=torch.long, device=dev)"], M) + [''])
+rep("""        inp = tuple(torch.as_tensor(a, device=dev) for a in arrs)
+        pos_t = torch.as_tensor(pos, device=dev)
+        cand = torch.as_tensor(np.concatenate([pos[:, None], negs], 1), device=dev)
+        with torch.autocast('cuda', dtype=dtype):
+            z, el = model(*inp)
+        z = z.float(); el = el.float()
+        fp = fpnet.unpack_gpu(PFP[cand], D.nbits)
+        sc = torch.einsum('bkn,bn->bk', fp, z)
+        l_rank = F.cross_entropy(sc, target)
+        l_bce = F.binary_cross_entropy_with_logits(z, fp[:, 0])
+        l_el = F.smooth_l1_loss(el, ELEM[pos_t])
+        loss = l_rank + args.w_bce * l_bce + args.w_el * l_el
+        opt.zero_grad(set_to_none=True)
+        scaler.scale(loss).backward()
+""",
+    ["        opt.zero_grad(set_to_none=True)"] +
+    m(["        vals = accum_backward(model, arrs, pos, negs, PFP, ELEM, D.nbits, target, args.accum, dev, dtype, scaler)"], M) + [''])
+rep("        vals = dict(loss=loss.item(), rank=l_rank.item(), bce=l_bce.item(), el=l_el.item(), acc=(sc.argmax(1) == 0).float().mean().item())\n",
+    [''])
+rep("@torch.no_grad()\ndef window_eval",
+    m(["def accum_backward(model, arrs, pos, negs, PFP, ELEM, nbits, target, accum, dev, dtype, scaler, fdt=torch.float32):",
+       "    # forward/backward of one optimizer step in `accum` equal contiguous parts; returns the bs-sample means for the log",
+       "    B = len(pos); mb = B // accum",
+       "    assert mb * accum == B and len(target) == mb, (B, accum, len(target))",
+       "    tot = {}",
+       "    for s in range(0, B, mb):",
+       "        sl = slice(s, s + mb)",
+       "        inp = tuple(torch.as_tensor(a[sl], device=dev) for a in arrs)",
+       "        inp = tuple(t.to(fdt) if t.is_floating_point() else t for t in inp)",
+       "        pos_t = torch.as_tensor(pos[sl], device=dev)",
+       "        cand = torch.as_tensor(np.concatenate([pos[sl, None], negs[sl]], 1), device=dev)",
+       "        with torch.autocast(dev, dtype=dtype, enabled=dtype != torch.float32):",
+       "            z, el = model(*inp)",
+       "        z = z.to(fdt); el = el.to(fdt)",
+       "        fp = fpnet.unpack_gpu(PFP[cand], nbits).to(fdt)",
+       "        sc = torch.einsum('bkn,bn->bk', fp, z)",
+       "        l_rank = F.cross_entropy(sc, target)",
+       "        l_bce = F.binary_cross_entropy_with_logits(z, fp[:, 0])",
+       "        l_el = F.smooth_l1_loss(el, ELEM[pos_t].to(fdt))",
+       "        loss = l_rank + args.w_bce * l_bce + args.w_el * l_el",
+       "        scaler.scale(loss / accum).backward()",
+       "        for k, v in (('loss', loss), ('rank', l_rank), ('bce', l_bce), ('el', l_el), ('acc', (sc.argmax(1) == 0).to(fdt).mean())):",
+       "            tot[k] = tot.get(k, 0.0) + v.detach() / accum",
+       "        del inp, z, el, fp, sc, loss, l_rank, l_bce, l_el",
+       "    return {k: v.item() for k, v in tot.items()}",
+       "",
+       ""], M) + ["@torch.no_grad()", "def window_eval"])
 # periodic resume save (after the eval/ckpt block of each step)
 rep("            json.dump(hist, open(f'{args.tag}_history.json', 'w'), indent=1)\n    ev = ",
     ["            json.dump(hist, open(f'{args.tag}_history.json', 'w'), indent=1)"] +

@@ -23,6 +23,7 @@ ap.add_argument('--holdout', default='hold,np'); ap.add_argument('--tag', defaul
 ap.add_argument('--bias_init', type=int, default=0)
 ap.add_argument('--device', default='mps')  # [port:device]
 ap.add_argument('--ckpt_every_min', type=float, default=30.0); ap.add_argument('--resume', type=int, default=1)  # [port:resume]
+ap.add_argument('--accum', type=int, default=1)  # [port:memory]
 args = ap.parse_args()
 sys.path.insert(0, args.code)
 os.chdir(args.run)
@@ -73,6 +74,33 @@ def eval_groups(D, fold_names, n, rng):
     if len(keys) > n:
         keys = [keys[i] for i in sorted(rng.choice(len(keys), n, replace=False))]
     return [groups[k][:8] for k in keys]
+
+
+def accum_backward(model, arrs, pos, negs, PFP, ELEM, nbits, target, accum, dev, dtype, scaler, fdt=torch.float32):  # [port:memory]
+    # forward/backward of one optimizer step in `accum` equal contiguous parts; returns the bs-sample means for the log  # [port:memory]
+    B = len(pos); mb = B // accum  # [port:memory]
+    assert mb * accum == B and len(target) == mb, (B, accum, len(target))  # [port:memory]
+    tot = {}  # [port:memory]
+    for s in range(0, B, mb):  # [port:memory]
+        sl = slice(s, s + mb)  # [port:memory]
+        inp = tuple(torch.as_tensor(a[sl], device=dev) for a in arrs)  # [port:memory]
+        inp = tuple(t.to(fdt) if t.is_floating_point() else t for t in inp)  # [port:memory]
+        pos_t = torch.as_tensor(pos[sl], device=dev)  # [port:memory]
+        cand = torch.as_tensor(np.concatenate([pos[sl, None], negs[sl]], 1), device=dev)  # [port:memory]
+        with torch.autocast(dev, dtype=dtype, enabled=dtype != torch.float32):  # [port:memory]
+            z, el = model(*inp)  # [port:memory]
+        z = z.to(fdt); el = el.to(fdt)  # [port:memory]
+        fp = fpnet.unpack_gpu(PFP[cand], nbits).to(fdt)  # [port:memory]
+        sc = torch.einsum('bkn,bn->bk', fp, z)  # [port:memory]
+        l_rank = F.cross_entropy(sc, target)  # [port:memory]
+        l_bce = F.binary_cross_entropy_with_logits(z, fp[:, 0])  # [port:memory]
+        l_el = F.smooth_l1_loss(el, ELEM[pos_t].to(fdt))  # [port:memory]
+        loss = l_rank + args.w_bce * l_bce + args.w_el * l_el  # [port:memory]
+        scaler.scale(loss / accum).backward()  # [port:memory]
+        for k, v in (('loss', loss), ('rank', l_rank), ('bce', l_bce), ('el', l_el), ('acc', (sc.argmax(1) == 0).to(fdt).mean())):  # [port:memory]
+            tot[k] = tot.get(k, 0.0) + v.detach() / accum  # [port:memory]
+        del inp, z, el, fp, sc, loss, l_rank, l_bce, l_el  # [port:memory]
+    return {k: v.item() for k, v in tot.items()}  # [port:memory]
 
 
 @torch.no_grad()
@@ -164,7 +192,8 @@ def main():
         log('resumed from', ck_path, 'step', step, 'elapsed_s', round(ck['elapsed'], 1))  # [port:resume]
         del ck  # [port:resume]
     t_ck = time.time()  # [port:resume]
-    target = torch.zeros(args.bs, dtype=torch.long, device=dev)
+    assert args.bs % args.accum == 0, (args.bs, args.accum)  # [port:memory]
+    target = torch.zeros(args.bs // args.accum, dtype=torch.long, device=dev)  # [port:memory]
     while True:
         prog = max(step / args.max_steps, (time.time() - t0) / budget)
         if prog >= 1.0:
@@ -173,25 +202,12 @@ def main():
         for g in opt.param_groups:
             g['lr'] = lr
         arrs, pos, negs = q.get()
-        inp = tuple(torch.as_tensor(a, device=dev) for a in arrs)
-        pos_t = torch.as_tensor(pos, device=dev)
-        cand = torch.as_tensor(np.concatenate([pos[:, None], negs], 1), device=dev)
-        with torch.autocast(dev, dtype=dtype, enabled=dtype != torch.float32):  # [port:device]
-            z, el = model(*inp)
-        z = z.float(); el = el.float()
-        fp = fpnet.unpack_gpu(PFP[cand], D.nbits)
-        sc = torch.einsum('bkn,bn->bk', fp, z)
-        l_rank = F.cross_entropy(sc, target)
-        l_bce = F.binary_cross_entropy_with_logits(z, fp[:, 0])
-        l_el = F.smooth_l1_loss(el, ELEM[pos_t])
-        loss = l_rank + args.w_bce * l_bce + args.w_el * l_el
         opt.zero_grad(set_to_none=True)
-        scaler.scale(loss).backward()
+        vals = accum_backward(model, arrs, pos, negs, PFP, ELEM, D.nbits, target, args.accum, dev, dtype, scaler)  # [port:memory]
         scaler.unscale_(opt)
         torch.nn.utils.clip_grad_norm_(model.parameters(), 1.0)
         scaler.step(opt); scaler.update()
         step += 1
-        vals = dict(loss=loss.item(), rank=l_rank.item(), bce=l_bce.item(), el=l_el.item(), acc=(sc.argmax(1) == 0).float().mean().item())
         for k, v in vals.items():
             ema[k] = v if step == 1 else 0.98 * ema[k] + 0.02 * v
         if not math.isfinite(vals['loss']):
