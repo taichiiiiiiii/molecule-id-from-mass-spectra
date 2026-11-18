@@ -15,7 +15,9 @@
      MERGE_REPORT）に入った外側の候補の数を report の `downstream` に足す（読むだけ。#127 固定すること (3)）
 2. 外側セル 15 の `neural_score` の 1 行（OLD_LINE）を NEW_LINE に替える（同じセルのほかの行は変えない）
 
-kernel-metadata.json: 元の 10 件の dataset_sources に `taichiiiii/casmi26-align0487-weights` を足す。id は別 slug、id_no なし。
+kernel-metadata.json（#127 本文 案 A″）: 元の 10 件の dataset_sources に公開の DreaMS の重みのデータセット
+`ahmedberatozer/casmi26-dreams-ssl-readiness-v1` を足し、model_sources に private の Kaggle Models
+`taichiiiii/casmi26-align0487/PyTorch/foldsafe-v1/1`（整列の model_best.pt だけ）を入れる。id は別 slug、id_no なし。
 
     python scripts/submit/make_lb487_align.py --align-config <outputs/align_train/align_config.json> \
         --dreams-root <data/ext/dreams/DreaMS-dbec3a0…> [--out-dir kernels/lb487_align]
@@ -40,7 +42,8 @@ CONFIG_CELL = 5
 ADDED_INDEX = 6
 NEURAL_CELL = 15            # 元のノートの番号（新しいノートでは 16）
 SLUG = "taichiiiii/casmi26-lb487-align"
-WEIGHTS_DS = "taichiiiii/casmi26-align0487-weights"
+DREAMS_DS = "ahmedberatozer/casmi26-dreams-ssl-readiness-v1"     # 公開、weights/ssl_model.ckpt（Zenodo 10997887 と同じバイト列）
+ALIGN_MODEL_SRC = "taichiiiii/casmi26-align0487/PyTorch/foldsafe-v1/1"   # private の Kaggle Models（model_best.pt だけ）
 ALIGN_TRAIN_REF = "origin/feat/109-align-local-train:scripts/train/align_train.py"
 ALIGN_TRAIN_SHA256 = "8e1e9dde20add0f7a7cce911f36835ea448311f84ea2f8806275a3aaca1966ef"
 DREAMS_COMMIT = "dbec3a0b514a99e5056cfccde4559fda8cfe8129"
@@ -54,6 +57,11 @@ CELL_TEMPLATE = r'''# ── #127（診断）: 整列チャネル（自前・fol
 # 変えるのはこのセルと、外側セル 15 の neural_score の 1 行だけ（Issue #127 の事前登録）。
 #   新: neural_score = (z(sanpier v1) + z(v80) + z(a_align)) / 3。a_align が作れない分子は今と同じ 0.5*z + 0.5*z
 #   a_align = cos(normalize(mean(normalize(g))), h)。g = 整列 MLP のスペクトル側（DreaMS の埋め込みから）、h = 分子側
+# 重み（#127 本文 案 A″）: 整列の model_best.pt は private の Kaggle Models（taichiiiii/casmi26-align0487、自前・fold-safe）、
+#   DreaMS の ssl_model.ckpt は公開データセット ahmedberatozer/casmi26-dreams-ssl-readiness-v1（runner の中で大きさ・md5・sha256 を照合）。
+# Credit: DreaMS pre-trained weights — Roman Bushuiev et al. / Pluskal laboratory, "Self-supervised learning of molecular
+#   representations from millions of tandem mass spectra using DreaMS", Nat Biotechnol 2025 (doi:10.1038/s41587-025-02663-3),
+#   Zenodo 10997887, licensed CC-BY-4.0. DreaMS code: MIT (pluskal-lab/DreaMS dbec3a0).
 COMMIT_MODE = 'smoke'   # #127: commit で見える 12 分子が全段を通る（#77 と同じ。採点の再実行の動きには関わらない）
 import base64 as _a_b64, io as _a_io, zipfile as _a_zip, json as _a_json, hashlib as _a_hl
 import subprocess as _a_sp, sys as _a_sys, time as _a_time
@@ -72,6 +80,25 @@ def _a0487_one(pattern, must):
     if len(hits) != 1:
         raise RuntimeError(('#127 input not found exactly once', pattern, must, [str(h) for h in hits]))
     return hits[0]
+
+
+def _a0487_model(root=_a_P('/kaggle/input')):
+    # private の Kaggle Models の 2 通りの mount の形を固定の深さで探す（framework の段は * 、版の下に 0 段か 1 段）
+    pats = ['models/*/casmi26-align0487/*/foldsafe-v1/*/model_best.pt',
+            'models/*/casmi26-align0487/*/foldsafe-v1/*/*/model_best.pt',
+            'casmi26-align0487/*/foldsafe-v1/*/model_best.pt',
+            'casmi26-align0487/*/foldsafe-v1/*/*/model_best.pt']
+    hits = sorted({p for pat in pats for p in root.glob(pat)})
+    if len(hits) != 1:
+        raise RuntimeError(('#127 align weights not found exactly once in Kaggle Models', [str(h) for h in hits]))
+    print(f'#127 align weights (Kaggle Models): {hits[0]}', flush=True)
+    return hits[0]
+
+
+def _a0487_rss():
+    import resource as _r
+    return {k: round(_r.getrusage(w).ru_maxrss * 1024 / 1e6, 1)
+            for k, w in (('self', _r.RUSAGE_SELF), ('children', _r.RUSAGE_CHILDREN))}
 
 
 def _a0487_materialise():
@@ -106,8 +133,9 @@ def ALIGN0487_MIX(idx, za, zb, zfun):
         dreams_root = _a0487_materialise()
         pool_meta = _a0487_one('pool_meta.parquet', 'casmi26-v2-pool')
         casmi_chem = _a0487_one('chem.py', 'casmi26-v3-models/code/casmi')
-        state = _a0487_one('dreams_ssl_state.pt', 'casmi26-align0487-weights')
-        model = _a0487_one('model_best.pt', 'casmi26-align0487-weights')
+        ckpt = _a0487_one('ssl_model.ckpt', 'casmi26-dreams-ssl-readiness-v1/weights')
+        model = _a0487_model()
+        rep.update(align_weights_path=str(model), dreams_ckpt_path=str(ckpt))
         cands = _pd.DataFrame({'molecule_id': idx.get_level_values(0).astype(str),
                                'smiles': idx.get_level_values(1).astype(str)})
         cands.to_parquet(_A0487_DIR / 'cands.parquet', index=False)
@@ -117,7 +145,7 @@ def ALIGN0487_MIX(idx, za, zb, zfun):
                '--cands', str(_A0487_DIR / 'cands.parquet'), '--out', str(_A0487_DIR / 'a_align.parquet'),
                '--report', str(ROOT / 'align0487_runner.json'), '--pool-dir', str(pool_meta.parent),
                '--casmi-code', str(casmi_chem.parent.parent), '--code-dir', str(_A0487_DIR),
-               '--dreams-root', str(dreams_root), '--dreams-state', str(state), '--align-model', str(model),
+               '--dreams-root', str(dreams_root), '--dreams-ckpt', str(ckpt), '--align-model', str(model),
                '--align-config', str(_A0487_DIR / 'align_config.json'), '--device', dev,
                '--expect-rdkit', '2026.03.3']
         rep['device'] = dev
@@ -132,9 +160,15 @@ def ALIGN0487_MIX(idx, za, zb, zfun):
         rep['runner'] = {k: rr.get(k) for k in ('status', 'versions', 'input_sha256', 'check_d', 'candidates',
                                                  'spectra', 'molecules', 'unknown_adduct_spectra', 'out_sha256',
                                                  'seconds', 't_sha_s', 't_dreams_load_s', 't_keys_s', 't_fp_s',
-                                                 't_h_s', 't_preproc_s', 't_embed_s', 't_g_s', 'error')}
+                                                 't_h_s', 't_preproc_s', 't_embed_s', 't_g_s', 'dreams_ckpt',
+                                                 'max_rss_mb', 'max_rss_mb_after_strip', 'error')}
+        rep['max_rss_mb'] = _a0487_rss()
+        try:
+            rep['mem_total_mb'] = round(int(next(l for l in open('/proc/meminfo') if l.startswith('MemTotal')).split()[1]) * 1024 / 1e6, 1)
+        except Exception:
+            rep['mem_total_mb'] = None
         if rc != 0 or rr.get('status') != 'ok':
-            rep['status'] = 'fp_mismatch' if rr.get('status') == 'fp_mismatch' else 'error'
+            rep['status'] = (rr.get('status') if rr.get('status') in ('fp_mismatch', 'weights_mismatch') else 'error')
             raise RuntimeError(('#127 align runner failed', rc, rr.get('status'), rr.get('error')))
         a = _pd.read_parquet(_A0487_DIR / 'a_align.parquet')
         if not (a.molecule_id.astype(str).tolist() == cands.molecule_id.tolist()
@@ -165,6 +199,10 @@ def ALIGN0487_MIX(idx, za, zb, zfun):
             rep['status'] = 'error'
         rep['error'] = repr(e)[:2000]
         rep['seconds'] = round(_a_time.time() - t0, 1)
+        try:
+            rep['max_rss_mb'] = _a0487_rss()
+        except Exception:
+            pass
         dump()
         raise
 
@@ -270,6 +308,7 @@ def main() -> None:
         "base_fs.py": (ROOT / "scripts/engine2/base_fs.py").read_bytes(),
         "align_train.py": at,
         "align_config.json": Path(args.align_config).read_bytes(),
+        "strip_dreams_ckpt.py": (ROOT / "scripts/ship/strip_dreams_ckpt.py").read_bytes(),
     }
     dz = dreams_zip(Path(args.dreams_root))
     cell = make_cell(files, dz)
@@ -287,7 +326,8 @@ def main() -> None:
     meta = json.loads(SRC_META.read_text())
     meta.pop("id_no", None)
     meta.update(id=SLUG, title="casmi26 lb487 align", code_file="notebook.ipynb")
-    meta["dataset_sources"] = list(meta["dataset_sources"]) + [WEIGHTS_DS]
+    meta["dataset_sources"] = list(meta["dataset_sources"]) + [DREAMS_DS]
+    meta["model_sources"] = [ALIGN_MODEL_SRC]
     (out / "kernel-metadata.json").write_text(json.dumps(meta, indent=2) + "\n")
     info = {"issue": 127, "base_sha256": SRC_SHA256, "added_index": ADDED_INDEX, "neural_cell_base": NEURAL_CELL,
             "embedded_sha256": {k: sha256_bytes(v) for k, v in files.items()}, "dreams_zip_sha256": sha256_bytes(dz),

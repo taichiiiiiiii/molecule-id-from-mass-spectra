@@ -23,7 +23,7 @@
     "takumuhata/casmi26-extlib",
     "sanpier/catalogue-experiment-saner",
     "metric/rdkit-2026-3-3-wheel",
-    "taichiiiii/casmi26-align0487-weights"
+    "ahmedberatozer/casmi26-dreams-ssl-readiness-v1"
   ],
   "kernel_sources": [
     "popwenman/casmi26-scorer-train-v80"
@@ -31,7 +31,9 @@
   "competition_sources": [
     "enveda-CASMI26-molecule-id-mass-spectra"
   ],
-  "model_sources": [],
+  "model_sources": [
+    "taichiiiii/casmi26-align0487/PyTorch/foldsafe-v1/1"
+  ],
   "docker_image": "gcr.io/kaggle-private-byod/python@sha256:37c64f7dd9c54116ecd1bcc88817c5469b88387388fade02bfa8bf3fc647d461",
   "machine_shape": "NvidiaTeslaT4"
 }
