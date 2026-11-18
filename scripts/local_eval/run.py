@@ -17,6 +17,10 @@
                   z 合成で s に混ぜる。fragnnblind は同じ重み・同じ候補で、別の分子のスペクトルに入れ替えた点（対照）。
                   点は scripts/local_eval/fragnn_score.py が outputs/local_eval/<h>/fragnn_scores.npz・
                   fragnnblind_scores.npz に作る。fragnn と fragnnblind は同時に使えず、併用できるのは score・prior・frag だけ
+  3b. lfus      : （#150、指定時だけ）prior の後・frag の前で、上位 TOPN の候補 c に N(c) = Σ_a s_a·T(c, a) / Σ_a s_a
+                  （a は train の参照の類縁体、scripts/local_eval/lfus.py build が隠す印と混入の検査の後に
+                  outputs/local_eval/<h>/lfus_analogs.json に書く）を作り、点を z(prior 後) + z(N) にする。
+                  併用できるのは score・prior・frag だけ
   4. frag       : 上位 TOPN の同一組成式グループを MetFrag-lite 断片説明率で並べ替え（0.479 版 v7c と同じ:
                   gl_fuse.rerank_multi、λ=0.5、学習なしなのでリーク無し）
   4b. elem      : （#90、指定時だけ）dedup 後の上位 TOPN で、C・H・N・O・P・S・F・Cl・Br・I 以外の元素を含む候補を
@@ -33,6 +37,7 @@ from __future__ import annotations
 import argparse
 import csv
 import json
+import os
 import sys
 import time
 from pathlib import Path
@@ -40,10 +45,11 @@ from pathlib import Path
 import numpy as np
 import pandas as pd
 
-ROOT = Path(__file__).resolve().parents[2]
-sys.path.insert(0, str(ROOT / "data/ext/v4g/casmi26-v3-models/code"))
-sys.path.insert(0, str(ROOT / "scripts/validate"))
-sys.path.insert(0, str(ROOT / "scripts/local_eval"))
+CODE = Path(__file__).resolve().parents[2]   # このファイルのある木（#150: git の対象外に写したコードから動かせるように）
+ROOT = Path(os.environ.get("LOCAL_EVAL_ROOT", CODE))   # データ・出力の木（既定はコードと同じ。前と同じ動き）
+sys.path.insert(0, os.environ.get("CASMI_CODE", str(ROOT / "data/ext/v4g/casmi26-v3-models/code")))
+sys.path.insert(0, str(CODE / "scripts/validate"))
+sys.path.insert(0, str(CODE / "scripts/local_eval"))
 
 PPM = 10.0          # 0.479 版の PubChem チャネルと同じ
 TOPN = 60           # 0.479 版の base リスト長
@@ -153,7 +159,7 @@ def nbz_mix(zs: dict, pairs: list) -> dict:
 def nbz_pairs(spectra: dict) -> list:
     """#101 と同じ定義（query_network.sim_matrix / mutual_pairs、library._prep と同じ前処理、entropy_sim）で、
     spectra（query_spectra の形）の中の相互最近傍の組 [(a, b, s)] を返す。spectra は書き換えない。"""
-    sys.path.insert(0, str(ROOT / "scripts/cv"))
+    sys.path.insert(0, str(CODE / "scripts/cv"))
     import query_network as QN
     from casmi import spectra as sp
     from casmi.library import SearchCfg
@@ -200,6 +206,8 @@ def check_stages(stages: list[str]) -> None:
     assert len(fn) <= 1, "fragnn と fragnnblind は同時に使えない（#120 は別々に 1 回ずつ採点する）"
     bad = [s for s in stages if fn and s not in FRAGNN_ALLOWED and s not in FRAGNN_STAGES]
     assert not bad, f"{fn} は {bad} と併用できない（#120 の範囲外。使えるのは {FRAGNN_ALLOWED}）"
+    import lfus as LF   # #150: lfus と併用できるのは score・prior・frag だけ、prior が要る
+    LF.check_stages_lfus(stages)
 
 
 # ---------------------------------------------------------------- 段 2b: sanpier（#60、等重み）
@@ -343,6 +351,23 @@ def run(holdout: str, stages: list[str], logits_run: str | None = None) -> dict:
                         nbz_s_median=round(float(np.median([p[2] for p in pairs])), 4) if pairs else None,
                         nbz_crosscheck_101=nbz_crosscheck(pairs, ROOT / f"outputs/local_eval/query_network_{holdout}.json"),
                         nbz_connected=sorted(nbz_z))
+    lfus_an, lfus_diag, lfus_applied = None, {}, []
+    if "lfus" in stages:   # #150: 類縁体は lfus.py build が書いた json（印・混入の検査済み）。ここでは読むだけ
+        import hashlib
+        import lfus as LF
+        apath = ROOT / f"outputs/local_eval/{holdout}/lfus_analogs.json"
+        aj = json.loads(apath.read_text())
+        dk = ROOT / f"data/holdouts/{holdout}/drop_keys.txt"
+        assert aj["holdout"] == holdout and aj["limit"] is None, "lfus_analogs.json が全分子の build でない"
+        assert aj["drop_keys_sha256"] == hashlib.sha256(dk.read_bytes()).hexdigest(), "build 時と drop_keys.txt が違う"
+        assert aj["align"]["all_ok"] and all(aj["audit"][k] == 0 for k in
+                                             ("leak_rep_drop_keys", "leak_rep_source_keys", "leak_rep_meta_lib", "leak_analog_hits"))
+        lfus_an = LF.load_analogs(apath)
+        ts = ROOT / "data/ext/v4g/casmi26-v2-pool/train_structs.parquet"
+        assert aj["train_structs_sha256"] == hashlib.sha256(ts.read_bytes()).hexdigest(), "build 時と train_structs が違う"
+        lfus_smiles = pd.read_parquet(ts, columns=["smiles"]).smiles.values
+        lfus_diag = dict(lfus_analogs_json=str(apath), lfus_analogs_sha256=hashlib.sha256(apath.read_bytes()).hexdigest(),
+                         lfus_drop_keys_sha256=aj["drop_keys_sha256"], lfus_n_fp_fail=0)
     lists = {}
     for mid in truth:
         if mid not in targets:
@@ -356,6 +381,11 @@ def run(holdout: str, stages: list[str], logits_run: str | None = None) -> dict:
             rows = sanpier_mix(rows, fscores[mid])
         if "prior" in stages:
             rows = rerank_with_prior(rows, pool)
+        if lfus_an is not None:   # #150: prior の後・frag の前。z(prior 後の点) + z(N)（分子が json に無ければ KeyError）
+            rows, info = LF.lfus_rows(rows, [pool.smiles[i] for _, i in rows], lfus_an[mid], lfus_smiles, fpc)
+            lfus_diag["lfus_n_fp_fail"] += info["n_fp_fail"]
+            if info["applied"]:
+                lfus_applied.append(mid)
         if "frag" in stages:
             rows = frag_rerank(rows, pool, spectra.get(mid, []), frag, fuse, fcache, formula_of)
         lists[mid] = dedup(rows, pool, TOPN)
@@ -434,6 +464,8 @@ def run(holdout: str, stages: list[str], logits_run: str | None = None) -> dict:
         res.update(pmi_n_queries=len(zf.files) - 1, pmi_zbar_mean=round(float(zbar.mean()), 4), pmi_zbar_std=round(float(zbar.std()), 4))
     res.update(nbz_diag)   # #103: nbz の組の数・つながりのある分子（記録用）
     res.update(fragnn_diag)   # #120: 読んだ npz のパスと sha256（記録用）
+    if lfus_an is not None:   # #150: 読んだ json・drop_keys の sha256、類縁体で点を変えた分子（記録用）
+        res.update(lfus_diag, lfus_n_applied=len(lfus_applied), lfus_applied=sorted(lfus_applied))
     (out_dir / f"result_{tag}.json").write_text(json.dumps(res, indent=2))
     return res
 
@@ -441,7 +473,7 @@ def run(holdout: str, stages: list[str], logits_run: str | None = None) -> dict:
 def main() -> None:
     ap = argparse.ArgumentParser()
     ap.add_argument("--holdout", required=True)
-    ap.add_argument("--stages", default="score,prior", help="カンマ区切り: score[,pmi|,nbz][,sanpier|,fragnn|,fragnnblind][,prior][,frag][,elem][,lib][,reflast][,pubchem]")
+    ap.add_argument("--stages", default="score,prior", help="カンマ区切り: score[,pmi|,nbz][,sanpier|,fragnn|,fragnnblind][,prior][,lfus][,frag][,elem][,lib][,reflast][,pubchem]")
     ap.add_argument("--logits-run", default=None, help="outputs/holdout_eval/<run>/pc_logits.npz（既定 <holdout>_fold0）")
     args = ap.parse_args()
     print(json.dumps(run(args.holdout, args.stages.split(","), args.logits_run), indent=2))
