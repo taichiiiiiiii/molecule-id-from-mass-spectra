@@ -60,6 +60,7 @@ def main() -> None:
     ap.add_argument("--model", default="data/ext/foldsafe/fpnet_fold0.pt")
     ap.add_argument("--device", default="cpu")
     ap.add_argument("--run", default=None, help="出力先 outputs/holdout_eval/<run>/（既定 <holdout>_fold0）。fold k のモデルなら <holdout>_fold<k> など")
+    ap.add_argument("--out-dir", default=None, help="#146: 出力先のディレクトリ（指定すると --run より優先。既定の動きは変えない）")
     args = ap.parse_args()
     te = pd.read_parquet(f"data/holdouts/{args.holdout}/test.parquet")
     te["nm"] = chem.neutral_mass(te.precursor_mz.values.astype(np.float64), te.adduct.values)
@@ -84,7 +85,7 @@ def main() -> None:
             continue
         out[mid] = z
         targets.append([mid, target])
-    d = Path(f"outputs/holdout_eval/{args.run or args.holdout + '_fold0'}")
+    d = Path(args.out_dir) if args.out_dir else Path(f"outputs/holdout_eval/{args.run or args.holdout + '_fold0'}")
     d.mkdir(parents=True, exist_ok=True)
     np.savez_compressed(d / "pc_logits.npz", **out, __targets__=np.array(targets, dtype=object))
     print(f"wrote {d}/pc_logits.npz: {len(out)} molecules in {time.time() - t0:.0f}s")
