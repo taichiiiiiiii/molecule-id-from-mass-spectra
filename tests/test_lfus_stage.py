@@ -247,3 +247,6 @@ def test_check_inputs_asserts():
         CK.check_inputs("v3_c1", rj, aj | dict(audit={**aj["audit"], "leak_analog_hits": 1}), man, 0.8535)
     with pytest.raises(AssertionError):
         CK.check_inputs("v3_c1", rj, aj | dict(limit=10), man, 0.8535)
+    CK.check_inputs("v3_c1", rj, aj, man, 0.8535, analogs_sha256="x")
+    with pytest.raises(AssertionError):
+        CK.check_inputs("v3_c1", rj, aj, man, 0.8535, analogs_sha256="y")

@@ -62,13 +62,15 @@ def split_summary(a: dict, b: dict, applied: set) -> dict:
     return out
 
 
-def check_inputs(h: str, rj: dict, aj: dict, manifest: dict, ctrl_mrr: float) -> dict:
-    """事前登録の前提の assert（対照の値・drop_keys の sha256・行の一致・混入 0 件）。記録を返す。"""
+def check_inputs(h: str, rj: dict, aj: dict, manifest: dict, ctrl_mrr: float, analogs_sha256: str | None = None) -> dict:
+    """事前登録の前提の assert（対照の値・drop_keys の sha256・行の一致・混入 0 件・新が読んだ類縁体の json）。記録を返す。"""
     assert round(ctrl_mrr, 4) == CTRL_EXPECTED[h], f"{h}: 対照 {ctrl_mrr} が事前登録の {CTRL_EXPECTED[h]} と違う"
     assert rj["lfus_drop_keys_sha256"] == manifest["after"]["sha256"] == aj["drop_keys_sha256"], f"{h}: drop_keys の sha256 が違う"
     assert aj["align"]["all_ok"], f"{h}: 行の一致の確認が通っていない"
     assert all(aj["audit"][k] == 0 for k in LEAK_KEYS), f"{h}: 混入 {aj['audit']}"
     assert aj["limit"] is None and rj["lfus_analogs_sha256"], f"{h}: 全分子の build でない"
+    if analogs_sha256 is not None:
+        assert rj["lfus_analogs_sha256"] == analogs_sha256, f"{h}: 新が読んだ lfus_analogs.json と今のファイルが違う"
     return dict(align=aj["align"], mask=aj["mask"], audit=aj["audit"], drop_keys_sha256=aj["drop_keys_sha256"],
                 stage0=aj["stage0"], build_timing=aj["timing"], build_secs=aj["secs_total"])
 
@@ -101,7 +103,9 @@ def main() -> None:
         assert ctrl_same, f"{h}: 変更後のコードの対照が前の submission と違う"
         rj, aj = json.loads(rj_p.read_text()), json.loads(aj_p.read_text())
         manifest = json.loads((ROOT / f"data/holdouts/{h}/drop_keys_manifest.json").read_text())
-        inputs[h] = check_inputs(h, rj, aj, manifest, sum(b.values()) / len(b)) | dict(ctrl_rerun_cmp_identical=ctrl_same)
+        import hashlib
+        inputs[h] = check_inputs(h, rj, aj, manifest, sum(b.values()) / len(b), hashlib.sha256(aj_p.read_bytes()).hexdigest()) \
+            | dict(ctrl_rerun_cmp_identical=ctrl_same)
         if h == "v3_c2":
             assert all(v == 0 for v in a.values()) and all(v == 0 for v in b.values()), "v3_c2 で rr が 0 でない分子がある"
         d = bootstrap_diff(a, b)
