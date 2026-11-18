@@ -446,6 +446,8 @@ def run_all(sets: list[str], root: Path = ROOT) -> dict:
     t0 = time.time()
     if E180K in sets:
         chk = check_window(root)
+        # 起動前レビューの minor 1: 本番では fragnn・fragnnblind の npz の照合も済んでいることを求める
+        chk["ok"] = chk["ok"] and all(f"{x}_npz_mismatch" in chk for x in ("fragnn", "fragnnblind"))
         if not chk["ok"]:
             print(json.dumps(chk, ensure_ascii=False))
             print("[stop] e180_c2k の窓が remove 版（か fragnn の npz）と一致しない。何も数えていない")
