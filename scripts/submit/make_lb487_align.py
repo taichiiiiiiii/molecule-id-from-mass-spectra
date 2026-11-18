@@ -29,6 +29,7 @@ import base64
 import hashlib
 import io
 import json
+import lzma
 import subprocess
 import zipfile
 from pathlib import Path
@@ -52,6 +53,7 @@ OLD_LINE = ("        _a['neural_score'] = 0.5 * _z(_a['neural_score'].fillna(0.0
 NEW_LINE = ("        _a['neural_score'] = ALIGN0487_MIX(_a.index, _z(_a['neural_score'].fillna(0.0)), "
             "_z(_b['neural_score'].fillna(0.0)), _z)\n")
 MARK = "# ── #127（診断）: 整列チャネル"
+KERNEL_SOURCE_LIMIT = 1_000_000   # Kaggle: "The kernel source must be less than 1 megabytes in size."（十進で見て余裕を取る）
 
 CELL_TEMPLATE = r'''# ── #127（診断）: 整列チャネル（自前・fold-safe の整列 MLP ＋ 凍結 DreaMS）を neural_score に足す ──────────────
 # 変えるのはこのセルと、外側セル 15 の neural_score の 1 行だけ（Issue #127 の事前登録）。
@@ -66,9 +68,9 @@ COMMIT_MODE = 'smoke'   # #127: commit で見える 12 分子が全段を通る�
 import base64 as _a_b64, io as _a_io, zipfile as _a_zip, json as _a_json, hashlib as _a_hl
 import subprocess as _a_sp, sys as _a_sys, time as _a_time
 from pathlib import Path as _a_P
-_A0487_FILES = __FILES__
+# 埋め込みは 1 つの塊: base85(xz(ZIP_STORED の zip{files/<名前>, dreams.zip}))。Kaggle の「ノートは 1 MB 未満」に収めるため
+_A0487_BLOB = __BLOB__
 _A0487_SHA256 = __SHA__
-_A0487_DREAMS_ZIP = __DREAMS_ZIP__
 _A0487_DREAMS_SHA256 = __DREAMS_SHA__
 _A0487_DREAMS_COMMIT = __DREAMS_COMMIT__
 _A0487_TIMEOUT_S = 3600   # 足す段 ≤ 1 時間（#127 の時間の関門）
@@ -105,15 +107,25 @@ def _a0487_rss():
             for k, w in (('self', _r.RUSAGE_SELF), ('children', _r.RUSAGE_CHILDREN))}
 
 
+def _a0487_unpack():
+    import lzma as _a_lzma
+    with _a_zip.ZipFile(_a_io.BytesIO(_a_lzma.decompress(_a_b64.b85decode(_A0487_BLOB)))) as zf:
+        names = zf.namelist()
+        files = {n[len('files/'):]: zf.read(n) for n in names if n.startswith('files/')}
+        dz = zf.read('dreams.zip')
+    if set(files) != set(_A0487_SHA256) or len(names) != len(files) + 1:
+        raise RuntimeError(('#127 embedded bundle has unexpected entries', names))
+    return files, dz
+
+
 def _a0487_materialise():
     _A0487_DIR.mkdir(parents=True, exist_ok=True)
-    for name, b64 in _A0487_FILES.items():
-        data = _a_b64.b64decode(b64)
+    files, z = _a0487_unpack()
+    for name, data in files.items():
         h = _a_hl.sha256(data).hexdigest()
         if h != _A0487_SHA256[name]:
             raise RuntimeError(('#127 embedded file sha256 mismatch', name, h))
         (_A0487_DIR / name).write_bytes(data)
-    z = _a_b64.b64decode(_A0487_DREAMS_ZIP)
     if _a_hl.sha256(z).hexdigest() != _A0487_DREAMS_SHA256:
         raise RuntimeError('#127 embedded DreaMS zip sha256 mismatch')
     with _a_zip.ZipFile(_a_io.BytesIO(z)) as zf:
@@ -246,29 +258,50 @@ print('#127 align channel cell ready (COMMIT_MODE =', COMMIT_MODE + ')')
 '''
 
 
+def pushed_source_bytes(path: Path) -> int:
+    """`kaggle kernels push`（CLI 2.2.5）が送る本文の大きさ: outputs を空に、source を 1 つの文字列にして json.dumps。"""
+    j = json.loads(Path(path).read_text(encoding="utf-8"))
+    for c in j.get("cells", []):
+        if "outputs" in c and c["cell_type"] == "code":
+            c["outputs"] = []
+        if isinstance(c.get("source"), list):
+            c["source"] = "".join(c["source"])
+    return len(json.dumps(j).encode("utf-8"))
+
+
 def sha256_bytes(b: bytes) -> str:
     return hashlib.sha256(b).hexdigest()
 
 
 def dreams_zip(dreams_root: Path) -> bytes:
-    """dreams/**/*.py と LICENSE だけの zip（中身は DreaMS-<commit>/ の下、日付は固定、名前順）。"""
+    """dreams/**/*.py と LICENSE だけの zip（中身は DreaMS-<commit>/ の下、日付は固定、名前順、無圧縮 — 外側で xz にする）。"""
     files = sorted([p for p in (dreams_root / "dreams").rglob("*.py")] + [dreams_root / "LICENSE"])
     buf = io.BytesIO()
-    with zipfile.ZipFile(buf, "w", zipfile.ZIP_DEFLATED) as z:
+    with zipfile.ZipFile(buf, "w", zipfile.ZIP_STORED) as z:
         for p in files:
             zi = zipfile.ZipInfo(f"DreaMS-{DREAMS_COMMIT}/" + p.relative_to(dreams_root).as_posix(), (2024, 1, 1, 0, 0, 0))
-            zi.compress_type = zipfile.ZIP_DEFLATED
+            zi.compress_type = zipfile.ZIP_STORED
             zi.external_attr = 0o644 << 16
             z.writestr(zi, p.read_bytes())
     return buf.getvalue()
 
 
+def bundle(files: dict[str, bytes], dz: bytes) -> bytes:
+    """files/<名前>（名前順）と dreams.zip を無圧縮の zip に入れ、xz（preset 9e）で縮める。日付は固定。"""
+    buf = io.BytesIO()
+    with zipfile.ZipFile(buf, "w", zipfile.ZIP_STORED) as z:
+        for name, data in [("files/" + k, files[k]) for k in sorted(files)] + [("dreams.zip", dz)]:
+            zi = zipfile.ZipInfo(name, (2024, 1, 1, 0, 0, 0))
+            zi.external_attr = 0o644 << 16
+            z.writestr(zi, data)
+    return lzma.compress(buf.getvalue(), format=lzma.FORMAT_XZ, preset=9 | lzma.PRESET_EXTREME)
+
+
 def make_cell(files: dict[str, bytes], dz: bytes) -> str:
-    b64 = {k: base64.b64encode(v).decode() for k, v in files.items()}
     sha = {k: sha256_bytes(v) for k, v in files.items()}
     s = CELL_TEMPLATE
-    s = s.replace("__FILES__", repr(b64)).replace("__SHA__", repr(sha))
-    s = s.replace("__DREAMS_ZIP__", repr(base64.b64encode(dz).decode())).replace("__DREAMS_SHA__", repr(sha256_bytes(dz)))
+    s = s.replace("__BLOB__", repr(base64.b85encode(bundle(files, dz)).decode())).replace("__SHA__", repr(sha))
+    s = s.replace("__DREAMS_SHA__", repr(sha256_bytes(dz)))
     s = s.replace("__DREAMS_COMMIT__", repr(DREAMS_COMMIT))
     return s
 
@@ -327,6 +360,8 @@ def main() -> None:
     out = Path(args.out_dir)
     out.mkdir(parents=True, exist_ok=True)
     (out / "notebook.ipynb").write_text(json.dumps(nb, indent=1, ensure_ascii=False) + "\n")
+    nb_bytes = pushed_source_bytes(out / "notebook.ipynb")
+    assert nb_bytes < KERNEL_SOURCE_LIMIT, f"pushed notebook source {nb_bytes} B >= Kaggle limit {KERNEL_SOURCE_LIMIT} B"
     meta = json.loads(SRC_META.read_text())
     meta.pop("id_no", None)
     meta.update(id=SLUG, title="casmi26 lb487 align", code_file="notebook.ipynb")

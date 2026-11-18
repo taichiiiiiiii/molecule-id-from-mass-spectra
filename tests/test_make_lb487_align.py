@@ -125,9 +125,11 @@ def test_build_refuses_when_line_not_unique(base):
 
 # ---------------------------------------------------------------- 埋め込んだファイル
 
-def test_embedded_files_match_repo_and_sha(new):
+def test_embedded_files_match_repo_and_sha(new, tmp_path):
     cell = added_source(new)
-    files = {k: base64.b64decode(v) for k, v in literal(cell, "_A0487_FILES").items()}
+    ns = {"ROOT": tmp_path, "COMP": tmp_path, "__name__": "t"}
+    exec(compile(cell, "added_cell", "exec"), ns)
+    files, dz = ns["_a0487_unpack"]()          # ノートと同じ取り出し方（base85 → xz → zip）
     shas = literal(cell, "_A0487_SHA256")
     assert set(files) == {"align0487_runner.py", "align_speed_trial.py", "base_fs.py", "align_train.py",
                           "align_config.json", "strip_dreams_ckpt.py"}
@@ -140,8 +142,14 @@ def test_embedded_files_match_repo_and_sha(new):
     assert sha(files["align_train.py"]) == M.ALIGN_TRAIN_SHA256
     cfg = json.loads(files["align_config.json"])
     assert cfg["pool_meta_sha256"] == AR.POOL_META_SHA256 and cfg["best_step"] == 24000
-    dz = base64.b64decode(literal(cell, "_A0487_DREAMS_ZIP"))
     assert sha(dz) == literal(cell, "_A0487_DREAMS_SHA256")
+    # 取り出しと照合（_a0487_materialise）がそのまま通り、DreaMS のコードが DreaMS-<commit>/ に出る
+    ns["_A0487_DIR"] = tmp_path / "mat"
+    root = ns["_a0487_materialise"]()
+    assert root == tmp_path / "mat" / "dreams_code" / f"DreaMS-{M.DREAMS_COMMIT}"
+    assert (root / "dreams/models/dreams/dreams.py").exists() and (root / "LICENSE").exists()
+    for k, b in files.items():
+        assert (tmp_path / "mat" / k).read_bytes() == b
     assert literal(cell, "_A0487_DREAMS_COMMIT") == M.DREAMS_COMMIT
     info = json.loads((ROOT / "kernels/lb487_align/build_info.json").read_text())
     assert info["embedded_sha256"] == shas and info["dreams_zip_sha256"] == sha(dz)
@@ -436,3 +444,9 @@ def test_models_path_resolver_counts_symlinked_mount_once(new, tmp_path):
     f.write_bytes(b"w")
     (tmp_path / "casmi26-align0487").symlink_to(tmp_path / "models/taichiiiii/casmi26-align0487")
     assert ns["_a0487_model"](tmp_path).resolve() == f.resolve()
+
+
+def test_notebook_is_under_kaggle_source_limit():
+    # CLI が送る本文（outputs を空・source を結合して json.dumps）で数える。0.487 写し（受け付けられた）は 1,000,000 未満
+    assert M.pushed_source_bytes(BASE) < M.KERNEL_SOURCE_LIMIT == 1_000_000
+    assert M.pushed_source_bytes(NEW) < M.KERNEL_SOURCE_LIMIT

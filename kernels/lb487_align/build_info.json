@@ -11,8 +11,8 @@
   "align_config.json": "640a3ae49cb226c1e51397a83f9c6ed0acbf8a7bb62c2558912e33077586c283",
   "strip_dreams_ckpt.py": "c02bc2d182eba0c83e1accb2844345cf5b972784b1340ac8364120021169818e"
  },
- "dreams_zip_sha256": "b12ca24ae5f7d1fa072712001c73eb1335ee0b6bbac51508eb3c4e9790cac59f",
+ "dreams_zip_sha256": "0a10c30bc31e31326802147ecbd7f7d8e1385559a65e9cc202d930acfec280aa",
  "dreams_commit": "dbec3a0b514a99e5056cfccde4559fda8cfe8129",
  "align_train_ref": "origin/feat/109-align-local-train:scripts/train/align_train.py",
- "notebook_sha256": "913ee3e3c5d0b770fafdd34d2ddaa919a6b4b8d4fa6841f88c6d29af123e12e5"
+ "notebook_sha256": "306869d898283b671ad719e8ede1c15329085414f73a3cd165831cbed6e7f438"
 }
