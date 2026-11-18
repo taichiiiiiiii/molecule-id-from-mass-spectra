@@ -88,7 +88,11 @@ def _a0487_model(root=_a_P('/kaggle/input')):
             'models/*/casmi26-align0487/*/foldsafe-v1/*/*/model_best.pt',
             'casmi26-align0487/*/foldsafe-v1/*/model_best.pt',
             'casmi26-align0487/*/foldsafe-v1/*/*/model_best.pt']
-    hits = sorted({p for pat in pats for p in root.glob(pat)})
+    found = {}
+    for pat in pats:                     # 同じ実体（symlink で 2 つの形に出る場合）は 1 つと数える
+        for p in sorted(root.glob(pat)):
+            found.setdefault(p.resolve(), p)
+    hits = sorted(found.values())
     if len(hits) != 1:
         raise RuntimeError(('#127 align weights not found exactly once in Kaggle Models', [str(h) for h in hits]))
     print(f'#127 align weights (Kaggle Models): {hits[0]}', flush=True)

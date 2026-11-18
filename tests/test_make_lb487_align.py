@@ -426,3 +426,13 @@ def test_load_stripped_dreams_refuses_other_bytes(tmp_path):
     with pytest.raises(AR.WeightsMismatch):
         AR.load_stripped_dreams(f, tmp_path, rep)
     assert rep["dreams_ckpt"]["bytes"] == 12
+
+
+def test_models_path_resolver_counts_symlinked_mount_once(new, tmp_path):
+    ns = {"ROOT": tmp_path, "COMP": tmp_path, "__name__": "t"}
+    exec(compile(added_source(new), "added_cell", "exec"), ns)
+    f = tmp_path / "models/taichiiiii/casmi26-align0487/pytorch/foldsafe-v1/1/model_best.pt"
+    f.parent.mkdir(parents=True)
+    f.write_bytes(b"w")
+    (tmp_path / "casmi26-align0487").symlink_to(tmp_path / "models/taichiiiii/casmi26-align0487")
+    assert ns["_a0487_model"](tmp_path).resolve() == f.resolve()

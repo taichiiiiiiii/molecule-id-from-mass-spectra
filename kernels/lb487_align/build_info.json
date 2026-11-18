@@ -14,5 +14,5 @@
  "dreams_zip_sha256": "b12ca24ae5f7d1fa072712001c73eb1335ee0b6bbac51508eb3c4e9790cac59f",
  "dreams_commit": "dbec3a0b514a99e5056cfccde4559fda8cfe8129",
  "align_train_ref": "origin/feat/109-align-local-train:scripts/train/align_train.py",
- "notebook_sha256": "98ddd93110ed5b7b7a7ebaea325e1cc5ae3021c996064b5d0e5e18034fd5c5de"
+ "notebook_sha256": "913ee3e3c5d0b770fafdd34d2ddaa919a6b4b8d4fa6841f88c6d29af123e12e5"
 }
