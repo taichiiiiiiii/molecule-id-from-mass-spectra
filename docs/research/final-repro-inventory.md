@@ -50,8 +50,8 @@
 - **R12** 757309 David Healey 2026-11-11: PubChem の CID-SMILES と CC0 の COCONUT から作った候補索引を private 入力として付けることに「Those are fine to use」
 - **R13** 745072 David Healey 2026-10-09: 「train.parquet should be considered open source」。PubChem と COCONUT も使ってよい
 - **R14** 745072 Marie Killian 2026-10-27 21:20Z（id 3545813）: Truthseeking（10-21）が `ahmedberatozer/casmi26-fpnet-full1` と `prvsiyan/casmi26-ranker-features` を名指しして「元の学習コードが無いが使えるか、無理なら自前の公開コードと許可データで同等のモデルを学習し直せばよいか」と聞いたことへの答え。「Without the original training code, these components are not eligible. But if you retrain equivalent models with your own published code and permitted data, that would satisfy the rule」
-  - 質問の時点で質問者は full1 の学習コードが無いと書いている。TC（10-19 公開）に `06_train_fpnet.py` があることには触れていない。だから、この答えが TC の公開の後の full1 にもそのまま当たるかは決まらない（Q-Y (1) の括弧書きが同じ点を問うている）
-- **R15** 745072 Marie Killian 2026-10-27 21:23Z（id 3545817）: 「The winner's package would need to include the training script that reproduces the v3 weights. As we have stated, for any weights used, the original training code and access to permitted training data must be available」
+  - 質問の時点で質問者は full1 の学習コードが無いと書いている。TC に `06_train_fpnet.py` があることには触れていない（TC のファイルの creationDate は 2026-10-19 08:25 で、質問より前。`kaggle datasets files` で確認）。だから、この答えが TC の公開の後の full1 にもそのまま当たるかは決まらない（Q-Y (1) の括弧書きが同じ点を問うている）
+- **R15** 745072 Marie Killian 2026-10-27 21:23Z（id 3545817）: Truthseeking の 10-25 の質問（id 3544619、`casmi26-v3-models` の v3 の重みについて）への答えで、full1 への答えではない。後半は一般の原則として使う。「The winner's package would need to include the training script that reproduces the v3 weights. As we have stated, for any weights used, the original training code and access to permitted training data must be available」
 
 **まだ答えの無い質問**（11/19 02:1x JST の取得時点。主催者の返答が見当たらない。なお 748882 には、本文も投稿者名も空のコメントが 3 件ある〈id 3538940・3550345・3548672〉。削除されたものとみられ、主催者の返答だったかどうかは分からない）
 - **Q-L** 756893 LeeDongHyuk 2026-11-17: 次の (a)(b)(c) のとき、作者の元の重みを読んでよいか、自分で学習し直す必要があるか
@@ -60,7 +60,7 @@
   - (c) 中間の入力ファイルの版がもう落とせないが、公開コードで同等のものを作れる
 - **Q-A** 748882 Ashot Mirzoyan 2026-11-05: 学習の後に編集されたスクリプトで作った v4b の重みを、そのまま使ってよいか
 - **Q-Y** 748882 yesterdays_rebel 2026-11-05: 3 つの場合を問う
-  - (1) TC の重みと表をそのまま使ってよいか
+  - (1) TC の重みと表をそのまま使ってよいか（括弧書きで「745072 の以前の返答は full1 に学習コードが無いとしていたが、TC には `06_train_fpnet.py` がある」と指摘している）
   - (2) fold-safe FPNet は同じ扱いか
   - (3) fe_D の元の DreaMS ckpt の config に NIST20+MoNA の probing 集合が書かれている点は問題か
 
@@ -193,11 +193,11 @@
 6. **FPNet B（3B）と fe_D（4）**（未決。Q-L (a)(b) しだい）
    - FPNet B は TC の full1 と同じスクリプト（`--steps 40000`）。時間は**未測定**（#82 の 14.36 h はキットの 82,855 ステップの値で、そのままは使えない）
    - fe_D（DreaMS の微調整）は**未測定**
-7. 作り直しは要らない: 3A・6・7・11d・12〜18・20 と、表 B の全部（B2・B3 はコードを main に入れるだけ）
+7. 作り直しは要らない: 3A・6・7・11d・12〜18・20・S5 と、表 B の全部（B2・B3 はコードを main に入れるだけ）。影響なしの 23・S2・S3・S6 は対象外
 8. **保留**: S1（hengck23 の DreaMS の空き順位の埋め）は未確認なので、優先順を決めない。中の .py 3 本と `embedding_model_state_dict.pt` の出どころを読んでから決める
 
 ### 読み（判断の材料。決定ではない）
-- 1〜3 は Q-L の答えを待たずに要る。どれも GPU は要らない（CPU とローカル）が、LB の下げが大きい（#77 の −0.052、#62）。最終の 2 本を「規則に合う形」にするなら、Engine 2 と外部ライブラリの扱いを先に決める必要がある
+- 1・3 と、2 のうち候補バンク（11a・11b・11c）は、Q-L の答えを待たずに要る（Engine 2 を残す場合）。2 の FP モデル（10）は Q-L しだい。どれも GPU は要らない（CPU とローカル）が、LB の下げが大きい（#77 の −0.052、#62）。最終の 2 本を「規則に合う形」にするなら、Engine 2 と外部ライブラリの扱いを先に決める必要がある
 - 4〜6 は Q-L・Q-A の答えしだい。全部やり直すと、GPU の見込みは T4 で少なくとも 14.36 h（full1 をキットの経路で）＋ 8.7〜20.3 h（ranker の段 1）＋ 未測定の分（B・fe_D・ranker の段 2〜3）になる。週 30 h の枠に 1 週では収まらない見込み。答えが「元の重みでよい」なら 0 h
 - 締切は 12/14。答えが出ないまま 12 月に入るなら、どの形を最終にするかを、残りの週の GPU の枠と合わせてオーナーに聞く（お願いに回す）
 
