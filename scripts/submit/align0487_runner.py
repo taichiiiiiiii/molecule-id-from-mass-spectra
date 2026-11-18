@@ -7,7 +7,7 @@
 
     python align0487_runner.py --test test.parquet --cands cands.parquet --out a_align.parquet --report align0487_runner.json \
         --pool-dir <casmi26-v2-pool> --casmi-code <casmi26-v3-models/code> --code-dir <align_train.py 等を置いた所> \
-        --dreams-root <DreaMS-<commit>> --dreams-state dreams_ssl_state.pt --align-model model_best.pt \
+        --dreams-root <DreaMS-<commit>> --dreams-ckpt ssl_model.ckpt --align-model model_best.pt \
         --align-config align_config.json [--device cuda] [--expect-rdkit 2026.03.3]
 
 #127 の「提出の前に固定すること」:
@@ -21,6 +21,12 @@
 - g: DreaMS（ピーク 100、fp32 の前向き、最後の層の先頭トークン）→ 学習のシャードと同じ規則で fp16 に丸める（有限かつ
   |x| ≤ 60,000 のとき）→ encode_spectrum → 行ごとに正規化 → 分子ごとの平均を正規化（align.py の molecule_vectors）
 - a = cos(v, h) = h_norm · v（align.py の window_scores と同じ。float64 で計算して float32 に）
+- DreaMS の重み（#127 本文 案 A″ / A′）: 公開データセット `ahmedberatozer/casmi26-dreams-ssl-readiness-v1` の
+  `weights/ssl_model.ckpt` を `--dreams-ckpt` で受け、大きさ・md5・sha256 を照合 → `strip_dreams_ckpt.strip_checkpoint` で
+  optimizer などを外す → 外した state_dict のテンソルの digest（`state_dict_digest`）を手元の strip の出力（68 テンソル、
+  ファイル sha256 65eb33fa…c11）の値と照合 → メモリ上の torch.save の bytes を load_dreams に渡す。どれかが違えば status
+  `weights_mismatch`（終了コード 4）で止まる。重み: CC-BY-4.0（Bushuiev et al., Nat Biotechnol 2025,
+  doi:10.1038/s41587-025-02663-3 / Zenodo 10997887）、コード: MIT（pluskal-lab/DreaMS dbec3a0）
 
 torch・RDKit はモジュールの先頭で import しない（CI は純粋な関数だけをテストする）。
 """
@@ -40,7 +46,12 @@ import numpy as np
 POOL_META_SHA256 = "82b8c40315611289b9a4004b3af18d6d3402b3cd5baa4ee5723da07b7e2f6bb0"
 POOL_FP_SHA256 = "f02d91eeb4e2be5687ce678c199aa09a3acda1e821478372fc23fd1c7edf55e8"
 FP_BITS_SHA256 = "c3869e86449d6fed6e79e9655f8a7d35bd55c3138ecddfc1dae5072627e78677"
-DREAMS_STATE_SHA256 = "65eb33fa6d6179438af16d0973b2b461e5712288cc7b5c46a938e4926ba55c11"
+DREAMS_CKPT_SIZE = 1_392_710_212                                       # Zenodo 10997887 / 公開データセットの版 1
+DREAMS_CKPT_MD5 = "4deee91dd4486c2b6cbcde1f200b8f50"
+DREAMS_CKPT_SHA256 = "4b73da583a4b4e4abef4bb3ab496dc12f716ed484ea0e4066ad45d6952856fef"
+DREAMS_STATE_FILE_SHA256 = "65eb33fa6d6179438af16d0973b2b461e5712288cc7b5c46a938e4926ba55c11"  # 手元の strip の出力（記録）
+DREAMS_STATE_N_TENSORS = 68
+DREAMS_STATE_TENSOR_SHA256 = "45d58acf8580afcd912cc3a37ec2f44ca4f5bb7465797b69096b3f13dba595b2"   # state_dict_digest(strip の出力の state_dict)
 ALIGN_MODEL_SHA256 = "4e2a7cbe6a570805f47c4359c57de7a8ed7d75de688aa603d27745ca5507cd51"
 FP_BITS = 10_226
 PACKED_BYTES = (FP_BITS + 7) // 8
@@ -48,6 +59,7 @@ PEAKS = 100
 EMB_BATCH = 32
 FP16_MAX = 60_000.0
 EXIT_FP_MISMATCH = 3
+EXIT_WEIGHTS_MISMATCH = 4
 
 
 # ---------------------------------------------------------------- 純粋な関数（CI でテストする）
@@ -130,6 +142,79 @@ def z_by_molecule(x: np.ndarray, mids) -> np.ndarray:
     return out
 
 
+def file_digests(p, chunk=1 << 22) -> dict:
+    """大きさ・md5・sha256 を 1 回の読みで。"""
+    m, h, n = hashlib.md5(), hashlib.sha256(), 0
+    with open(p, "rb") as f:
+        for b in iter(lambda: f.read(chunk), b""):
+            m.update(b)
+            h.update(b)
+            n += len(b)
+    return {"bytes": n, "md5": m.hexdigest(), "sha256": h.hexdigest()}
+
+
+def ckpt_matches(d: dict, size=None, md5=None, sha256=None) -> bool:
+    size = DREAMS_CKPT_SIZE if size is None else size
+    md5 = DREAMS_CKPT_MD5 if md5 is None else md5
+    sha256 = DREAMS_CKPT_SHA256 if sha256 is None else sha256
+    return d.get("bytes") == size and d.get("md5") == md5 and d.get("sha256") == sha256
+
+
+def state_dict_digest(sd) -> str:
+    """state_dict の挿入順のキーごとに key・str(dtype)・str(tuple(shape)) を \\0 区切りで、続けてテンソルのバイト列を流した sha256。
+
+    バイト列は `t.detach().cpu().contiguous().reshape(-1).view(torch.uint8)`（#127 本文 案 A″ の定義）。
+    """
+    import torch
+    h = hashlib.sha256()
+    for k, t in sd.items():
+        h.update(str(k).encode() + b"\0" + str(t.dtype).encode() + b"\0" + str(tuple(t.shape)).encode() + b"\0")
+        h.update(t.detach().cpu().contiguous().reshape(-1).view(torch.uint8).numpy().tobytes())
+    return h.hexdigest()
+
+
+def max_rss_mb() -> dict:
+    """このプロセスと子プロセスの最大 RSS（MB）。Linux の ru_maxrss は KiB、macOS は B。"""
+    import resource
+    scale = 1.0 if sys.platform == "darwin" else 1024.0
+    return {k: round(resource.getrusage(w).ru_maxrss * scale / 1e6, 1)
+            for k, w in (("self", resource.RUSAGE_SELF), ("children", resource.RUSAGE_CHILDREN))}
+
+
+class WeightsMismatch(RuntimeError):
+    pass
+
+
+def load_stripped_dreams(ckpt, dreams_root, rep):
+    """公開の ckpt を照合して optimizer などを外し、torch.save の bytes（BytesIO）を返す。違えば WeightsMismatch。"""
+    import gc
+    import io
+    t0 = time.time()
+    d = file_digests(ckpt)
+    rep["dreams_ckpt"] = {"path": str(ckpt), **d, "t_hash_s": round(time.time() - t0, 2)}
+    if not ckpt_matches(d):
+        raise WeightsMismatch(f"DreaMS ckpt size/md5/sha256 mismatch: {d}")
+    import torch
+    import strip_dreams_ckpt as SD
+    t1 = time.time()
+    state = SD._load(ckpt, str(dreams_root))
+    new, keys = SD.strip_checkpoint(state)
+    del state
+    gc.collect()
+    sd = new["state_dict"]
+    dig = state_dict_digest(sd)
+    rep["dreams_ckpt"].update(kept=keys["kept"], dropped=keys["dropped"], n_tensors=len(sd), tensor_sha256=dig)
+    if len(sd) != DREAMS_STATE_N_TENSORS or dig != DREAMS_STATE_TENSOR_SHA256:
+        raise WeightsMismatch(f"stripped DreaMS state_dict differs: n={len(sd)} digest={dig}")
+    buf = io.BytesIO()
+    torch.save(new, buf)
+    del new, sd
+    gc.collect()
+    buf.seek(0)
+    rep["dreams_ckpt"]["t_strip_s"] = round(time.time() - t1, 2)
+    return buf
+
+
 def sha256_file(p, chunk=1 << 22) -> str:
     h = hashlib.sha256()
     with open(p, "rb") as f:
@@ -206,7 +291,7 @@ def embed_test(test_path, dreams_root, dreams_state, device, AST, rep):
 
 def main(argv=None) -> int:
     ap = argparse.ArgumentParser()
-    for k in ("test", "cands", "out", "report", "pool-dir", "casmi-code", "code-dir", "dreams-root", "dreams-state",
+    for k in ("test", "cands", "out", "report", "pool-dir", "casmi-code", "code-dir", "dreams-root", "dreams-ckpt",
               "align-model", "align-config"):
         ap.add_argument("--" + k, required=True)
     ap.add_argument("--device", default="cpu")
@@ -241,16 +326,22 @@ def main(argv=None) -> int:
     assert AT.FP_BITS == FP_BITS
     pool = Path(args.pool_dir)
     sha = {"pool_meta": sha256_file(pool / "pool_meta.parquet"), "pool_fp": sha256_file(pool / "pool_fp.npy"),
-           "fp_bits": sha256_file(pool / "fp_bits.npy"), "dreams_state": sha256_file(args.dreams_state),
-           "align_model": sha256_file(args.align_model)}
+           "fp_bits": sha256_file(pool / "fp_bits.npy"), "align_model": sha256_file(args.align_model)}
     rep["input_sha256"] = sha
     want = {"pool_meta": POOL_META_SHA256, "pool_fp": POOL_FP_SHA256, "fp_bits": FP_BITS_SHA256,
-            "dreams_state": DREAMS_STATE_SHA256, "align_model": ALIGN_MODEL_SHA256}
+            "align_model": ALIGN_MODEL_SHA256}
     if sha != want:
         rep.update(status="error", error="input sha256 mismatch", want_sha256=want)
         dump()
         return 2
     rep["t_sha_s"] = round(time.time() - T0, 2)
+    try:
+        dreams_state = load_stripped_dreams(args.dreams_ckpt, args.dreams_root, rep)
+    except WeightsMismatch as e:
+        rep.update(status="weights_mismatch", error=str(e)[:2000], max_rss_mb=max_rss_mb())
+        dump()
+        return EXIT_WEIGHTS_MISMATCH
+    rep["max_rss_mb_after_strip"] = max_rss_mb()
     meta = pd.read_parquet(pool / "pool_meta.parquet", columns=["key", "smiles"])
     key_to_row = dict(zip(meta.key.values, range(len(meta))))
     pool_fp = np.load(pool / "pool_fp.npy", mmap_mode="r")
@@ -317,7 +408,8 @@ def main(argv=None) -> int:
     rep["t_h_s"] = round(time.time() - t3, 2)
 
     # g
-    emb, rows = embed_test(args.test, args.dreams_root, args.dreams_state, dev, AST, rep)
+    emb, rows = embed_test(args.test, args.dreams_root, dreams_state, dev, AST, rep)
+    del dreams_state
     t4 = time.time()
     emb = fp16_like_training(emb)
     vocab = cfg["adduct_vocab"]
@@ -358,6 +450,7 @@ def main(argv=None) -> int:
         np.savez(args.save_g, mids=np.array(list(vec), dtype=object), v=np.stack(list(vec.values())) if vec else np.zeros((0, 512)))
     rep["out_sha256"] = sha256_file(args.out)
     rep["status"] = "ok"
+    rep["max_rss_mb"] = max_rss_mb()
     rep["seconds"] = round(time.time() - T0, 2)
     dump()
     print("ALIGN0487 ok", json.dumps(rep["molecules"])[:300], f"{rep['seconds']}s", flush=True)

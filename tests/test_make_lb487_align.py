@@ -6,7 +6,7 @@
 - 足したセルが埋め込むファイルは sha256 が合い、リポジトリのファイル（runner など）・PR #110 の align_train.py と同じ
 - 式の値: a が分子の全候補で有限な分子だけ (z(sanpier) + z(v80) + z(a)) / 3、ほかは今と同じ 0.5 z + 0.5 z
 - runner が fp_mismatch・失敗なら例外で止まり、report の status に書く（黙って 2 項に戻らない）
-torch・RDKit は使わない（CI に torch が無い）。ALIGN0487_MIX の中の `import torch` は偽のモジュールで置き換える。
+torch・RDKit は基本は使わない（CI に torch が無い。torch・手元の ckpt が要るテストは無ければ skip）。ALIGN0487_MIX の中の `import torch` は偽のモジュールで置き換える。
 """
 from __future__ import annotations
 
@@ -130,12 +130,13 @@ def test_embedded_files_match_repo_and_sha(new):
     files = {k: base64.b64decode(v) for k, v in literal(cell, "_A0487_FILES").items()}
     shas = literal(cell, "_A0487_SHA256")
     assert set(files) == {"align0487_runner.py", "align_speed_trial.py", "base_fs.py", "align_train.py",
-                          "align_config.json"}
+                          "align_config.json", "strip_dreams_ckpt.py"}
     for k, b in files.items():
         assert sha(b) == shas[k], k
     assert files["align0487_runner.py"] == (ROOT / "scripts/submit/align0487_runner.py").read_bytes()
     assert files["align_speed_trial.py"] == (ROOT / "scripts/train/align_speed_trial.py").read_bytes()
     assert files["base_fs.py"] == (ROOT / "scripts/engine2/base_fs.py").read_bytes()
+    assert files["strip_dreams_ckpt.py"] == (ROOT / "scripts/ship/strip_dreams_ckpt.py").read_bytes()
     assert sha(files["align_train.py"]) == M.ALIGN_TRAIN_SHA256
     cfg = json.loads(files["align_config.json"])
     assert cfg["pool_meta_sha256"] == AR.POOL_META_SHA256 and cfg["best_step"] == 24000
@@ -157,7 +158,10 @@ def test_kernel_metadata():
     base = json.loads((ROOT / "kernels/lb487/kernel-metadata.json").read_text())
     meta = json.loads((ROOT / "kernels/lb487_align/kernel-metadata.json").read_text())
     assert meta["id"] == M.SLUG and "id_no" not in meta and meta["code_file"] == "notebook.ipynb"
-    assert meta["dataset_sources"] == base["dataset_sources"] + [M.WEIGHTS_DS]
+    # #127 案 A″: 公開の DreaMS のデータセットを足し、整列の重みは private の Kaggle Models から読む
+    assert meta["dataset_sources"] == base["dataset_sources"] + ["ahmedberatozer/casmi26-dreams-ssl-readiness-v1"]
+    assert not any("casmi26-align0487-weights" in d for d in meta["dataset_sources"])
+    assert meta["model_sources"] == ["taichiiiii/casmi26-align0487/PyTorch/foldsafe-v1/1"]
     for k in ("kernel_sources", "competition_sources", "docker_image", "machine_shape", "enable_gpu",
               "enable_internet", "is_private"):
         assert meta.get(k) == base.get(k), k
@@ -237,6 +241,7 @@ def cell_ns(new, tmp_path, monkeypatch):
     ns["_A0487_DIR"].mkdir()
     ns["_a0487_materialise"] = lambda: tmp_path / "dreams"
     ns["_a0487_one"] = lambda pattern, must: tmp_path / "in" / must / pattern
+    ns["_a0487_model"] = lambda: tmp_path / "models" / "model_best.pt"
     return ns
 
 
@@ -273,6 +278,7 @@ def test_mix_cell_ok(cell_ns):
 
 
 @pytest.mark.parametrize("status,rc,want", [("fp_mismatch", AR.EXIT_FP_MISMATCH, "fp_mismatch"),
+                                            ("weights_mismatch", AR.EXIT_WEIGHTS_MISMATCH, "weights_mismatch"),
                                             ("error", 2, "error"), ("ok", 1, "error")])
 def test_mix_cell_stops_loudly(cell_ns, status, rc, want):
     idx, za, zb, a = synth(2)
@@ -286,3 +292,137 @@ def test_mix_cell_stops_loudly(cell_ns, status, rc, want):
 def test_downstream_hook_is_quiet_without_report(cell_ns):
     cell_ns["_a0487_downstream"]()      # report が無くても例外を出さない
     assert not (cell_ns["ROOT"] / "align0487_report.json").exists()
+
+
+# ---------------------------------------------------------------- #127 案 A″: Models のパス・DreaMS の ckpt の照合と strip
+
+def test_mix_cell_passes_public_ckpt_and_models_path(cell_ns):
+    idx, za, zb, a = synth(3)
+    seen = {}
+
+    def run(cmd, capture_output, text, timeout):
+        seen["cmd"] = cmd
+        c = pd.read_parquet(cmd[cmd.index("--cands") + 1])
+        c.assign(a_align=a).to_parquet(cmd[cmd.index("--out") + 1], index=False)
+        Path(cmd[cmd.index("--report") + 1]).write_text(json.dumps({"status": "ok"}))
+        return types.SimpleNamespace(returncode=0, stdout="", stderr="")
+    cell_ns["_a_sp"] = types.SimpleNamespace(run=run, TimeoutExpired=subprocess.TimeoutExpired)
+    cell_ns["ALIGN0487_MIX"](idx, za, zb, nb_z)
+    cmd = seen["cmd"]
+    assert "--dreams-state" not in cmd
+    assert cmd[cmd.index("--dreams-ckpt") + 1].endswith("casmi26-dreams-ssl-readiness-v1/weights/ssl_model.ckpt")
+    assert cmd[cmd.index("--align-model") + 1] == str(cell_ns["ROOT"] / "models" / "model_best.pt")
+    rep = json.loads((cell_ns["ROOT"] / "align0487_report.json").read_text())
+    assert rep["align_weights_path"] == str(cell_ns["ROOT"] / "models" / "model_best.pt")
+    assert set(rep["max_rss_mb"]) == {"self", "children"}
+
+
+@pytest.mark.parametrize("layout", [
+    "models/taichiiiii/casmi26-align0487/pytorch/foldsafe-v1/1/model_best.pt",
+    "models/taichiiiii/casmi26-align0487/PyTorch/foldsafe-v1/1/run/model_best.pt",
+    "casmi26-align0487/pytorch/foldsafe-v1/1/model_best.pt",
+    "casmi26-align0487/pytorch/foldsafe-v1/1/x/model_best.pt"])
+def test_models_path_resolver(new, tmp_path, capsys, layout):
+    ns = {"ROOT": tmp_path, "COMP": tmp_path, "__name__": "t"}
+    exec(compile(added_source(new), "added_cell", "exec"), ns)
+    f = tmp_path / layout
+    f.parent.mkdir(parents=True)
+    f.write_bytes(b"w")
+    # 同じ名前でも別の model・variation・深すぎる所は当たらない
+    for other in ("models/taichiiiii/other-model/pytorch/foldsafe-v1/1/model_best.pt",
+                  "models/taichiiiii/casmi26-align0487/pytorch/other-var/1/model_best.pt",
+                  "datasets/x/casmi26-align0487-weights/model_best.pt",
+                  "models/taichiiiii/casmi26-align0487/pytorch/foldsafe-v1/1/a/b/model_best.pt"):
+        q = tmp_path / other
+        q.parent.mkdir(parents=True, exist_ok=True)
+        q.write_bytes(b"o")
+    assert ns["_a0487_model"](tmp_path) == f
+    assert f"#127 align weights (Kaggle Models): {f}" in capsys.readouterr().out
+
+
+def test_models_path_resolver_needs_exactly_one(new, tmp_path):
+    ns = {"ROOT": tmp_path, "COMP": tmp_path, "__name__": "t"}
+    exec(compile(added_source(new), "added_cell", "exec"), ns)
+    with pytest.raises(RuntimeError):
+        ns["_a0487_model"](tmp_path)          # 0 個
+    for layout in ("models/o/casmi26-align0487/pytorch/foldsafe-v1/1/model_best.pt",
+                   "casmi26-align0487/pytorch/foldsafe-v1/1/model_best.pt"):
+        f = tmp_path / layout
+        f.parent.mkdir(parents=True)
+        f.write_bytes(b"w")
+    with pytest.raises(RuntimeError):
+        ns["_a0487_model"](tmp_path)          # 2 個
+
+
+def test_ckpt_digest_and_match(tmp_path):
+    f = tmp_path / "x.ckpt"
+    f.write_bytes(b"abc" * 1000)
+    d = AR.file_digests(f, chunk=7)
+    assert d == {"bytes": 3000, "md5": hashlib.md5(b"abc" * 1000).hexdigest(), "sha256": sha(b"abc" * 1000)}
+    assert AR.ckpt_matches(d, 3000, d["md5"], d["sha256"])
+    assert not AR.ckpt_matches(d)                                   # 既定は公開の ckpt の値
+    assert not AR.ckpt_matches(d, 2999, d["md5"], d["sha256"])
+    assert not AR.ckpt_matches(d, 3000, "0" * 32, d["sha256"])
+    assert not AR.ckpt_matches(d, 3000, d["md5"], "0" * 64)
+    assert (AR.DREAMS_CKPT_SIZE, AR.DREAMS_CKPT_MD5) == (1_392_710_212, "4deee91dd4486c2b6cbcde1f200b8f50")
+    assert AR.DREAMS_CKPT_SHA256 == "4b73da583a4b4e4abef4bb3ab496dc12f716ed484ea0e4066ad45d6952856fef"
+    assert AR.DREAMS_STATE_N_TENSORS == 68 and AR.EXIT_WEIGHTS_MISMATCH == 4
+
+
+def test_runner_no_longer_checks_stripped_file_sha():
+    src = (ROOT / "scripts/submit/align0487_runner.py").read_text()
+    assert "DREAMS_STATE_SHA256" not in src and '"dreams_state": ' not in src and "--dreams-state" not in src
+    assert "load_stripped_dreams(args.dreams_ckpt" in src
+
+
+def test_state_dict_digest_definition():
+    torch = pytest.importorskip("torch")
+    sd = {"a.w": torch.arange(6, dtype=torch.float32).reshape(2, 3).t(), "b": torch.tensor(3.0)}
+    h = hashlib.sha256()
+    for k, t in sd.items():
+        h.update(k.encode() + b"\0" + str(t.dtype).encode() + b"\0" + str(tuple(t.shape)).encode() + b"\0")
+        h.update(t.contiguous().numpy().tobytes())
+    assert AR.state_dict_digest(sd) == h.hexdigest()
+    assert AR.state_dict_digest(dict(reversed(list(sd.items())))) != h.hexdigest()   # 順も含む
+
+
+DREAMS_CKPT = Path(__import__("os").environ.get(
+    "CASMI_DREAMS_CKPT", str(ROOT / "data/ext/dreams/ssl_model.ckpt")))
+DREAMS_ROOT = DREAMS_CKPT.parent / f"DreaMS-{M.DREAMS_COMMIT}"
+
+
+@pytest.mark.skipif(not DREAMS_CKPT.exists() or not DREAMS_ROOT.exists(), reason="DreaMS の ckpt は手元だけ（CI に無い）")
+def test_notebook_strip_equals_strip_output(tmp_path):
+    """ノートの runner と同じ処理（照合 → strip_checkpoint → torch.save の bytes）で作った state_dict が、
+    strip_dreams_ckpt.py の出力（ファイル sha256 65eb33fa…c11）と 68 テンソルとも torch.equal で、digest が定数と一致。"""
+    torch = pytest.importorskip("torch")
+    sys.path[:0] = [str(ROOT / "scripts/ship"), str(ROOT / "scripts/train")]
+    import strip_dreams_ckpt as SD
+    out = tmp_path / "dreams_ssl_state.pt"
+    r = subprocess.run([sys.executable, str(ROOT / "scripts/ship/strip_dreams_ckpt.py"), "--ckpt", str(DREAMS_CKPT),
+                        "--dreams-root", str(DREAMS_ROOT), "--out", str(out), "--report", str(tmp_path / "r.json"),
+                        "--skip-load-dreams"], capture_output=True, text=True)
+    assert r.returncode == 0, r.stderr[-2000:]
+    file_sha = AR.sha256_file(out)
+    ref = SD._load(out, str(DREAMS_ROOT))["state_dict"]
+    out.unlink()
+    rep = {}
+    buf = AR.load_stripped_dreams(DREAMS_CKPT, DREAMS_ROOT, rep)
+    got = SD._load(buf, str(DREAMS_ROOT))
+    sd = got["state_dict"]
+    assert len(sd) == len(ref) == AR.DREAMS_STATE_N_TENSORS == 68
+    assert list(sd) == list(ref)
+    assert all(sd[k].dtype == ref[k].dtype and sd[k].shape == ref[k].shape and torch.equal(sd[k], ref[k]) for k in ref)
+    assert AR.state_dict_digest(ref) == AR.state_dict_digest(sd) == AR.DREAMS_STATE_TENSOR_SHA256
+    assert rep["dreams_ckpt"]["sha256"] == AR.DREAMS_CKPT_SHA256 and "optimizer_states" in rep["dreams_ckpt"]["dropped"]
+    assert set(got) == set(rep["dreams_ckpt"]["kept"]) and "hyper_parameters" in got
+    print("strip output file sha256", file_sha, "(recorded:", AR.DREAMS_STATE_FILE_SHA256, ")")
+
+
+def test_load_stripped_dreams_refuses_other_bytes(tmp_path):
+    f = tmp_path / "ssl_model.ckpt"
+    f.write_bytes(b"not the ckpt")
+    rep = {}
+    with pytest.raises(AR.WeightsMismatch):
+        AR.load_stripped_dreams(f, tmp_path, rep)
+    assert rep["dreams_ckpt"]["bytes"] == 12

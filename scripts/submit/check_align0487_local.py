@@ -4,8 +4,8 @@
 見えているテスト（data/test.parquet）の数分子で確かめる。足す段の秒も測る（時間の関門の参考値）。
 
     PYTHONPYCACHEPREFIX=<scratch>/pyc .venv/bin/python scripts/submit/check_align0487_local.py \
-        --root <元のフォルダ> --code-dir <runner・align_train.py・align_speed_trial.py・base_fs.py・align.py を置いた所> \
-        --dreams-state <scratch>/dreams_ssl_state.pt --work <scratch>/n1117n_check --n-mol 6
+        --root <元のフォルダ> --code-dir <runner・align_train.py・align_speed_trial.py・base_fs.py・align.py・strip_dreams_ckpt.py を置いた所> \
+        --dreams-ckpt <元のフォルダ>/data/ext/dreams/ssl_model.ckpt --work <scratch>/n1117n_check --n-mol 6
 
 - 候補: 各分子の precursor_mz −1.007276（[M+H]+ の仮定。候補を作るためだけ）の ±10 ppm にある pool の行を先頭から最大 30、
   ＋ pool に無い SMILES 2 つ（pool の SMILES に "C" を足したもので RDKit が読めてキーが pool に無いもの）。最初の分子だけは
@@ -105,7 +105,7 @@ def main() -> None:
     ap = argparse.ArgumentParser()
     ap.add_argument("--root", required=True)
     ap.add_argument("--code-dir", required=True)
-    ap.add_argument("--dreams-state", required=True)
+    ap.add_argument("--dreams-ckpt", required=True)
     ap.add_argument("--work", required=True)
     ap.add_argument("--n-mol", type=int, default=6)
     ap.add_argument("--align-model", default="", help="既定: <root>/outputs/align_train/model_best.pt")
@@ -153,7 +153,7 @@ def main() -> None:
     cmd = [sys.executable, str(Path(args.code_dir) / "align0487_runner.py"), "--test", str(W / "test_sub.parquet"),
            "--cands", str(W / "cands.parquet"), "--out", str(W / "a_align.parquet"), "--report", str(W / "runner.json"),
            "--pool-dir", str(pool), "--casmi-code", str(R / "data/ext/v4g/casmi26-v3-models/code"),
-           "--code-dir", args.code_dir, "--dreams-root", str(D), "--dreams-state", args.dreams_state,
+           "--code-dir", args.code_dir, "--dreams-root", str(D), "--dreams-ckpt", args.dreams_ckpt,
            "--align-model", model_path,
            "--align-config", str(Path(args.code_dir) / "align_config.json"), "--save-g", str(W / "v.npz")]
     t0 = time.time()
