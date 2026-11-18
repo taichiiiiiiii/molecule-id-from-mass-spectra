@@ -10,8 +10,8 @@
 - fragnn の負例（`scripts/train/fragnn_train.py` の `prepare`）: `B.negative_csr(up_tr, mass, allowed & ~val_rows & is_trainstruct)`。つまり「v2 プールの ±10 ppm 窓のうち DROP_KEY と内部検証に無く、**train_structs の正準キーを持つ行**」から 127 個。正例 1 + 負例 127 の softmax 交差エントロピー（#120 本文）
 - この負例の形にした理由（#120 本文 23〜24 行、レビュー 1 回目 major）: 正例は必ず train の構造で、使えるプールの約 2/3 は外部由来。プール全体を負例にすると「train らしい断片の密度か」で外部の負例を落とす近道を学べてしまい、v3 の 4 集合は正解がすべて train 由来なので採否の規則で見分けられない
 - 負例の数（#120 の速度測定の count、2026-11 の実測）:
-  - design（今の fragnn）: 負例の和集合 214,772 構造（すべて学習の正解構造の中）、1 正例あたりの負例の中央値 45、負例 0 の構造 7,339。同じ分子式の負例は中央値 15・負例の 60.8%
-  - allpool（#109 と同じ、train_structs の条件なし）: 和集合 563,482、中央値 78、負例 0 の構造 1,936。同じ分子式は中央値 25・53.6%
+  - design（今の fragnn）: N_union（正例 ∪ 負例、断片を前計算する構造の数）214,772。負例だけのユニークは 207,433 で、すべて学習の正解構造（214,772）の中（#120 の事前登録のレビュー）。1 正例あたりの負例の中央値 45、負例 0 の構造 7,339。同じ分子式の負例は中央値 15・負例の 60.8%
+  - allpool（#109 と同じ、train_structs の条件なし）: N_union（正例 ∪ 負例）563,482、中央値 78、負例 0 の構造 1,936。同じ分子式は中央値 25・53.6%
   - 学習時間の見込み（同じ count の外挿、未実測）: design 4.76 h、allpool 6.69 h
 - 推論の窓の中身（#146 の群の大きさの中央値、S = T / U = train ∖ T / O = train の外 / 候補）: v3_c1 56 / 15 / 23 / 119、e180_c2k 84.5 / 23 / 31.5 / 155.5。推論では窓の約 2 割が O（train の外）で、fragnn は学習中に O の候補を一度も見ていない
 - 項目 3 の結果（#146、1 回だけ数えた）: Δ_seen は v3_c1 −0.0093 [−0.0446, +0.0252]、e180_c2k +0.0275 [−0.0242, +0.0803]、どちらも `none` → 事前登録の使い道は「偏りへの手当ては入れない」。**したがって、この文書の案は「偏りの手当て」ではない**。異性体を区別する学習の負例の構造の変更として、次の計画の ② が自前の部品の候補として選ぶかどうかを決めるもの
@@ -42,8 +42,9 @@
 - ライセンス: MIT。コードは写さず、考え方だけ
 
 ### 1.3 FraGNNet の「分子式ごとの難しい負例」のサンプラー
-- https://github.com/FraGNNet/fragnnet （GitHub API: BSD-2-Clause、最終 push 2026-11-13）。README の「Dynamic batch sampler and formula-based hard negatives」の節と、`src/fragnnet/dataset/data_sampler.py` の `FormulaPrecTypeGroupSampler`・`DualGroupDynamicBatchSampler` の docstring と `_take_from_groups` の docstring を読んだ。runner 側の損失は読んでいない
-- 要点（確認）: 学習データのスペクトルを「付加イオン + 分子式」（と「付加イオン + 分子 ID」）でまとめ、同じ組のスペクトルを同じミニバッチに入れる。対照・対の損失の負例は**同じバッチの中の学習データ**、つまり同じ式の学習構造
+- https://github.com/FraGNNet/fragnnet （GitHub API: BSD-2-Clause、最終 push 2026-11-13）。README の「Dynamic batch sampler and formula-based hard negatives」の節と、`src/fragnnet/dataset/data_sampler.py` の `FormulaPrecTypeGroupSampler`・`DualGroupDynamicBatchSampler` の docstring と `_sample_from_group_dict` の docstring を読んだ。runner 側の損失は読んでいない
+- 要点（確認）: 学習データのスペクトルを「付加イオン + 分子式」（と「付加イオン + 分子 ID」）でまとめ、同じ組のスペクトルを同じミニバッチに入れる（docstring: 対の類似度の損失に意味のある信号を与えるため）
+- 【推測：runner 側の損失は読んでいない】対照・対の損失の負例は同じバッチの中の学習データ、つまり同じ式の学習構造になる
 - この競技への示唆【推測】: これは fragnn の design（負例が学習の構造だけ）と同じ側の作り方。学習の分布の外の候補は負例に入らない
 - ライセンス: BSD-2-Clause。論文（arXiv:2404.02360v2）の CC BY 4.0 は #118 で確認済み
 
@@ -117,7 +118,8 @@
 - 正例の中の train の外の割合、1 正例あたりの負例の中央値、負例の中の T / train ∖ T / train の外の割合、同じ分子式の負例の割合
 - 外部の正例の断片の前計算ができるか（プールに無い SMILES を `frag_rescore` の断片の列挙に通す）と、その秒/構造
 - 漏れの確認（0 件の assert）: 外部の正例・負例 × DROP・e180_c2 の正解（生・正準・別名）、pool_meta の key が一意か（1.2）
-- 残った外部の構造が少なすぎて案が成り立たない場合の扱い（止める数）は、**この数を見る前に**事前登録の Issue に書く
+- 残った外部の構造が少なすぎて案が成り立たない場合の扱い（止める数）は、**この数を見る前に**事前登録の Issue に書く（値の根拠は実行できるかの判断で、LB・v3 では選ばない）
+- 残る限界として事前登録に書く: train の外の正例が少ないと、train の外の候補の大半は負例のままなので、「train の外なら下げる」近道は弱まるだけで消えない。train の外の候補のうち正例の割合（学習の中）を記録する
 
 ### 3.3 測り方（採用規則は #120 のまま）
 - 集合: **v3_c1・v3_c2・enveda_v1・v3_c2n の 4 集合すべて**。対照は `score,prior,frag`（v3_c1 0.8535 / v3_c2 0.0000 / enveda_v1 0.8376 / v3_c2n 0.6284 と小数 4 桁で一致することを先に確かめる。一致しなければ採点しない）。新は `score,fragnnx,prior,frag`
