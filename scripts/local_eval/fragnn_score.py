@@ -156,7 +156,7 @@ class LevelCache:
 
 
 def score_holdout(holdout: str, weights: Path, out_dir: Path, device: str = "cpu", limit: int = 0,
-                  root: Path = ROOT) -> dict:
+                  root: Path = ROOT, logits: Path | None = None, truth: Path | None = None) -> dict:
     """集合の全分子の fragnn・fragnnblind の点を作って npz と json を書く。limit > 0 なら先頭 N 分子だけ
     （blind の入れ替え先は集合の全分子で決める。費用の測定用）。"""
     import pandas as pd
@@ -172,14 +172,18 @@ def score_holdout(holdout: str, weights: Path, out_dir: Path, device: str = "cpu
     model = load_model(weights, device)
     fr = T.import_frag_rescore(root)
     fr.warmup()
-    zf = np.load(root / f"outputs/holdout_eval/{holdout}_fold0/pc_logits.npz", allow_pickle=True)
+    # #146: 読み先を指定できる（既定は今までどおり）
+    logits = Path(logits) if logits else root / f"outputs/holdout_eval/{holdout}_fold0/pc_logits.npz"
+    truth = Path(truth) if truth else root / f"outputs/holdouts/{holdout}/truth.csv"
+    zf = np.load(logits, allow_pickle=True)
     targets = {m: float(t) for m, t in zf["__targets__"]}
     pool = R.load_pool()
     rule = L.hide_rule(holdout)
     hidden = L.drop_keys(holdout) if rule.get("pool") == "remove" else set()
     te = pd.read_parquet(root / f"data/holdouts/{holdout}/test.parquet")
     spec = molecule_rows(te)
-    truth = read_truth(root / f"outputs/holdouts/{holdout}/truth.csv")
+    truth_path = truth
+    truth = read_truth(truth_path)
     mids = [m for m in truth if m in targets]
     bt = blind_targets(mids, {m: first_mode(spec.get(m, [])) for m in mids})
     run_mids = mids[:limit] if limit else mids
@@ -209,7 +213,7 @@ def score_holdout(holdout: str, weights: Path, out_dir: Path, device: str = "cpu
                nan_full=int(sum(np.isnan(v[1]).sum() for v in full.values())),
                nan_blind=int(sum(np.isnan(v[1]).sum() for v in blind.values())),
                blind_same_mode=kinds.count("same_mode"), blind_any_mode=kinds.count("any_mode"), blind_self=kinds.count("self"),
-               hidden_keys=len(hidden), weights=str(weights), weights_sha256=w_sha, device=device,
+               hidden_keys=len(hidden), logits=str(logits), truth=str(truth_path), weights=str(weights), weights_sha256=w_sha, device=device,
                torch=torch.__version__, rdkit=rdBase.rdkitVersion, numba=numba.__version__,
                torch_threads=torch.get_num_threads(), secs_molecules=round(secs_mol, 1),
                secs_per_molecule=round(secs_mol / max(len(run_mids), 1), 3), secs=round(time.time() - t0, 1),
@@ -232,10 +236,12 @@ def main() -> None:
     ap.add_argument("--out-dir", default=None, help="既定 outputs/local_eval/<holdout>")
     ap.add_argument("--device", default="cpu")
     ap.add_argument("--limit", type=int, default=0, help="先頭 N 分子だけ（費用の測定用）")
+    ap.add_argument("--logits", default=None, help="#146: pc_logits.npz（既定 outputs/holdout_eval/<holdout>_fold0/pc_logits.npz）")
+    ap.add_argument("--truth", default=None, help="#146: truth.csv（既定 outputs/holdouts/<holdout>/truth.csv）")
     a = ap.parse_args()
     sys.path.insert(0, str(ROOT / "scripts/validate"))
     out = Path(a.out_dir) if a.out_dir else ROOT / f"outputs/local_eval/{a.holdout}"
-    rep = score_holdout(a.holdout, Path(a.weights), out, a.device, a.limit)
+    rep = score_holdout(a.holdout, Path(a.weights), out, a.device, a.limit, logits=a.logits, truth=a.truth)
     print(json.dumps(rep, ensure_ascii=False))
 
 
