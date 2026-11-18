@@ -49,6 +49,9 @@
 - **R11** 757307 David Healey 2026-11-11: 「MassSpecGym and MIST models are fine」。同 2026-11-16: 「GNPS-NIST14-MATCHES in GNPS is fine to use as」（取得した本文はここで切れている。原文のまま）
 - **R12** 757309 David Healey 2026-11-11: PubChem の CID-SMILES と CC0 の COCONUT から作った候補索引を private 入力として付けることに「Those are fine to use」
 - **R13** 745072 David Healey 2026-10-09: 「train.parquet should be considered open source」。PubChem と COCONUT も使ってよい
+- **R14** 745072 Marie Killian 2026-10-27 21:20Z（id 3545813）: Truthseeking（10-21）が `ahmedberatozer/casmi26-fpnet-full1` と `prvsiyan/casmi26-ranker-features` を名指しして「元の学習コードが無いが使えるか、無理なら自前の公開コードと許可データで同等のモデルを学習し直せばよいか」と聞いたことへの答え。「Without the original training code, these components are not eligible. But if you retrain equivalent models with your own published code and permitted data, that would satisfy the rule」
+  - 質問の時点で質問者は full1 の学習コードが無いと書いている。TC（10-19 公開）に `06_train_fpnet.py` があることには触れていない。だから、この答えが TC の公開の後の full1 にもそのまま当たるかは決まらない（Q-Y (1) の括弧書きが同じ点を問うている）
+- **R15** 745072 Marie Killian 2026-10-27 21:23Z（id 3545817）: 「The winner's package would need to include the training script that reproduces the v3 weights. As we have stated, for any weights used, the original training code and access to permitted training data must be available」
 
 **まだ答えの無い質問**（11/19 02:1x JST の取得時点。主催者の返答が見当たらない。なお 748882 には、本文も投稿者名も空のコメントが 3 件ある〈id 3538940・3550345・3548672〉。削除されたものとみられ、主催者の返答だったかどうかは分からない）
 - **Q-L** 756893 LeeDongHyuk 2026-11-17: 次の (a)(b)(c) のとき、作者の元の重みを読んでよいか、自分で学習し直す必要があるか
@@ -78,7 +81,7 @@
 | # | 部品 | 生成コードの所在（出典 URL） | ライセンス | 当たる回答 | 判定 | 未確認の点 |
 |---|---|---|---|---|---|---|
 | 1 | Engine 1 ランカー `ranker_v4b.pkl` | TC `fe_v4/simulate_v1ctx.py` → `build_feats.py` → `train_v4_ranker.py`（https://www.kaggle.com/datasets/ahmedberatozer/casmi26-training-code 、README §2.3） | TC は MIT。データセット `ahmedberatozer/casmi26-v4b-models` は other | R4 Q2、R7、Q-L (b)、Q-A、Q-Y (1) | **未決**。README §5 によると、起動コマンドは再構成で、ブースターの学習ログが無い（記録は `ranker_v4b.json` だけ）。`simulate_v1ctx.py`・`ctxlib.py` は学習の後に編集されている。特徴量を作る FPNet B（3B）と fe_D（4）も未決なので、ここに連なる | Q-L・Q-A の答え |
-| 2 | `fpnet_full1.pt` | TC `scripts/06_train_fpnet.py`（README §2.1 の「full1 (reconstructed)」の行 `--steps 40000 --holdout "" --val_every 40000`） | MIT / other | R7、Q-L (a)(b)、Q-Y (1) | **未決**。README §5: seed と正確な `--holdout` の文字列が記録されておらず、コマンドは再構成。Q-L の (a)(b) そのもの | Q-L の答え |
+| 2 | `fpnet_full1.pt` | TC `scripts/06_train_fpnet.py`（README §2.1 の「full1 (reconstructed)」の行 `--steps 40000 --holdout "" --val_every 40000`） | MIT / other | R7、R14、R15、Q-L (a)(b)、Q-Y (1) | **未決**。README §5: seed と正確な `--holdout` の文字列が記録されておらず、コマンドは再構成。Q-L の (a)(b) そのもの | Q-L の答え |
 | 3A | FPNet A（`fpnet_0.pt` = `fe_A.pt`） | TC `06_train_fpnet.py`。README §2.1:「A (command from the script docstring; … seed 7). Best step 38,000」。ログは `logs/log_train_a.txt`（README §1 の表） | MIT / other | R4 Q2、R7、Q-Y (1)（確認の質問だけ） | **可**。seed 7 が記録され、コマンドはスクリプトの docstring にある。ビット一致はしないが、R4 Q2 でそれは足りる | ログの中身は読んでいない。Q-Y (1) の答え |
 | 3B | FPNet B（`fpnet_1.pt` = `fe_B.pt`） | 同上。README §2.1:「B: same recipe, different seed (not recorded …)」 | MIT / other | R7、Q-L (a)、Q-Y (1) | **未決**（seed が記録されていない） | Q-L の答え |
 | 4 | `fe_D.pt`（DreaMS の微調整） | TC `dreams_ft/review_fixes/train_dreams_fp.py` → `extract_step20k_ema.py`（README §2.2、seed 11） | MIT。DreaMS の port も MIT | R1、R2、R9、Q-L (b)、Q-Y (1)(3) | **未決**。README §5: 学習のコマンドは再構成。重みの取り出しは対話的に行い、`extract_step20k_ema.py` は後から書いたもので再実行していない。土台の DreaMS SSL は R9 で可だが、NIST の probing の点（Q-Y (3)）は未回答 | Q-L・Q-Y の答え |
@@ -121,7 +124,7 @@
 - 8・9 に従う: **1 行**（S4）
 - 合計 13 + 6 + 5 + 3 + 4 + 1 + 1 = 33 行
 
-**結論: (A) は今のままでは最終提出の要件を満たさない。** 理由は、主催者が名指しで「再現できない」とした Engine 2 の 2 表（8・9）と、生成コードの無い ExtLib（21）を読むため。説明だけの 5 行（11a・11b・11c・19・22）も、R4 Q3 に照らすと手順のコードが要る見込み。Engine 1 の 6 行は Q-L の答えしだい。
+**結論: (A) は今のままでは最終提出の要件を満たさない。** 理由は、主催者が名指しで「再現できない」とした Engine 2 の 2 表（8・9）と、生成コードの無い ExtLib（21）を読むため。説明だけの 5 行（11a・11b・11c・19・22）も、R4 Q3 に照らすと手順のコードが要る見込み。未決の 6 行（Engine 1 の 1・2・3B・4・5 と、Engine 2 の 10）は Q-L・Q-A・Q-Y の答えしだい。
 
 ## 5. 表 B: (B) #127 版で足した部品
 | # | 部品 | 生成コードの所在（出典 URL） | ライセンス | 当たる回答 | 判定 | 未確認の点 |
@@ -172,13 +175,15 @@
    - 経路 (i) 自前の 2 表に替える（#74・#77）: 生成は Kaggle の **CPU**。2 回はどちらも完走していて、約 5.6 h と約 6.3 h（#74 のコメント）。GPU は 0 h。0.487 写しに入れた診断は Public 0.435（Δ −0.052、事前登録の帯で「判定なし」、#77）
    - 経路 (ii) Engine 2 を外す: 0.479 版で外した診断は Public 0.378（提出 58215746、#62）
    - どちらも LB の下げが大きいので、最終の形をどうするかは方針の判断になる（このメモでは決めない）
-2. **Engine 2 の FP モデル（10）と COCONUT バンク（11a）**（Engine 2 を残す場合だけ要る）
+2. **Engine 2 の FP モデル（10）と候補バンク（11a・11b・11c）**（Engine 2 を残す場合だけ要る）
    - FP モデル: #152 でローカル MPS の作り直しを測った。見込みは 7.62 h（関門 (a) 合格）。footprint が 17.44 GB で 14 GB を超え、関門 (b) で止まった。GPU は 0 h。候補の指紋を packbits のまま持つ修正で約 4.3 GB 減る見込み（未測定）
-   - COCONUT バンク: COCONUT から指紋を作り直すコードを書く（CPU）。**未測定**
+   - 候補バンク 3 つ（COCONUT 11a、ChEBI/LMSD 11b、PubChemLite 11c）: どれもカードの説明だけでコードが無い。出どころ（COCONUT、ChEBI release 255 と LMSD、`cosmicbe/casmi26-pubchemlite`）から指紋を作り直すコードを書く（CPU、6,930 ビットは 11d で再現済み）。**未測定**
 3. **ExtLib（21）、外部参照（19）、MassBank harmonized（22）**（学習ではないが、外すか作り直す）
    - GNPS・MassBank・MoNA から自前で組み直す（CPU、ダウンロードあり）か、外す。**未測定**。21 を外したときの LB の差は測られていない（元の表の行 21）
 4. **Engine 1 FPNet full1（2）**（未決。Q-L が「学習し直しが要る」なら最優先に上がる）
-   - #82 の経路（fold-safe キットの `train_fpnet.py` で全 train を 82,855 ステップ）: Kaggle T4 で 2 セッション、外挿は **14.36 h**（#82 の試走から）。週 30 h の約半分。この経路は「自前の公開コードと許可データで同等のモデルを学習し直す」（745072、Marie Killian 2026-10-27）に当たる
+   - #82 の経路（fold-safe キット〈dmitriigluzdov、Apache-2.0〉の `train_fpnet.py` をそのまま自前のカーネルで回し、全 train を 82,855 ステップ）: 外挿は **14.36 h**（#82 の試走から）。週 30 h の約半分
+     - キットの `train_fpnet.py` には途中保存からの再開が無く、1 セッション（11 h 以下）に収まらない。2 セッションに分けるには再開が要る。#82 の推奨は、PR #142（未マージ）で MPS 版に足した途中保存と再開を CUDA で使う案。CUDA で動くかは確かめておらず、事前登録が要る
+     - この経路は R14 の後半（「retrain equivalent models with your own published code and permitted data」）に当たる見込み。ただしコードは第三者の公開キット（R2 により使ってよい）で、自作ではない。当たるかどうかは解釈で、確認されていない
    - ローカル MPS は同じ経路で 93.6 h の見込みで、関門で不合格（#82）
    - TC のレシピ（`06_train_fpnet.py --steps 40000`）での時間は**未測定**。1 ステップの速さが同じなら約半分になるが、これは推測
 5. **Engine 1 ranker_v4b（1）と fe_v4 の表（5）**（未決。Q-L (b)・Q-A しだい）
@@ -189,6 +194,7 @@
    - FPNet B は TC の full1 と同じスクリプト（`--steps 40000`）。時間は**未測定**（#82 の 14.36 h はキットの 82,855 ステップの値で、そのままは使えない）
    - fe_D（DreaMS の微調整）は**未測定**
 7. 作り直しは要らない: 3A・6・7・11d・12〜18・20 と、表 B の全部（B2・B3 はコードを main に入れるだけ）
+8. **保留**: S1（hengck23 の DreaMS の空き順位の埋め）は未確認なので、優先順を決めない。中の .py 3 本と `embedding_model_state_dict.pt` の出どころを読んでから決める
 
 ### 読み（判断の材料。決定ではない）
 - 1〜3 は Q-L の答えを待たずに要る。どれも GPU は要らない（CPU とローカル）が、LB の下げが大きい（#77 の −0.052、#62）。最終の 2 本を「規則に合う形」にするなら、Engine 2 と外部ライブラリの扱いを先に決める必要がある
