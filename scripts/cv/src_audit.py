@@ -13,7 +13,7 @@ Issue #162: v2 プール（pool_meta.parquet）の `src` の意味を、`src` �
     coco_raw    key ∈ COCONUT 2026-09 全件 CSV の standard_inchi_key[:14]（raw。互変異性体の別名の分は取りこぼす）
     coco_np     pool_popularity.csv の np_coconut == 1（PubChem 側の COCONUT 注記。別のデータセット）
     coco_any    coco_raw か coco_np
-    pubchem     pool_popularity.csv の pubchem_cid がある
+    pubchem     pool_popularity.csv の pubchem_cid がある（正の値。「無し」は −1 で書かれている）
     内部の列（独立ではない）: train_sid_ge0（train_sid >= 0）、np_likeness_notna
     PubChem 層（data/ext/pubchem_tier、キーの列なし）との積は数えない（未測定）
   判定（judge）: 「確かめた」= (i) 作ったコードに src の定義があり行番号で引用できる、
@@ -66,6 +66,12 @@ def crosstab(src: np.ndarray, flags: dict[str, np.ndarray]) -> dict:
         m = src == v
         out[str(int(v))] = dict(n=int(m.sum()), **{f: int(np.asarray(a)[m].sum()) for f, a in flags.items()})
     return out
+
+
+def cid_present(cid) -> np.ndarray:
+    """pool_popularity.csv の pubchem_cid は「無し」を −1 で書く（NaN ではない）。正の CID だけを「ある」とする。"""
+    c = np.asarray(cid, dtype=np.float64)
+    return np.isfinite(c) & (c > 0)
 
 
 def rate(table: dict, src_vals, flag: str) -> float | None:
@@ -208,7 +214,7 @@ def main() -> None:
     np_coco = np.zeros(len(pm), bool)
     np_coco[pp.pool_row.values] = pp.np_coconut.fillna(0).values == 1
     has_cid = np.zeros(len(pm), bool)
-    has_cid[pp.pool_row.values] = pp.pubchem_cid.notna().values
+    has_cid[pp.pool_row.values] = cid_present(pp.pubchem_cid.values)
     ts_key, ts_raw = set(ts.key.dropna().astype(str)), set(ts.rawkey.dropna().astype(str)) | set(ts.inchikey14.dropna().astype(str))
     ks = pd.Series(keys)
     isin = lambda st: ks.isin(st).values

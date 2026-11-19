@@ -74,3 +74,7 @@ def test_check_code(tmp_path):
     r = S.check_code(p)
     assert r["lines_match"] is True and r["sha_match"] is False and r["ok"] is False   # sha が違えば根拠にしない
     assert S.check_code(tmp_path / "missing.py")["ok"] is False
+
+
+def test_cid_present_treats_minus_one_as_absent():
+    assert S.cid_present([123, -1, np.nan, 0, 5]).tolist() == [True, False, False, False, True]
