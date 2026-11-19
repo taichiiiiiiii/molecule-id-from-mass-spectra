@@ -15,6 +15,12 @@ sha256 のピンは tests/test_engine2_fp_retrain.py で検査）。upstream/NOT
   Data.__init__ を差し替えて、候補プールの指紋（pool_fp.npy の np.packbits の形）を packed のまま持ち、
   取り出した行だけを上流の式 np.unpackbits(..., axis=1)[:, :nbits] で戻す。PFP のメモリ上の持ち方を変えた
   自前の差分で、学習に渡る値はビット単位で同じ（テストと実データの確認）
-- check_packed_rows.py・e2fp_*.sh・prep_inputs.sh: 自前の実行・確認のスクリプト
+- train_m1_resumable.py（Issue #167）: upstream/train_fp4.py（merged_m1 の学習、同じ commit の
+  checkpoint_lineage/original_sources/train_fp4.py、upstream/NOTICE の 29 ファイルの一覧にある Apache-2.0 のソース）を
+  **変えずに** import し、main() の学習ループを train_s2_resumable.py と同じ式で書き直したもの（学習と検証の batch に
+  merge_p を渡すのは上流 157・194 行のまま）。PackedData4 は Data.__init__ だけを差し替えて PFP を packed のまま持つ
+  （構造ごとのまとまり・merge の枝は上流のまま）。途中保存・再開、モデルを作る前の seed、MPS の GradScaler、速さの記録を足した
+- check_packed_rows.py・e2fp_*.sh・prep_inputs.sh: 自前の実行・確認のスクリプト（#167 で e2fp_*.sh に、プロセスを探す
+  ときのスクリプト名 TRAIN_PAT〈既定 train_s2_resumable.py〉を足した）
 
 モデルの重みは含まない。
