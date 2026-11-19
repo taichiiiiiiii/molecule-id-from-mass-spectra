@@ -23,7 +23,13 @@ Issue #162: v2 プール（pool_meta.parquet）の `src` の意味を、`src` �
     （±10 ppm、pool: remove なら drop_keys を除く）の中の key != 正解の canon の全行の src。
     分子ごとの「窓の中で正解と同じ src のおとりの行数」の分位点。記録だけ（採否に使わない）
 
-    python scripts/cv/src_audit.py [--out outputs/local_eval/src_audit/src_audit.json]
+  追加の確認（事前登録の外。判定は変えない、読み方の補足だけ）: --coco-canon のとき、COCONUT CSV の行のうち raw キーが
+    プールの key に無いものについて score_key(standardize_smiles(canonical_smiles))（02_build_coconut.py と同じ
+    「最大の断片・電荷を外す・立体を落とす」→ 互変異性体の正準化）を自前で計算し、src ∈ {2,3} で coco_raw に当たらない
+    行の key がそれで何行当たるかを数える（coco_canon）。pool_popularity の np_coconut は上流のプールの COCONUT の印を
+    写したもの（TECHNICAL_NOTES.md「COCONUT membership follows the upstream pool」）で独立ではないと分かったため
+
+    python scripts/cv/src_audit.py [--out outputs/local_eval/src_audit/src_audit.json] [--coco-canon --workers 6]
 """
 from __future__ import annotations
 
@@ -146,11 +152,36 @@ def coconut_raw_keys(path: Path) -> tuple[set, int]:
     return out, n
 
 
+def _std_key(smi):
+    if str(ROOT / "data/ext/v4g/casmi26-v3-models/code") not in sys.path:   # spawn の子プロセス用
+        sys.path.insert(0, str(ROOT / "data/ext/v4g/casmi26-v3-models/code"))
+    from casmi import chem
+    if not isinstance(smi, str):
+        return None
+    x = chem.standardize_smiles(smi)
+    return chem.score_key(x) if x else None
+
+
+def coco_canon_keys(path: Path, pool_keys: set, workers: int) -> tuple[set, int]:
+    """COCONUT の行のうち raw キーがプールに無い行の、自前の標準化 + score_key の集合と、計算した行数。"""
+    import pandas as pd
+    from multiprocessing import Pool as MP
+    smis = []
+    for ch in pd.read_csv(path, usecols=["canonical_smiles", "standard_inchi_key"], chunksize=200_000, dtype=str):
+        raw = ch.standard_inchi_key.fillna("").str[:14]
+        smis += ch.canonical_smiles[~raw.isin(pool_keys)].tolist()
+    with MP(workers) as mp:
+        ks = mp.map(_std_key, smis, chunksize=200)
+    return {k for k in ks if k}, len(smis)
+
+
 def main() -> None:
     ap = argparse.ArgumentParser()
     ap.add_argument("--out", default=str(ROOT / "outputs/local_eval/src_audit/src_audit.json"))
     ap.add_argument("--tc-build-pool", default=str(Path.home() / ".hermes/profiles/massspec/cache/scratch/tc_src/scripts/scripts/05_build_pool.py"),
                     help="Kaggle の ahmedberatozer/casmi26-training-code から取得した scripts/05_build_pool.py")
+    ap.add_argument("--coco-canon", action="store_true", help="追加の確認（事前登録の外）: COCONUT の自前の正準キー")
+    ap.add_argument("--workers", type=int, default=6)
     a = ap.parse_args()
     sys.path.insert(0, str(ROOT / "data/ext/v4g/casmi26-v3-models/code"))
     sys.path.insert(0, str(ROOT / "scripts/local_eval"))
@@ -202,6 +233,20 @@ def main() -> None:
                code=code, table1=table, judge=judge(table, code["ok"]),
                coconut_csv_sha256=sha256_file(COCONUT_CSV))
     print("table1", json.dumps(table), flush=True)
+    if a.coco_canon:
+        t1 = time.time()
+        cc, n_calc = coco_canon_keys(COCONUT_CSV, set(keys), a.workers)
+        miss = (src >= 2) & ~f["coco_raw"]
+        hit = miss & isin(cc)
+        out["extra_coco_canon"] = dict(
+            note="事前登録の外。判定（judge）は変えない。np_coconut は上流プールの印の写しで独立でない",
+            coconut_rows_computed=n_calc, canon_keys=len(cc), secs=round(time.time() - t1, 1),
+            src23_rows=int((src >= 2).sum()), src23_coco_raw=int(((src >= 2) & f["coco_raw"]).sum()),
+            src23_miss_raw=int(miss.sum()), src23_miss_raw_hit_canon=int(hit.sum()),
+            src1_coco_canon=int(((src == 1) & isin(cc)).sum()),
+            per_src={str(v): dict(coco_raw_or_canon=int(((src == v) & (f["coco_raw"] | isin(cc))).sum()), n=int((src == v).sum()))
+                     for v in SRC_VALUES})
+        print("extra_coco_canon", json.dumps(out["extra_coco_canon"], ensure_ascii=False), flush=True)
     print("judge", json.dumps(out["judge"], ensure_ascii=False), flush=True)
 
     # 表 2: run.py の Pool と同じ並び（mass の stable argsort）
