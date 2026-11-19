@@ -118,10 +118,31 @@ def allocate(n_mol):
     return out
 
 
-def select_queries(lib_set, lib_ik, excl, fold, n_mol):
-    """{set: [inchikey14, ...]}。fold_identity 1–4 だけ、除外集合に入らないもの。"""
+def alias_leak_keys(keys, s2_val, fold, universe):
+    """keys のうち、同じ scorer_key の別の inchikey14（fold〈structures.parquet〉にあり universe〈train の inchikey14〉に
+    出るもの）が S2 の VAL の外にあるもの（＝S2 の学習側に別名がある。#158 §3 (B)・§9 の定義）。"""
+    keys = list(keys)
+    if not keys:
+        return set()
+    st = fold[fold.index.isin(set(universe))]
+    sk_of = st.scorer_key
+    grp = st.reset_index().groupby("scorer_key").inchikey14.apply(set)
+    bad = set()
+    for k in keys:
+        if k not in sk_of.index:
+            continue
+        if any(o not in s2_val for o in grp[sk_of[k]] if o != k):
+            bad.add(k)
+    return bad
+
+
+def select_queries(lib_set, lib_ik, excl, fold, n_mol, s2_val=None):
+    """{set: [inchikey14, ...]}。fold_identity 1–4 だけ、除外集合に入らないもの。
+    s2_val（S2 の VAL の inchikey14 の集合）を渡すと (B) の条件を足す: inchikey14 が VAL に入り、別名の漏れ
+    （alias_leak_keys、universe = lib_ik）が無いもの。s2_val=None なら #74 と同じ（並び・乱数も同じ）。"""
     alloc = allocate(n_mol)
     df = pd.DataFrame({"s": lib_set, "ik": lib_ik}).dropna().drop_duplicates()
+    universe = set(df.ik)
     q, info = {}, {}
     for s in QUERY_ALLOC:
         ks = np.array(sorted(df.ik[df.s == s].unique()), dtype=object)
@@ -129,11 +150,31 @@ def select_queries(lib_set, lib_ik, excl, fold, n_mol):
         ok = np.array(f.fold_identity.isin([1, 2, 3, 4]).values, dtype=bool)
         ok &= ~pd.Series(ks).isin(excl).values
         ok &= ~f.scorer_key.isin(excl).values
+        extra = {}
+        if s2_val is not None:
+            n0 = int(ok.sum())
+            ok &= pd.Series(ks).isin(s2_val).values
+            n1 = int(ok.sum())
+            bad = alias_leak_keys(ks[ok], s2_val, fold, universe)
+            ok &= ~pd.Series(ks).isin(bad).values
+            extra = dict(eligible_before_s2=n0, in_s2_val=n1, alias_leak_removed=len(bad))
         cand = ks[ok]
         perm = np.random.RandomState(SEED).permutation(len(cand))
         q[s] = list(cand[perm[:alloc[s]]])
-        info[s] = dict(available=int(len(ks)), eligible=int(len(cand)), chosen=len(q[s]))
+        info[s] = dict(available=int(len(ks)), eligible=int(len(cand)), chosen=len(q[s]), **extra)
     return q, info
+
+
+def assert_s2_queries(queries, excl, fold, s2_val, universe):
+    """(B) のクエリの assert: 除外集合と積が空（inchikey14・scorer_key）、クエリ ⊂ VAL、別名の漏れ 0。件数を返す。"""
+    assert_disjoint(queries, excl, fold)
+    keys = {k for ks in queries.values() for k in ks}
+    out_val = sorted(keys - set(s2_val))
+    assert not out_val, f"queries outside S2 VAL: {out_val[:5]} ({len(out_val)})"
+    leak = sorted(alias_leak_keys(sorted(keys), s2_val, fold, universe))
+    assert not leak, f"queries whose alias is on the S2 training side: {leak[:5]} ({len(leak)})"
+    return dict(unique_queries=len(keys), outside_val=0, alias_leak=0, exclusion_overlap=0,
+                duplicate_queries=sum(len(v) for v in queries.values()) - len(keys))
 
 
 def assert_disjoint(queries, excl, fold):
@@ -327,12 +368,45 @@ def make_rec(E, L, I, rows, adducts, modes, target, cand, hide_rows, truth_p, tr
     return rec
 
 
-def rows_for_molecule(E, rec, cfp, cfp_fs, zlog_fs):
-    """(sim の X 51 列, rank_train の X 31 列)。"""
+def rows_for_molecule(E, rec, cfp, cfp_fs, zlog_fs, fp_source="foldsafe"):
+    """(sim の X 51 列, rank_train の X 31 列)。
+    fp_source='foldsafe'（#74）: base は blk_base_fs（FP 12 列を 10,226 ビットの cfp_fs と fold-safe の z から）。
+    fp_source='s2'（#165、#158 (B)）: base は E.blk_base(dict(rec, zlog=z_s2), cfp)（pv.rank_features そのまま、6,930 ビット）。
+    このとき zlog_fs に z_s2 を渡し、cfp_fs は使わない。"""
     rr = dict(rec, zlog=None)
     Xs = np.hstack([E.BLOCKS[b](rr, cfp) for b in BLOCKS_SIM]).astype(np.float32)
-    Xr = base_fs.blk_base_fs(rec, cfp, cfp_fs, zlog_fs).astype(np.float32)
+    if fp_source == "s2":
+        Xr = E.blk_base(dict(rec, zlog=None if zlog_fs is None else np.asarray(zlog_fs, np.float32)), cfp).astype(np.float32)
+    else:
+        assert fp_source == "foldsafe", fp_source
+        Xr = base_fs.blk_base_fs(rec, cfp, cfp_fs, zlog_fs).astype(np.float32)
     return Xs, Xr
+
+
+# ------------------------------------------------------------------------------------------------
+# 自前 S2（#152 run1）のロジット（#165）
+# ------------------------------------------------------------------------------------------------
+def load_s2(model_path, dev="cpu"):
+    """S2 を pv_fp.load_fp_models で読む（ファイル名に merged を含まないので single 側）。(single, merged, nbits)。"""
+    E = base_fs.engine()  # noqa: F841  （eng/ を sys.path に置く）
+    import pv_fp
+    single, merged, nbits = pv_fp.load_fp_models([model_path], dev)
+    assert len(single) == 1 and not merged, (len(single), len(merged))
+    return single, merged, nbits
+
+
+def s2_logits(models, L, meta, rows, add):
+    """1 分子の S2 のロジット。推論の casmi_engine.compute_channels と同じ入力の作り方（specs は query_specs、
+    prec は float32、adduct・instrument_type は文字列、ce は parse_ce、mode は ±1）で pv_fp.molecule_logits。
+    models = (single, merged, dev)。merged が空なら single の各スペクトルの平均だけ。"""
+    E = base_fs.engine()
+    import pv_fp
+    specs = query_specs(L, rows)
+    modes = np.where(np.asarray(meta["mode"][rows]) == "positive", 1.0, -1.0)
+    ces = np.array([E.parse_ce(v) for v in meta["ce"][rows]], np.float32)
+    z = pv_fp.molecule_logits(models, specs, L["prec"][rows].astype(np.float32), list(np.asarray(add, dtype=str)),
+                              list(np.asarray(meta["instr"][rows], dtype=str)), ces, modes)
+    return None if z is None else np.asarray(z, np.float32)
 
 
 def sha256(path):
@@ -377,12 +451,15 @@ def mol_logits(meta, L, rows, add, k, banks, raw=None):
 
 
 def build(E, L, meta, I, queries, fold, banks, bits, workers, log=print, raw=None, v3keys=None,
-          channels_impl="pair", zcache=None, zout=None):
+          channels_impl="pair", zcache=None, zout=None, fp_source="foldsafe", s2_models=None):
     """queries: {set: [ik]}。L は row_p つき、E.POOL は設定済み。戻り値 (sim dict, rt dict, report)。
     channels_impl: 'pair'（channels_pair、検索 1 回）か 'hidden'（channels_hidden を class-1・class-2 で 2 回、高速化前）。
     zcache: dict を渡すと (set, ik) ごとの z を入れ、すでにあればそれを使う（2 つの経路で同じ z を共有する試走用）。
-    zout: list を渡すと採用した分子の (set, ik, fold, z) を順に足す（z の保存用）。表の中身は変えない。"""
+    zout: list を渡すと採用した分子の (set, ik, fold, z) を順に足す（z の保存用）。表の中身は変えない。
+    fp_source: 'foldsafe'（#74、fold k の fold-safe FPNet と blk_base_fs）か 's2'（#165、s2_models の S2 と blk_base）。"""
     assert channels_impl in ("pair", "hidden"), channels_impl
+    assert fp_source in ("foldsafe", "s2"), fp_source
+    assert (fp_source == "s2") == (s2_models is not None), "s2_models は fp_source='s2' のときだけ"
     POOL = E.POOL
     rep = dict(dropped_out_of_window=0, dropped_no_pool=0, dropped_no_mass=0, dropped_no_logits=0,
                molecules=0, per_set={}, v3_truth_negative_rows=0)
@@ -397,6 +474,7 @@ def build(E, L, meta, I, queries, fold, banks, bits, workers, log=print, raw=Non
             mols.append((s, ik, rows))
     recs = []
     t0 = time.time()
+    t_z = 0.0
     for mi, (s, ik, rows) in enumerate(mols):
         if not len(rows):
             rep["dropped_no_pool"] += 1; continue
@@ -420,7 +498,12 @@ def build(E, L, meta, I, queries, fold, banks, bits, workers, log=print, raw=Non
         if zcache is not None and (s, ik) in zcache:
             z = zcache[(s, ik)]["z"]
         else:
-            z = mol_logits(meta, L, rows, add, k, banks, raw)
+            tz = time.time()
+            if fp_source == "s2":
+                z = s2_logits(s2_models, L, meta, rows, add)
+            else:
+                z = mol_logits(meta, L, rows, add, k, banks, raw)
+            t_z += time.time() - tz
             if zcache is not None:
                 zcache[(s, ik)] = dict(z=z, rows=rows, add=add, k=k)
         if z is None:
@@ -445,23 +528,25 @@ def build(E, L, meta, I, queries, fold, banks, bits, workers, log=print, raw=Non
             x["r2"][f] = x["r1"][f]
         x["r2"].pop("specs", None)
     t_fr = time.time() - t0 - t_ch
-    fpc = base_fs.FsFpCache(lambda i: POOL["smiles"][i], bits)
+    fpc = base_fs.FsFpCache(lambda i: POOL["smiles"][i], bits) if fp_source == "foldsafe" else None
     v3 = set(v3keys or ())
     Xs_l, Ys, Ss, Gs, Qs, Xr_l, Yr, Mr, Gr = [], [], [], [], [], [], [], [], []
     for gi, x in enumerate(recs):
-        cand = x["cand"]; cfp = E.pool_fps(cand); cfs = fpc.get(cand)
+        cand = x["cand"]; cfp = E.pool_fps(cand); cfs = fpc.get(cand) if fpc is not None else None
         y = (cand == x["p"]).astype(np.int8)
         rep["v3_truth_negative_rows"] += 2 * int((pd.Series(POOL["keys"][cand]).isin(v3).values & (y == 0)).sum())
         rep["dup_truth_key_rows"] = rep.get("dup_truth_key_rows", 0) + 2 * int(((POOL["keys"][cand] == x["ik"]) & (y == 0)).sum())
         for S, rec in ((0, x["r1"]), (1, x["r2"])):
-            Xs, Xr = rows_for_molecule(E, rec, cfp, cfs, x["z"])
+            Xs, Xr = rows_for_molecule(E, rec, cfp, cfs, x["z"], fp_source)
             Xs_l.append(Xs); Ys.append(y); Ss.append(np.full(len(y), S, np.int8)); Gs.append(np.full(len(y), 2 * gi + S, np.int32))
             Qs.append(np.full(len(y), SETS.index(x["set"]), np.int8))
             Xr_l.append(Xr); Yr.append(y.astype(np.float64)); Mr.append(np.full(len(y), float(S))); Gr.append(np.full(len(y), gi, np.int64))
         rep["per_set"][x["set"]] = rep["per_set"].get(x["set"], 0) + 1
     rep["molecules"] = len(recs)
-    rep["fs_fp_failed"] = fpc.failed
-    rep["secs"] = dict(channels=round(t_ch, 1), frag=round(t_fr, 1), rows=round(time.time() - t0 - t_ch - t_fr, 1))
+    rep["fs_fp_failed"] = fpc.failed if fpc is not None else None
+    rep["fp_source"] = fp_source
+    rep["secs"] = dict(channels=round(t_ch, 1), frag=round(t_fr, 1), rows=round(time.time() - t0 - t_ch - t_fr, 1),
+                       logits_in_channels=round(t_z, 1))
     sim = dict(X=np.vstack(Xs_l), Y=np.concatenate(Ys), S=np.concatenate(Ss), G=np.concatenate(Gs), Q=np.concatenate(Qs),
                blocks=np.array(BLOCKS_SIM), sets=np.array(SETS))
     rt = dict(X=np.vstack(Xr_l), Y=np.concatenate(Yr), M=np.concatenate(Mr), G=np.concatenate(Gr))
@@ -544,24 +629,27 @@ def content_sha256(d):
     return h.hexdigest()
 
 
-def main(argv=None):
-    ap = argparse.ArgumentParser()
-    ap.add_argument("--train", required=True)
-    ap.add_argument("--assets", required=True, help="json: coco_dir, bio_dir, pc_dir, fs_models_dir, fs_bits, casmi_code, split, structures, drop_keys_dir")
-    ap.add_argument("--out", required=True)
-    ap.add_argument("--n-mol", type=int, default=2000)
-    ap.add_argument("--repeat", type=int, default=1, help="同じ条件で表を何回作るか（決定性の確認）")
-    ap.add_argument("--ab-check", action="store_true",
-                    help="同じセッションで高速化前（channels_hidden 2 回）と channels_pair の 2 表を作り比べる試走（z は共有、z をもう 1 回計算）")
-    ap.add_argument("--workers", type=int, default=os.cpu_count())
-    ap.add_argument("--rdkit", default=base_fs.RDKIT_VERSION)
-    args = ap.parse_args(argv)
-    if args.ab_check and args.repeat != 1:
-        ap.error("--ab-check は --repeat 1 だけ（2 経路を 1 回ずつ作る）")
-    import multiprocessing as mp
-    mp.set_start_method("fork", force=True)   # 推論（Kaggle の Linux）と同じ fork。差し替えた E.find をワーカーに引き継ぐ
-    install_guard()
-    A = json.load(builtins.open(args.assets))
+def s2_val_from_split(split_pkl):
+    """S2 の split.pkl（作者の build_dataset.py の出力）の VAL（inchikey14 の集合）。"""
+    import pickle
+    with builtins.open(split_pkl, "rb") as f:
+        sp = pickle.load(f)
+    return set(sp["VAL"])
+
+
+def check_s2_bits(s2_bits_path, coco_bits_path, nbits):
+    """S2 の出力のビット空間（up_train/fp_bits.npy）が Engine 2 の候補指紋（coconut-casmi26-candidates/fp_bits.npy）と
+    同じであることを確かめる（#165 §2 の 2 の止める条件）。違えば例外で表を作らない。"""
+    a = np.load(s2_bits_path); b = np.load(coco_bits_path)
+    ok = a.shape == b.shape and np.array_equal(a.astype(np.int64), b.astype(np.int64)) and int(nbits) == len(b)
+    assert ok, f"S2 bit space != Engine 2 candidate bits: s2 {a.shape} coco {b.shape} nbits {nbits}"
+    return dict(s2_bits_sha256=sha256(s2_bits_path), coco_bits_sha256=sha256(coco_bits_path), n_bits=int(len(b)),
+                equal=True)
+
+
+def prepare(A, args, log=print):
+    """固定費（資産・除外・ライブラリ・クエリ選び・プール・索引）。main と試走（trial_b_timing.py）が共有する。
+    戻り値 dict(E, L, meta, I, queries, qinfo, fold, excl, counts, pool_info, t_fixed, universe, s2_val, s2_info)。"""
     base_fs.set_casmi_code_dir(A["casmi_code"])
     rd = base_fs.check_rdkit(args.rdkit)
     E = base_fs.engine()
@@ -580,20 +668,42 @@ def main(argv=None):
     for n_, f_ in explicit.items():
         assert os.path.exists(f_), f"missing asset {n_}: {f_}"
     assert len(np.load(explicit["fp_bits.npy"])) == 6930, "Engine 2 の候補指紋は 6,930 ビット"
+    s2_val, s2_info = None, None
+    if args.fp_source == "s2":
+        for k_ in ("s2_model", "s2_split", "s2_bits"):
+            assert k_ in A and os.path.exists(A[k_]), f"assets.json に {k_} が要る（--fp-source s2）"
+        import torch
+        ck = torch.load(A["s2_model"], map_location="cpu", weights_only=False)
+        s2_info = dict(model_sha256=sha256(A["s2_model"]), split_sha256=sha256(A["s2_split"]), step=int(ck.get("step", -1)),
+                       nbits=int(ck["nbits"]), d=int(ck["d"]), layers=int(ck["layers"]), has_opt="opt" in ck)
+        s2_info["bits"] = check_s2_bits(A["s2_bits"], explicit["fp_bits.npy"], ck["nbits"])
+        del ck
+        s2_val = s2_val_from_split(A["s2_split"])
+        s2_info["val_structures"] = len(s2_val)
+        for f_ in (A["s2_model"], A["s2_split"]):
+            OPENED.append(f_)
+        log(f"s2 {s2_info}")
     for f_ in (args.train, A["split"], A["structures"]):
         OPENED.append(f_)                      # pyarrow で読むファイルも記録
     excl, counts, fold = load_exclusions(A["split"], A["structures"], A["drop_keys_dir"])
     log(f"exclusions {counts}")
     import pyarrow.parquet as pq
     L = E.load_library(args.train)
-    mt = pq.read_table(args.train, columns=["ingest_lib", "adduct", "ionization_mode", "collision_energy_ev"])
+    cols = ["ingest_lib", "adduct", "ionization_mode", "collision_energy_ev"] + (["instrument_type"] if s2_val is not None else [])
+    mt = pq.read_table(args.train, columns=cols)
     meta = dict(ingest_lib=np.asarray(mt.column("ingest_lib").to_pylist(), dtype=object), ik=L["ik"].copy(),
                 adduct=np.asarray(mt.column("adduct").cast("string").to_pylist(), dtype=object),
                 mode=np.asarray(mt.column("ionization_mode").cast("string").to_pylist(), dtype=object),
                 ce=np.asarray(mt.column("collision_energy_ev").to_pylist() + [None], dtype=object)[:-1])
+    if s2_val is not None:
+        meta["instr"] = np.asarray(mt.column("instrument_type").cast("string").to_pylist(), dtype=object)
     del mt
-    queries, qinfo = select_queries(meta["ingest_lib"], meta["ik"], excl, fold, args.n_mol)
-    assert_disjoint(queries, excl, fold)
+    queries, qinfo = select_queries(meta["ingest_lib"], meta["ik"], excl, fold, args.n_mol, s2_val=s2_val)
+    universe = set(pd.Series(meta["ik"]).dropna())
+    if s2_val is not None:
+        s2_info["query_assert"] = assert_s2_queries(queries, excl, fold, s2_val, universe)
+    else:
+        assert_disjoint(queries, excl, fold)
     log(f"queries {qinfo}")
     msgs, _log = [], E.log
     E.log = lambda m: (msgs.append(str(m)), _log(m))
@@ -610,22 +720,65 @@ def main(argv=None):
     I = E.build_index(L)
     t_fixed = time.time() - E.T0
     log(f"fixed cost {t_fixed:.0f}s")
-    banks = {k: base_fs.load_bank(os.path.join(A["fs_models_dir"], f"fpnet_fold{k}.pt")) for k in (1, 2, 3, 4)}
-    bits = np.load(A["fs_bits"])
+    return dict(E=E, L=L, meta=meta, I=I, queries=queries, qinfo=qinfo, fold=fold, excl=excl, counts=counts,
+                pool_info=pool_info, t_fixed=t_fixed, universe=universe, s2_val=s2_val, s2_info=s2_info, rdkit=rd)
+
+
+def add_common_args(ap):
+    ap.add_argument("--train", required=True)
+    ap.add_argument("--assets", required=True, help="json: coco_dir, bio_dir, pc_dir, fs_models_dir, fs_bits, casmi_code, split, "
+                    "structures, drop_keys_dir（--fp-source s2 では s2_model, s2_split, s2_bits も）")
+    ap.add_argument("--n-mol", type=int, default=2000)
+    ap.add_argument("--workers", type=int, default=os.cpu_count())
+    ap.add_argument("--rdkit", default=base_fs.RDKIT_VERSION)
+    ap.add_argument("--fp-source", choices=["foldsafe", "s2"], default="foldsafe",
+                    help="rank_train の FP 12 列の出どころ: foldsafe（#74）か s2（#165、#158 (B)、クエリは S2 の VAL に限る）")
+
+
+def main(argv=None):
+    ap = argparse.ArgumentParser()
+    add_common_args(ap)
+    ap.add_argument("--out", required=True)
+    ap.add_argument("--repeat", type=int, default=1, help="同じ条件で表を何回作るか（決定性の確認）")
+    ap.add_argument("--ab-check", action="store_true",
+                    help="同じセッションで高速化前（channels_hidden 2 回）と channels_pair の 2 表を作り比べる試走（z は共有、z をもう 1 回計算）")
+    args = ap.parse_args(argv)
+    if args.ab_check and args.repeat != 1:
+        ap.error("--ab-check は --repeat 1 だけ（2 経路を 1 回ずつ作る）")
+    if args.ab_check and args.fp_source != "foldsafe":
+        ap.error("--ab-check は --fp-source foldsafe だけ")
+    import multiprocessing as mp
+    mp.set_start_method("fork", force=True)   # 推論（Kaggle の Linux）と同じ fork。差し替えた E.find をワーカーに引き継ぐ
+    install_guard()
+    A = json.load(builtins.open(args.assets))
+    C = prepare(A, args)
+    E, L, meta, I, queries, qinfo, fold = C["E"], C["L"], C["meta"], C["I"], C["queries"], C["qinfo"], C["fold"]
+    log = E.log
+    s2_models = None
+    if args.fp_source == "s2":
+        single, merged, _ = load_s2(A["s2_model"], "cpu")
+        s2_models = (single, merged, "cpu")
+        banks, bits = None, None
+    else:
+        banks = {k: base_fs.load_bank(os.path.join(A["fs_models_dir"], f"fpnet_fold{k}.pt")) for k in (1, 2, 3, 4)}
+        bits = np.load(A["fs_bits"])
     v3keys = set()
     for h in HOLDOUTS:
         v3keys.update(x.strip() for x in builtins.open(os.path.join(A["drop_keys_dir"], h, "drop_keys.txt")) if x.strip())
-    report = dict(rdkit=rd, n_mol=args.n_mol, alloc=allocate(args.n_mol), exclusions=counts, query_info=qinfo,
-                  query_exclusion_overlap=0, fixed_secs=round(t_fixed, 1), pool=pool_info, runs=[], cpu_info=cpu_info(),
-                  ab_check_mode=bool(args.ab_check))
-    qrows = [r for s_, ks in queries.items() for r in np.flatnonzero(pd.Series(meta["ingest_lib"]).eq(s_).values & pd.Series(meta["ik"]).isin(set(ks)).values)]
-    raw = read_rows_f64(args.train, qrows)
-    log(f"query rows {len(raw):,}")
+    report = dict(rdkit=C["rdkit"], n_mol=args.n_mol, alloc=allocate(args.n_mol), exclusions=C["counts"], query_info=qinfo,
+                  query_exclusion_overlap=0, fixed_secs=round(C["t_fixed"], 1), pool=C["pool_info"], runs=[], cpu_info=cpu_info(),
+                  ab_check_mode=bool(args.ab_check), fp_source=args.fp_source, s2=C["s2_info"])
+    if args.fp_source == "s2":
+        raw = None                              # S2 の入力は L（float32）から作る（推論の compute_channels と同じ）
+    else:
+        qrows = [r for s_, ks in queries.items() for r in np.flatnonzero(pd.Series(meta["ingest_lib"]).eq(s_).values & pd.Series(meta["ik"]).isin(set(ks)).values)]
+        raw = read_rows_f64(args.train, qrows)
+        log(f"query rows {len(raw):,}")
 
     def one_run(tag, impl, zcache=None):
         t1 = time.time(); zl = []
         sim, rt, rep = build(E, L, meta, I, queries, fold, banks, bits, args.workers, log, raw=raw, v3keys=v3keys,
-                             channels_impl=impl, zcache=zcache, zout=zl)
+                             channels_impl=impl, zcache=zcache, zout=zl, fp_source=args.fp_source, s2_models=s2_models)
         ps, pr = save_tables(args.out, sim, rt, tag)
         pz = save_logits(args.out, zl, tag)
         rep.update(stats=table_stats(sim, rt), sha256=dict(sim_file=sha256(ps), rank_train_file=sha256(pr),
