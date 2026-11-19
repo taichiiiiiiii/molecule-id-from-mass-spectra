@@ -9,7 +9,7 @@
 - kernels/engine2_build/abcheck/: 試走と同じ 50 分子で、同じセッションの中で高速化前（channels_hidden 2 回）と
   channels_pair の 2 表を作り比べる（build_tables.py --ab-check）。trial/run1/run2 のノートブックは変えない
 - kernels/engine2_build/b_run1/: #165（#158 (B)）。`--fp-source s2`（FP 12 列を自前 S2 で、クエリは S2 の VAL 構造）、
-  2,000 分子 × 1 回。入力に S2 の dataset（S2_SLUG）を足す。他のノートブックは変えない（セルの文字列は置き換えで足す）
+  2,000 分子 × 1 回。入力に S2 の private model（S2_MODEL、model_sources）を足す。他のノートブックは変えない（セルの文字列は置き換えで足す）
 """
 import argparse
 import json
@@ -24,7 +24,8 @@ SOURCES = ["dmitriigluzdov/casmi26-attributed-v4g-reproduction-assets", "dmitrii
 HOLDOUTS = ["v3_c1", "v3_c2", "enveda_v1", "v3_c2n"]
 KERNELS = {"trial": (50, 2), "run1": (2000, 1), "run2": (2000, 1)}
 AB_KERNELS = {"abcheck": (50, 1)}          # --ab-check を付ける（高速化の前後の比較、#74 項目 2）
-S2_SLUG = "taichiiiii/casmi26-engine2-s2-weights"   # #165: 自前 S2（#152 run1 の best の重みだけ）・split.pkl・fp_bits.npy
+S2_MODEL = "taichiiiii/casmi26-engine2-s2/PyTorch/s2-run1/1"   # #165: 自前 S2（#152 run1 の best の重みだけ）・split.pkl・fp_bits.npy。
+# private dataset の残り（121 MB）に入らないので private の Kaggle Model に置く
 S2_KERNELS = {"b_run1": (2000, 1)}          # #165（#158 (B)）: --fp-source s2、クエリは S2 の VAL。生成は 1 回だけ
 
 CELL_SETUP = r'''# 入力の場所（明示パス）と RDKit 2026.03.3
@@ -118,7 +119,7 @@ print('torch threads', rep['cpu_info']['torch_num_threads'], 'os.cpu_count', rep
 
 
 CELL_S2_ASSETS = r'''# 自前 S2（#165）: 重みだけ（opt なし）・S2 の split.pkl（VAL）・S2 の出力のビット（up_train/fp_bits.npy）
-S2D = one('fp_s2_weights.pt', 'casmi26-engine2-s2-weights').parent
+S2D = one('fp_s2_weights.pt', 'casmi26-engine2-s2').parent
 ASSETS.update(s2_model=str(S2D / 'fp_s2_weights.pt'), s2_split=str(S2D / 'split.pkl'), s2_bits=str(S2D / 'fp_bits.npy'))
 for k in ('s2_model', 's2_split', 's2_bits'):
     assert os.path.exists(ASSETS[k]), (k, ASSETS[k])
@@ -147,7 +148,7 @@ def nb(n_mol, repeat, ab=False, fp_source="foldsafe"):
         cells[3] = code(CELL_RUN.replace(a, "'--repeat', str(REPEAT), '--fp-source', 's2']"))
         cells.insert(3, code(CELL_S2_ASSETS))
         cells[0] = dict(cells[0], source=cells[0]["source"] + (
-            "\n\n#165（#158 (B)）: rank_train の FP 12 列は自前 S2（`taichiiiii/casmi26-engine2-s2-weights`、#152 run1 の best）、"
+            "\n\n#165（#158 (B)）: rank_train の FP 12 列は自前 S2（private model `taichiiiii/casmi26-engine2-s2`、#152 run1 の best）、"
             "クエリは S2 の内部検証の構造（VAL）だけ。提出しない。"))
     return dict(cells=cells,
                 metadata=dict(kernelspec=dict(display_name="Python 3", language="python", name="python3"),
@@ -181,8 +182,8 @@ def main():
         slug = f"casmi26-engine2-build-{name}".replace("_", "-")
         meta = dict(id=f"taichiiiii/{slug}", title=f"casmi26 engine2 build {name}".replace("_", " "), code_file="notebook.ipynb",
                     language="python", kernel_type="notebook", is_private=True, enable_gpu=False, enable_tpu=False,
-                    enable_internet=False, dataset_sources=SOURCES + ([S2_SLUG] if fps == "s2" else []), kernel_sources=[],
-                    competition_sources=["enveda-CASMI26-molecule-id-mass-spectra"], model_sources=[], docker_image=DOCKER)
+                    enable_internet=False, dataset_sources=SOURCES, kernel_sources=[],
+                    competition_sources=["enveda-CASMI26-molecule-id-mass-spectra"], model_sources=[S2_MODEL] if fps == "s2" else [], docker_image=DOCKER)
         json.dump(meta, open(os.path.join(kd, "kernel-metadata.json"), "w"), indent=2)
         print("wrote", kd)
     print("code dataset", cd, sorted(os.listdir(cd)))
