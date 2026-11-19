@@ -1,0 +1,20 @@
+fp_retrain: cubres/enveda-casmi-2026 legacy-v2 のソースを使う自前のコード（Issue #152、PR #153）
+==========================================================================================
+
+upstream/ のファイルは GitHub cubres/enveda-casmi-2026 commit 477897993f006ebd86fbbc4809a732f282781b6b の
+reproduction/legacy-v2/ にある Apache-2.0 のソースを変えずに写したもの（upstream/NOTICE・upstream/LICENSE-SOURCE を参照。
+sha256 のピンは tests/test_engine2_fp_retrain.py で検査）。upstream/NOTICE は作者の文で、バイトのまま残している。
+
+このディレクトリのそれ以外のファイルは自前のコード（Apache-2.0 §4(b) の「変更したことの明示」としてここに書く）:
+
+- prep_flat_stream.py: upstream/prepare_legacy_exports.py の export_flat と speclib.load_flat からの派生。
+  train.parquet を pq.read_table ではなく row group ごとに読む（出力は同じ。変更点はファイルの先頭に書いた）
+- train_s2_resumable.py: upstream/train_fp3.py を変えずに import し、main() の学習ループを同じ式で書き直したもの。
+  途中保存・再開、モデルを作る前の seed、MPS の GradScaler、速さの記録を足した（Issue #152 §4）
+- packed_pfp.py と train_s2_resumable.py の PackedData（speed2）: **上流のファイルは変えず**、自前のラッパーで
+  Data.__init__ を差し替えて、候補プールの指紋（pool_fp.npy の np.packbits の形）を packed のまま持ち、
+  取り出した行だけを上流の式 np.unpackbits(..., axis=1)[:, :nbits] で戻す。PFP のメモリ上の持ち方を変えた
+  自前の差分で、学習に渡る値はビット単位で同じ（テストと実データの確認）
+- check_packed_rows.py・e2fp_*.sh・prep_inputs.sh: 自前の実行・確認のスクリプト
+
+モデルの重みは含まない。

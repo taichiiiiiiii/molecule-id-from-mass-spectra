@@ -234,3 +234,132 @@ def test_loop_resumes_then_finishes(tmp_path):
     log = (out / 'loop.log').read_text()
     assert 'round 1 rc=143 decision=resume rc_143' in log and 'round 2 rc=0 decision=done' in log
     assert not lock.exists()
+
+
+# ---------------------------------------------------------------- speed2: PFP を packbits のまま持つ
+
+def _load_packed(monkeypatch):
+    monkeypatch.syspath_prepend(str(FR))
+    import packed_pfp
+    return packed_pfp
+
+
+@pytest.mark.parametrize('nbits', [24, 21, 18, 1])   # 8 の倍数と、そうでないもの（18 は 6,930 と同じ余り 2）
+def test_packed_rows_match_unpacked_numpy(monkeypatch, nbits):
+    """(i) torch 無しでも走る部分: packed からの取り出し = 上流の unpack 済み配列の行（バイト一致）。"""
+    pp = _load_packed(monkeypatch)
+    rng = np.random.default_rng(nbits)
+    bits = rng.integers(0, 2, (50, nbits)).astype(np.uint8)
+    packed = np.packbits(bits, axis=1)
+    ref = np.unpackbits(packed, axis=1)[:, :nbits]          # 上流 20 行の式
+    assert np.array_equal(ref, bits)
+    P = pp.PackedPFP(packed, nbits)
+    assert P.shape == ref.shape and len(P) == 50
+    for idx in (np.arange(50), rng.integers(0, 50, 17), rng.integers(0, 50, (6, 5)),
+                np.array([3, 3, 0, 49], dtype=np.int32), np.zeros((0,), np.int64)):
+        got = P.rows_np(idx)
+        exp = ref[idx]
+        assert got.dtype == exp.dtype == np.uint8 and got.shape == exp.shape
+        assert got.tobytes() == exp.tobytes()
+        assert got.flags['C_CONTIGUOUS']
+
+
+def test_packed_rejects_bad_input(monkeypatch):
+    pp = _load_packed(monkeypatch)
+    with pytest.raises(ValueError):
+        pp.PackedPFP(np.zeros((3, 2), np.int64), 10)
+    with pytest.raises(ValueError):
+        pp.PackedPFP(np.zeros((3, 2), np.uint8), 17)
+    with pytest.raises(TypeError):
+        pp.PackedPFP(np.zeros((3, 2), np.uint8), 16).rows_np(np.array([0.0]))
+
+
+def test_packed_torch_getitem_matches_upstream_tensor(monkeypatch):
+    """(i) torch の部分: PFP[torch の idx] = 上流の torch.from_numpy(ascontiguousarray(unpacked))[idx]。"""
+    torch = pytest.importorskip('torch')
+    pp = _load_packed(monkeypatch)
+    rng = np.random.default_rng(7)
+    for nbits in (24, 21, 18):
+        packed = np.packbits(rng.integers(0, 2, (40, nbits)).astype(np.uint8), axis=1)
+        up = torch.from_numpy(np.ascontiguousarray(np.unpackbits(packed, axis=1)[:, :nbits]))   # 上流 20・28 行
+        P = pp.PackedPFP(packed, nbits)
+        assert P.device == up.device
+        for idx in (torch.as_tensor(rng.integers(0, 40, 9)), torch.as_tensor(rng.integers(0, 40, (4, 8)))):
+            g = P[idx]; e = up[idx]
+            assert g.dtype == e.dtype == torch.uint8 and g.shape == e.shape and torch.equal(g, e)
+            assert torch.equal(g.float(), e.float())
+
+
+def test_packed_data_matches_upstream_data(tmp_path, monkeypatch):
+    """PackedData の PFP 以外の属性が上流 Data と同じ、PFP の全行も同じ、batch の出力も同じ。"""
+    tr = _load_train(monkeypatch)
+    import torch
+    _toy_train_inputs(tmp_path)
+    A = tr.train_fp3.Data(str(tmp_path / 'spec.npz'), str(tmp_path / 'up'), str(tmp_path), device='cpu')
+    B = tr.PackedData(str(tmp_path / 'spec.npz'), str(tmp_path / 'up'), str(tmp_path), device='cpu')
+    assert set(vars(A)) == set(vars(B))
+    for k, v in vars(A).items():
+        w = getattr(B, k)
+        if k == 'PFP':
+            allrows = torch.arange(len(B.pmass))
+            assert torch.equal(v[allrows], w[allrows]) and v.dtype == w[allrows].dtype
+        elif isinstance(v, np.ndarray):
+            assert v.dtype == w.dtype and v.shape == w.shape and np.array_equal(v, w), k
+        else:
+            assert v == w if not isinstance(v, (list, tuple)) else list(v) == list(w), k
+    ids = B.tr[:6]
+    ia, ya, ca = A.batch(ids, K=5, rng=np.random.default_rng(3), aug=True)
+    ib, yb, cb = B.batch(ids, K=5, rng=np.random.default_rng(3), aug=True)
+    for x, y in zip(ia, ib):
+        assert torch.equal(x, y)
+    assert torch.equal(ya, yb) and torch.equal(ca, cb)
+    assert torch.equal(A.PFP[ca], B.PFP[cb])
+
+
+def test_packed_training_bit_identical_to_upstream(tmp_path, monkeypatch):
+    """(ii) CPU の合成データで --pfp upstream と --pfp packed の 12 step の損失（毎 step）・重み・best・乱数が一致。"""
+    tr = _load_train(monkeypatch)
+    import torch
+    torch.set_num_threads(1)
+    _toy_train_inputs(tmp_path)
+    realF = tr.F
+    rec = {}
+
+    class Shim:
+        def __init__(self, key):
+            self.key = key
+
+        def __getattr__(self, name):
+            return getattr(realF, name)
+
+        def binary_cross_entropy_with_logits(self, *a, **k):
+            v = realF.binary_cross_entropy_with_logits(*a, **k); rec[self.key].append(('bce', v.detach().clone())); return v
+
+        def cross_entropy(self, *a, **k):
+            v = realF.cross_entropy(*a, **k); rec[self.key].append(('ce', v.detach().clone())); return v
+
+    out = {}
+    for mode in ('upstream', 'packed'):
+        d = tmp_path / mode; d.mkdir()
+        rec[mode] = []
+        monkeypatch.setattr(tr, 'F', Shim(mode))
+        assert tr.main(_args(tmp_path, d / 'best.pt', d / 'state.pt', extra=('--pfp', mode))) == 0
+        out[mode] = (torch.load(d / 'state.pt', weights_only=False), torch.load(d / 'best.pt', weights_only=False))
+    monkeypatch.setattr(tr, 'F', realF)
+    ru, rp = rec['upstream'], rec['packed']
+    assert len(ru) == len(rp) and len(ru) >= 2 * 12            # 学習 12 step × 2 ＋ 評価
+    for (na, va), (nb, vb) in zip(ru, rp):
+        assert na == nb and torch.equal(va, vb)
+    (su, bu), (sp, bp) = out['upstream'], out['packed']
+    assert su['step'] == sp['step'] == 12 and su['best_val'] == sp['best_val']
+    assert su['args']['pfp'] == 'upstream' and sp['args']['pfp'] == 'packed'
+    assert su['np_rng'] == sp['np_rng'] and torch.equal(su['torch_rng'], sp['torch_rng'])
+    for k in su['model']:
+        assert torch.equal(su['model'][k], sp['model'][k]), k
+    assert bu['step'] == bp['step']
+    for k in bu['model']:
+        assert torch.equal(bu['model'][k], bp['model'][k]), k
+    # 違う持ち方の state からは再開しない
+    with pytest.raises(SystemExit, match='引数が違う'):
+        tr.main(_args(tmp_path, tmp_path / 'packed' / 'best.pt', tmp_path / 'packed' / 'state.pt',
+                      steps=12, extra=('--pfp', 'upstream')))

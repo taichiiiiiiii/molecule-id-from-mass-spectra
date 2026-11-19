@@ -10,6 +10,11 @@ import し、`Data`（入力の読み込み・負例・バッチ）と `fpmodel.
   3. 精度: cuda は元のまま fp16＋GradScaler。mps は autocast fp16＋torch.amp.GradScaler('mps')（元は scaler 無し）
      cpu は元のまま autocast 無し
   4. 記録だけ: `--speed_every` step ごとに `speed step <n> t <経過秒>`、終わりに ALL_DONE
+  6. PFP の持ち方（speed2、`--pfp packed` が既定）: 上流の Data.__init__ 20 行は候補の指紋を unpack して
+     1 バイト/ビット（約 4.93 GB）で持つ。`PackedData` は __init__ だけを差し替え、pool_fp.npy を packed のまま
+     `packed_pfp.PackedPFP` に入れ、取り出した行だけ上流と同じ式で unpack する（上流 73 行の self.PFP[pos] と
+     下の D.PFP[cand] の両方。式は変えない）。unpack 済みの全体の一時配列は一度も作らない。他の行は上流と同じ式。
+     `--pfp upstream` は上流の Data をそのまま使う（比べる側）。学習に渡る値はビット単位で同じ（テスト）
 `--max_minutes` は元と同じ意味（既定 1e9）。ただし経過時間は再開をまたいで足す。
 """
 import argparse
@@ -30,9 +35,46 @@ import torch.nn.functional as F  # noqa: E402
 import fpmodel  # noqa: E402
 import train_fp3  # noqa: E402
 
+sys.path.insert(0, str(HERE))
+from packed_pfp import PackedPFP  # noqa: E402
+
 # 再開のときに一致を求める引数（学習の中身を決めるもの）
 STATE_ARGS = ('steps', 'bs', 'lr', 'd', 'layers', 'K', 'lam', 'warm', 'val_every', 'seed', 'spec', 'fpdir', 'pooldir',
-              'device', 'out')
+              'device', 'out', 'pfp')
+
+
+class PackedData(train_fp3.Data):
+    """上流 train_fp3.Data の __init__ だけを差し替えたもの（PFP を packed のまま持つ）。
+    sample_negs・batch は上流のメソッドをそのまま使う。下の行は上流 13〜32 行と同じ式。違うのは 20 行（unpack しない）、
+    25〜28 行（PackedPFP に入れる。cuda で GPU に置く形は扱わない）、32 行の print（末尾に pfp=packed、記録だけ）。"""
+
+    def __init__(self, spec='ds/spec.npz', fpdir='up_train', pooldir='.', device='cpu', pool_on_gpu=True):
+        import pickle
+        z = np.load(spec)
+        self.off = z['off']; self.mz = z['mz']; self.it = z['it']; self.prec = z['prec']
+        self.ad = z['ad'].astype(np.int64); self.ins = z['ins'].astype(np.int64)
+        self.ce = z['ce']; self.mode = z['mode']; self.six = z['six']; self.is_val = z['is_val']
+        m = pickle.load(open(f'{fpdir}/fp_meta.pkl', 'rb')); self.nbits = m['nbits']; self.skeys = m['keys']
+        pm = pickle.load(open(f'{pooldir}/pool_meta.pkl', 'rb'))
+        self.pmass = np.load(f'{pooldir}/pool_mass.npy')
+        packed = np.load(f'{pooldir}/pool_fp.npy')                    # 上流 20 行: ここで unpack しない
+        self.pkeys = pm['keys']
+        k2p = {k: i for i, k in enumerate(self.pkeys)}
+        self.s2p = np.array([k2p.get(k, -1) for k in self.skeys], dtype=np.int64)
+        self.device = device
+        if pool_on_gpu and device == 'cuda':
+            raise SystemExit('PackedData は cuda で PFP を GPU に置く上流の形に対応していない（--pfp upstream を使う）')
+        self.PFP = PackedPFP(packed, self.nbits)                      # 上流 28 行に当たる（CPU に置く）
+        self.tr = np.where(~self.is_val)[0]; self.va = np.where(self.is_val)[0]
+        keep = self.s2p[self.six[self.tr]] >= 0
+        self.tr = self.tr[keep]
+        print(f'nbits={self.nbits} pool={len(self.pmass)} train={len(self.tr)} val={len(self.va)} pfp=packed', flush=True)
+
+
+def make_data(a, dev):
+    if a.pfp == 'packed':
+        return PackedData(a.spec, a.fpdir, a.pooldir, device=dev)
+    return train_fp3.Data(a.spec, a.fpdir, a.pooldir, device=dev)
 
 
 def parse(argv=None):
@@ -53,6 +95,8 @@ def parse(argv=None):
     ap.add_argument('--device', default='auto', choices=['auto', 'cpu', 'mps', 'cuda'])
     ap.add_argument('--run', default='', help='プロセスを探すための印（学習には使わない）')
     ap.add_argument('--stop_at_step', type=int, default=-1, help='テスト用: この step まで進んだら保存して終わる')
+    ap.add_argument('--pfp', default='packed', choices=['packed', 'upstream'],
+                    help='候補の指紋の持ち方（packed: 取り出した行だけ unpack、upstream: 上流の Data のまま）')
     return ap.parse_args(argv)
 
 
@@ -89,7 +133,7 @@ def main(argv=None):
     a = parse(argv)
     dev = train_fp3.dev_of() if a.device == 'auto' else a.device
     print('device', dev, flush=True)
-    D = train_fp3.Data(a.spec, a.fpdir, a.pooldir, device=dev)
+    D = make_data(a, dev)
     torch.manual_seed(a.seed)                                        # 自前の追加（作る前）
     model = fpmodel.FPNet(D.nbits, d=a.d, layers=a.layers).to(dev)
     print('params %.1fM' % (sum(p.numel() for p in model.parameters()) / 1e6), flush=True)
