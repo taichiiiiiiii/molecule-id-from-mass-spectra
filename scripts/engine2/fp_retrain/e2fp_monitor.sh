@@ -5,19 +5,20 @@
 #     主プロセスの footprint MB / そのうち IOAccelerator (graphics) MB（MPS の確保が入る区分）/ プロセスの木の RSS の合計 MB（記録だけ）/
 #     swap の使用 MB
 # 主プロセス = 引数に「train_s2_resumable.py」と「--run <run dir>」を含む python のうち親が python でないもの。
+export TRAIN_PAT=${TRAIN_PAT:-train_s2_resumable.py}   # #167: 学習のスクリプト名（M1 は train_m1_resumable.py）。プロセスを探すときだけ使う
 RUN="$1"; OUT="$2"; DT="${3:-10}"
 TOTAL=$(sysctl -n hw.memsize)
 is_py() {   # 学習の python 本体か（/usr/bin/time・bash の行は除く。venv のパスに空白があるので先頭で判定）
   local c; c=$(ps -o command= -p "$1" 2>/dev/null)
   case "$c" in /usr/bin/time*|bash*|/bin/bash*|"") return 1;; esac
-  case "$c" in *bin/python*train_s2_resumable.py*) return 0;; esac
+  case "$c" in *bin/python*"$TRAIN_PAT"*) return 0;; esac
   return 1
 }
 [ -f "$OUT" ] || printf 'time\tavail_gb\tused_gb\tpid\tfootprint_mb\tgraphics_mb\ttree_rss_mb\tswap_used_mb\tmp_free_pct\n' > "$OUT"
 while :; do
   read -r avail <<< "$(vm_stat | awk '/page size of/{ps=$8} /Pages free/{f=$3} /Pages inactive/{i=$3} /Pages speculative/{s=$3} END{gsub("\\.","",f);gsub("\\.","",i);gsub("\\.","",s); printf "%.0f", (f+i+s)*ps}')"
   pid=""; fp=""; gr=""; tree=""
-  for p in $(pgrep -f "train_s2_resumable.py.*--run $RUN"); do
+  for p in $(pgrep -f "$TRAIN_PAT.*--run $RUN"); do
     is_py "$p" || continue
     pp=$(ps -o ppid= -p "$p" | tr -d ' ')
     is_py "$pp" || pid=$p          # 親が学習の python なら worker

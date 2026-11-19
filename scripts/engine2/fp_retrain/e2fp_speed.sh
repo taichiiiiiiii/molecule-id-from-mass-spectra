@@ -13,6 +13,7 @@
 #   どの止めでも「以降の回を起動しない」と speed_driver.log に書く。正常に 2 回終われば終了 0。
 #   テスト用の差し替え: AVAIL_CMD（GB を 1 つ出すコマンド）、SWAP_CMD（vm.swapusage の形の行を出すコマンド）、
 #                       RESUME_CHECK（途中保存のパスを引数にとって 1 行出すコマンド）、NO_MONITOR=1
+export TRAIN_PAT=${TRAIN_PAT:-train_s2_resumable.py}   # #167: 学習のスクリプト名（M1 は train_m1_resumable.py）。プロセスを探すときだけ使う
 set -u
 SP="$1"; shift
 [ "${1:-}" = "--" ] && shift
@@ -37,12 +38,12 @@ swap_mb() {
 is_py() {
   local c; c=$(ps -o command= -p "$1" 2>/dev/null)
   case "$c" in /usr/bin/time*|bash*|/bin/bash*|"") return 1;; esac
-  case "$c" in *bin/python*train_s2_resumable.py*) return 0;; esac
+  case "$c" in *bin/python*"$TRAIN_PAT"*) return 0;; esac
   return 1
 }
 main_pid() {   # 学習の python のうち親が学習の python でないもの
   local p pp
-  for p in $(pgrep -f "train_s2_resumable.py.*--run $SP( |$)"); do
+  for p in $(pgrep -f "$TRAIN_PAT.*--run $SP( |$)"); do
     is_py "$p" || continue
     pp=$(ps -o ppid= -p "$p" 2>/dev/null | tr -d ' ')
     is_py "$pp" || echo "$p"

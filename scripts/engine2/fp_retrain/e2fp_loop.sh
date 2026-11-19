@@ -18,6 +18,7 @@
 #   再開は最大 MAX_RESTARTS 回（既定 5。swap の止めも数える）。超えたら終了 3。判定は 1 回ごとに <out>/loop.log に 1 行。
 #   テスト用の差し替え: SWAP_CMD（sysctl -n vm.swapusage の代わりに eval するコマンド）
 # 実行中のこのファイルを書き換えない（直すなら別名で作る）。
+export TRAIN_PAT=${TRAIN_PAT:-train_s2_resumable.py}   # #167: 学習のスクリプト名（M1 は train_m1_resumable.py）。プロセスを探すときだけ使う
 set -u
 OUT="$1"; RUN="$2"; SHA="$3"; shift 3
 [ "${1:-}" = "--" ] && shift
@@ -42,10 +43,10 @@ swap_mb() {   # swap の used（MB）
 }
 
 leftovers() {   # この run dir の学習の python（/usr/bin/time・bash の行は除く）
-  for p in $(pgrep -f "train_s2_resumable.py.*--run $RUN( |$)"); do
+  for p in $(pgrep -f "$TRAIN_PAT.*--run $RUN( |$)"); do
     c=$(ps -o command= -p "$p" 2>/dev/null)
     case "$c" in /usr/bin/time*|bash*|/bin/bash*|"") continue;; esac
-    case "$c" in *bin/python*train_s2_resumable.py*) echo "$p";; esac
+    case "$c" in *bin/python*"$TRAIN_PAT"*) echo "$p";; esac
   done
 }
 
@@ -55,7 +56,7 @@ main_pid() {    # leftovers のうち親が学習の python でないもの（fo
     pp=$(ps -o ppid= -p "$p" 2>/dev/null | tr -d ' ')
     c=$(ps -o command= -p "$pp" 2>/dev/null)
     case "$c" in /usr/bin/time*|bash*|/bin/bash*|"") echo "$p"; continue;; esac   # 親が time・bash なら主プロセス
-    case "$c" in *bin/python*train_s2_resumable.py*) continue;; esac                # 親が学習の python なら worker
+    case "$c" in *bin/python*"$TRAIN_PAT"*) continue;; esac                # 親が学習の python なら worker
     echo "$p"
   done
 }
