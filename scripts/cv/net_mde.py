@@ -11,6 +11,7 @@ from __future__ import annotations
 import argparse
 import json
 import math
+import statistics
 import sys
 from pathlib import Path
 
@@ -57,7 +58,7 @@ def summarize(ctrl: dict, variants: dict) -> dict:
                                     n_changed=sum(1 for x in d if x != 0))
     nz = [x["mde"] for x in out["variants"].values() if x["n_changed"] > 0]
     out["mde_min"] = round(min(nz), 4) if nz else None
-    out["mde_median"] = round(sorted(nz)[len(nz) // 2], 4) if nz else None
+    out["mde_median"] = round(statistics.median(nz), 4) if nz else None
     out["mde_max"] = round(max(nz), 4) if nz else None
     return out
 

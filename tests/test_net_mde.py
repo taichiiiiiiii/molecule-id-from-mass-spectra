@@ -54,3 +54,11 @@ def test_ctrl_since_uses_oldest_identical_backup(tmp_path):
 def test_rank_profile():
     r = M.rank_profile({"a": 1.0, "b": 0.5, "c": 0.04, "d": 0.0})
     assert r == dict(n=4, rank1=1, rank2_25=2, absent=1, gain_sum_unlocked=1.46, gain_sum_lock1=0.46)
+
+
+def test_median_of_even_count_is_mean_of_middle_pair():
+    ctrl = {f"m{i}": 0.5 for i in range(4)}
+    vs = {f"v{k}": dict(ctrl, m0=0.5 + 0.1 * (k + 1)) for k in range(4)}
+    r = M.summarize(ctrl, vs)
+    mdes = sorted(x["mde"] for x in r["variants"].values())
+    assert r["mde_median"] == round((mdes[1] + mdes[2]) / 2, 4)
