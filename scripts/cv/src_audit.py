@@ -12,6 +12,7 @@ Issue #162: v2 プール（pool_meta.parquet）の `src` の意味を、`src` �
     train_any   train_raw か train_canon か key ∈ train_structs.rawkey
     coco_raw    key ∈ COCONUT 2026-09 全件 CSV の standard_inchi_key[:14]（raw。互変異性体の別名の分は取りこぼす）
     coco_np     pool_popularity.csv の np_coconut == 1（PubChem 側の COCONUT 注記。別のデータセット）
+                （事前登録の文言。後に上流プールの印の写しで独立でないと判明 → 下の追加の確認）
     coco_any    coco_raw か coco_np
     pubchem     pool_popularity.csv の pubchem_cid がある（正の値。「無し」は −1 で書かれている）
     内部の列（独立ではない）: train_sid_ge0（train_sid >= 0）、np_likeness_notna

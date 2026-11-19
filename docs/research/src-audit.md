@@ -37,7 +37,7 @@
 
 - 入力の大きさ: プール 710,701 行（key は一意、pid = 行番号を assert）、train.parquet の inchikey14 275,810 種、train_structs 275,810 行、COCONUT CSV 738,827 行（raw キー 479,721 種、sha256 `1360a7f3…83d9da75`）、pool_popularity 710,701 行
 - train_structs.key が自前の `casmi.chem.score_key(smiles)` と同じか: 無作為 2,000 行（seed 0）で 2,000/2,000 一致
-- (a) が src 1・3 で 100% に届かない分（2,105 行・640 行）は、プールの key が正準キーで train.parquet の inchikey14 が raw キーなので、互変異性体の別名の分だけずれる（(b)・(c) は 100%）。src 2 の 22 行は、COCONUT の構造の正準キーが別の train 構造の raw キーとたまたま同じもの（(b) は 0）
+- (a) が src 1・3 で 100% に届かない分（2,105 行・640 行）は、プールの key が正準キーで train.parquet の inchikey14 が raw キーなので、互変異性体の別名の分だけずれると考えられる（未検証。(b)・(c) は 100%）。src 2 の 22 行は、COCONUT の構造の正準キーが別の train 構造の raw キーと同じになったものと考えられる（未検証。(b) は 0）
 - PubChem 層（`data/ext/pubchem_tier`、約 1.06 億行の SMILES、キーの列なし）との積は**数えていない**（未測定）
 
 ## 3. 判定
@@ -60,7 +60,7 @@
 | enveda_v1（all・keep） | 1: 200 | 1: 200 | 26,115 | 72.40% / 26.29% / 1.31% | 28.75 / 66 / 127.75 |
 
 - #155（PR の P5）の数「v3_c2n のおとりは 6.7% が src 3、v3_c1 は 72.3% が src 1」は、窓から seed 0 で 10 行ずつ抜いた値。全行では v3_c2n の src 3 は 4.48%、v3_c1 の src 1 は 74.85%。正解の内訳（v3_c1 は 200/200 が src 1、v3_c2n は 177/177 が src 3）は同じ
-- v3_c2n の正解が全部 src 3 なのは**作り方による**: `build_groups.py` 163 行が `V3.select_c2p(meta, split_hold, coco, ...)` を呼び、`select_c2p`（`build_holdout_v3.py` 56〜63 行、61 行 `cand = sorted((ok & set(allowed) & set(coconut)) - set(exclude))`）は fold 0 の hold（train 構造）と `coconut_keys()`（`build_groups.py` 128〜131 行、`src ∈ {2,3}` の key）の積を取る。train 構造で COCONUT にあるもの = src 3 なので、src 3 以外にはなりえない
+- v3_c2n の正解が全部 src 3 なのは**作り方による**: `build_groups.py` 163 行が `V3.select_c2p(meta, split_hold, coco, ...)` を呼び、`select_c2p`（`build_holdout_v3.py` 56〜63 行、61 行 `cand = sorted((ok & set(allowed) & set(coconut)) - set(exclude))`）は fold 0 の hold（train 構造）と `coconut_keys()`（`build_groups.py` 128〜131 行、`src ∈ {2,3}` の key）の積を取る。train 構造で COCONUT にあるもの = src 3 なので、作り方により src 3 になる（実測 195/195。raw キーと正準キーの差で src 2 の行が入る余地は理屈の上では残る）
 - 他の 3 集合（600 構造）の正解は全部 src 1（COCONUT に無い train 構造）。v3 の 4 集合の正解の中で COCONUT の構造は v3_c2n だけ
 
 ## 5. 追加の確認（事前登録の外）
@@ -77,7 +77,7 @@
 - **run.py（v3 の対照の縮小版）は `src` を読まない**: `load_pool` が読む列は key・smiles・mass・pid と `pool_popularity.csv` の log1p_substances・log1p_pubmed だけ（`scripts/local_eval/run.py` 72〜77 行）、frag の段は mass・formula（317 行）。`src`・np_coconut・train_sid・np_likeness を読む段は無い（`scripts/local_eval/`、`data/ext/v4g/casmi26-glacier/*.py`、`data/ext/v4g/casmi26-v3-models/code/casmi/*.py`、`data/ext/frag/*.py`、#150 のブランチの `lfus.py`・`library.py` を grep して該当 0。`scripts/` の中で `pool_meta.src` を読むのは集合を作る側の `build_groups.py`・`build_holdout_v3.py`（の呼び出し元）と、監査の `lineage_leak_audit.py`・`msg_wild_repr_check.py`・この `src_audit.py` だけ）。したがって v3_c2n の判定が `src` そのものを近道にしたことは無い。影響がありうるのは `src` と相関する別の列を通る経路だけ
 - **v3_c2n で `src` が見分けられる強さ**: 正解は全部 src 3、おとりの src 3 は 4.48%。分子ごとの「正解と同じ src のおとり」は中央値 2 行、少なくとも 4 分の 1 の分子で 0 行（窓の中で src 3 は正解だけ）。`src` と相関する特徴を持つ段は、v3_c2n では正解を当てやすく見える。他の 3 集合では正解は src 1 で、窓のおとりの約 73〜75% も src 1 なので、`src` はほぼ見分けに使えない
 - **相関しうる経路（未測定、§7 で測り方を書く）**:
-  - 0.479/0.487 系統の提出ノートブック（`kernels/lb479/notebook.ipynb` セル 17 の `_load_pop_prior`・`_score_cand`）は `NP_W * np_val`（np_val = np_coconut | np_lotus | src_natural_product）を足す。np_coconut は src ∈ {2,3} の写しなので、この項を縮小版に入れると v3_c2n では np_coconut が正解に必ず付き、src 1 のおとり（29%）にはほぼ付かない（src 1 で np_coconut = 1 は全体で 9 行）。v3_c1・v3_c2・enveda_v1 の正解は src 1 なので同じくほぼ付かない（正解の行ごとには数えていない。np_lotus・src_natural_product も数えていない）
+  - 0.479/0.487 系統の提出ノートブック（`kernels/lb479/notebook.ipynb` セル 17 の `_load_pop_prior`・`_score_cand`）は `NP_W * np_val`（np_val = np_coconut | np_lotus | src_natural_product）を足す。pool_popularity.csv の np_coconut は src ∈ {2,3} の写しなので（ノートブックが inchikey14 で引く `pool_popularity.csv` が手元の `data/ext/pop/pool_popularity.csv` と同じファイルかは確かめていない）、この項を縮小版に入れると v3_c2n では np_coconut が正解に必ず付き、src 1 のおとり（29%）にはほぼ付かない（src 1 で np_coconut = 1 は全体で 9 行）。v3_c1・v3_c2・enveda_v1 の正解は src 1 なので同じくほぼ付かない（正解の行ごとには数えていない。np_lotus・src_natural_product も数えていない）
   - 文献 prior（log1p_substances + log1p_pubmed）: pubchem_cid > 0 の率は src 1 93.76%・src 2 96.46%・src 3 98.86% で、src ごとに分布が違いうる（分布は数えていない）
   - lfus（#150）: 類縁体は train の参照の構造（sid）なので、参照の見える train 構造の候補（v3_c2n では src 1・3 のおとり、合わせて 33.55%）は自分自身が類縁体に出て T = 1 になりうる。v3_c2n の正解は参照を全部隠してあるので自分自身は出ない。lfus の −0.0387 がこの経路で出たかどうかは**未測定**（仮説）。この経路は隠れテストのクラス 2 型（正解が train に無い）でも同じ向きに働くので、v3_c2n だけの作りもの（近道）とは言えない
 - **lfus の判定は変えない**（事前登録どおり。この監査は採点していない）
@@ -94,8 +94,9 @@
 
 ## 8. 資源
 
+- 時間はどれも `/usr/bin/time` の real
 - 1 回目（ee1543a、事前登録の分）: 17.86 s、`/usr/bin/time -l` の最大 RSS 1.26 GB（1,264,664,576 B）
-- 2 回目の 1 度目（ed50070、`--coco-canon --workers 6`）: 約 3.5 分で止めた。ps で見たワーカー 6 本の RSS が各 0.37〜0.51 GB、親 1.10 GB で、合計が 3 GB を超える見込みになったため。出力は書いていない
-- 2 回目（ed50070、`--coco-canon --workers 2`）: 1,852 s、親の最大 RSS 1.33 GB、プロセス木（親＋ワーカー）の RSS の合計の最大 2.44 GB（5 秒ごとの ps の標本）。memory_pressure の空きは 68〜70%
-- 3 回目（b926ae4、pubchem の列を直した後、`--coco-canon` なし）: 16.4 s、最大 RSS 1.23 GB。表 2 と判定は 1 回目と同じ、表 1 は pubchem の列だけが変わった（src 1: 248,440 → 232,938、src 2: 436,515 → 421,081、src 3: 25,746 → 25,452）
+- 2 回目の 1 度目（ed50070、`--coco-canon --workers 6`）: 約 3.5 分で止めた。ps で見たワーカー 6 本の RSS が各 0.37〜0.51 GB、親 1.10 GB で、プロセス木の合計が約 3.3〜4.2 GB と**すでに 3 GB を超えていた**ため。出力は書いていない（`/usr/bin/time` の値は取れていない）
+- 2 回目（ed50070、`--coco-canon --workers 2`）: 1,851.99 s、親の最大 RSS 1.33 GB、プロセス木（親＋ワーカー）の RSS の合計の最大 約 2.50 GB（2,442,992 KiB、5 秒ごとの ps の標本）。memory_pressure の空きは 68〜70%
+- 3 回目（b926ae4、pubchem の列を直した後、`--coco-canon` なし）: 16.67 s、最大 RSS 1.23 GB。表 2 と判定は 1 回目と同じ、表 1 は pubchem の列だけが変わった（src 1: 248,440 → 232,938、src 2: 436,515 → 421,081、src 3: 25,746 → 25,452）
 - GPU 0。PubChem 層は読んでいない
