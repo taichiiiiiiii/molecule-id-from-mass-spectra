@@ -137,7 +137,8 @@ class ModeTable:
         return _lookup(self.a_keys, self.a_cnt, (np.int64(fam) << FAM_SHIFT) | q)
 
 
-def build_tables(rep_idx, rep_sid, rep_mode, off, mz, prec, sid_fam: np.ndarray, n_fam: int) -> dict[int, ModeTable]:
+def build_tables(rep_idx, rep_sid, rep_mode, off, mz, prec, sid_fam: np.ndarray, n_fam: int,
+                 chunk: int = 20000) -> dict[int, ModeTable]:
     """代表スペクトル（行 rep_idx、CSR の off/mz、prec）と sid → 家族 id（−1 = 骨格 None）からモードごとの表。"""
     rep_idx = np.asarray(rep_idx, np.int64)
     rep_sid = np.asarray(rep_sid, np.int64)
@@ -148,23 +149,32 @@ def build_tables(rep_idx, rep_sid, rep_mode, off, mz, prec, sid_fam: np.ndarray,
         idx, sids = rep_idx[sel], rep_sid[sel]
         o = np.argsort(sids, kind="stable")
         idx, sids = idx[o], sids[o]
-        st, ln = np.asarray(off)[idx].astype(np.int64), (np.asarray(off)[idx + 1] - np.asarray(off)[idx]).astype(np.int64)
-        tot = int(ln.sum())
-        cum = np.concatenate([[0], np.cumsum(ln)[:-1]]) if len(ln) else np.zeros(0, np.int64)
-        pos = np.repeat(st - cum, ln) + np.arange(tot)
-        row = np.repeat(np.arange(len(idx), dtype=np.int64), ln)
-        pmz = np.asarray(mz)[pos].astype(np.float64)
-        pprec = np.asarray(prec, np.float64)[idx][row]
-        fr = to_bins(pmz)
-        ls = to_bins(pprec - pmz)
-        keep = ls > 0
-        code = np.concatenate([fr + (KIND_FRAG << CODE_SHIFT), ls[keep] + (KIND_LOSS << CODE_SHIFT)])
-        rr = np.concatenate([row, row[keep]])
-        assert code.size == 0 or (code.min() >= 0 and code.max() < (1 << SPEC_SHIFT)), "code が範囲外"
-        pair = np.unique((rr << SPEC_SHIFT) | code)
+        off_a = np.asarray(off)
+        parts = []
+        for c0 in range(0, len(idx), chunk):   # メモリを抑えるため代表を chunk 本ずつ（結果は一度に作るのと同じ）
+            ci = idx[c0:c0 + chunk]
+            st, ln = off_a[ci].astype(np.int64), (off_a[ci + 1] - off_a[ci]).astype(np.int64)
+            tot = int(ln.sum())
+            cum = np.concatenate([[0], np.cumsum(ln)[:-1]]) if len(ln) else np.zeros(0, np.int64)
+            pos = np.repeat(st - cum, ln) + np.arange(tot)
+            row = np.repeat(np.arange(c0, c0 + len(ci), dtype=np.int64), ln)
+            pmz = np.asarray(mz[pos], np.float64)
+            pprec = np.asarray(prec, np.float64)[ci][row - c0]
+            fr = to_bins(pmz)
+            ls = to_bins(pprec - pmz)
+            keep = ls > 0
+            code = np.concatenate([fr + (KIND_FRAG << CODE_SHIFT), ls[keep] + (KIND_LOSS << CODE_SHIFT)])
+            rr = np.concatenate([row, row[keep]])
+            assert code.size == 0 or (code.min() >= 0 and code.max() < (1 << SPEC_SHIFT)), "code が範囲外"
+            parts.append(np.unique((rr << SPEC_SHIFT) | code))   # chunk の行は前の chunk より後なので連結しても昇順
+            del pos, row, pmz, pprec, fr, ls, keep, code, rr
+        pair = np.concatenate(parts) if parts else np.zeros(0, np.int64)
+        del parts
         prow = pair >> SPEC_SHIFT
         pcode = pair & ((1 << SPEC_SHIFT) - 1)
+        del pair
         ptr = np.searchsorted(prow, np.arange(len(idx) + 1))
+        del prow
         tables[m] = ModeTable(sids, sid_fam[sids].astype(np.int64), ptr, pcode, n_fam)
     return tables
 
@@ -362,6 +372,12 @@ def check_alignment(tr: dict, meta, st_ik14: np.ndarray, lib_ix: dict) -> dict:
     return res
 
 
+def _maxrss_gb() -> float:
+    import resource
+    r = resource.getrusage(resource.RUSAGE_SELF).ru_maxrss
+    return round(r / (1 << 30) if sys.platform == "darwin" else r / (1 << 20), 2)   # macOS はバイト、Linux は KiB
+
+
 def sha256(p: Path) -> str:
     return hashlib.sha256(Path(p).read_bytes()).hexdigest()
 
@@ -404,7 +420,9 @@ class RepContext:
         st_ik14, st_key, st_rawkey = (st[c].values.astype(object) for c in ("inchikey14", "key", "rawkey"))
         tr = read_train_cols(ROOT / "data/train.parquet")
         self.timing["read_train"] = round(time.time() - t0, 1)
+        self.timing["maxrss_gb_read_train"] = _maxrss_gb()
         lib = Library(str(workdir), verbose=True)
+        self.timing["maxrss_gb_load_library"] = _maxrss_gb()
         align = check_alignment(tr, lib.meta, st_ik14, lib_ix)
         print("[rep align]", align, flush=True)
         assert align["all_ok"], f"spec_meta と train.parquet の行が一致しない: {align}"
@@ -423,7 +441,10 @@ class RepContext:
         print("[rep audit]", audit, flush=True)
         assert audit["leak_rep_drop_keys"] == 0 and audit["leak_rep_source_keys"] == 0 and audit["leak_rep_meta_lib"] == 0, \
             f"隠すべき行が代表に混ざっている: {audit}"
+        del lk, tr_lib_meta, tr, mask   # 表を作る前に要らなくなった大きな配列を放す（メモリ）
+        lib.it = None
         self.timing["representatives"] = round(time.time() - t0, 1)
+        self.timing["maxrss_gb_representatives"] = _maxrss_gb()
         # 家族（骨格）: 代表を持つ sid だけ
         usid = np.unique(rep["sid"])
         smiles = st.smiles.values
@@ -438,9 +459,11 @@ class RepContext:
                 sid_fam[s] = self.fam_id[f]
         n_none = sum(1 for v in fam_str.values() if v is None)
         self.timing["scaffolds"] = round(time.time() - t0, 1)
+        self.timing["maxrss_gb_scaffolds"] = _maxrss_gb()
         self.tables = build_tables(rep["idx"], rep["sid"], rep["mode"], lib.off, lib.mz, lib.prec, sid_fam, len(names))
         self.timing["tables"] = round(time.time() - t0, 1)
-        del lib, tr, mask, lk, tr_lib_meta
+        self.timing["maxrss_gb_tables"] = _maxrss_gb()
+        del lib
         self.own_index = OwnIndex(st_ik14, st_key, st_rawkey)
         # pool の train_sid（Pool と同じ並び）: 補足 1 の assert
         pm = pd.read_parquet(ROOT / "data/ext/v4g/casmi26-v2-pool/pool_meta.parquet", columns=["key", "mass", "train_sid"])

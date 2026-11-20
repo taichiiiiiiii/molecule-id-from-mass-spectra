@@ -102,6 +102,19 @@ def test_i_table_counts_and_r_formula():
     assert got == pytest.approx(exp, rel=1e-12)
 
 
+def test_build_tables_chunked_is_same():
+    off, mz, prec = _csr(SPECS)
+    sid = np.array([s[0] for s in SPECS], np.int64)
+    mode = np.array([s[1] for s in SPECS], np.int8)
+    idx = np.arange(len(SPECS))
+    A = RP.build_tables(idx, sid, mode, off, mz, prec, SID_FAM, 2, chunk=1)
+    B = RP.build_tables(idx, sid, mode, off, mz, prec, SID_FAM, 2, chunk=1000)
+    for m in (1, -1):
+        for k in ("sids", "fam_of", "ptr", "codes", "c_keys", "c_cnt", "a_keys", "a_cnt", "nF"):
+            assert np.array_equal(getattr(A[m], k), getattr(B[m], k)), (m, k)
+        assert A[m].N == B[m].N
+
+
 def test_i_r_value_formula_and_two_modes():
     assert RP.r_value(2, 3, 4, 10) == pytest.approx(math.log(2.5 / 4) - math.log(4.5 / 11))
     T = _tables()
