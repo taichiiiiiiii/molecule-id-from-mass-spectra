@@ -3,7 +3,8 @@
     .venv/bin/python scripts/engine2/make_build_kernel.py --code-dir <scratch>/e2code
 出力:
 - <code-dir>/: scripts/engine2（build_tables.py・base_fs.py・eng/）、engine2_table_schema.py、drop_keys/<h>/drop_keys.txt、
-  dataset-metadata.json（taichiiiii/casmi26-engine2-build-code）
+  dataset-metadata.json（taichiiiii/casmi26-engine2-build-code）、manifest.json（#165: 全ファイルの相対パス・大きさ・sha256。
+  版を上げた後に scripts/engine2/check_dataset_listing.py で dataset の一覧 ⊇ manifest を確かめてから push する）
 - kernels/engine2_build/{trial,run1,run2}/: notebook.ipynb + kernel-metadata.json（CPU、private）。中身はセル 1 の
   N_MOL・REPEAT だけが違う（trial 50・2、run1/run2 2000・1）。run1 と run2 は notebook が同一
 - kernels/engine2_build/abcheck/: 試走と同じ 50 分子で、同じセッションの中で高速化前（channels_hidden 2 回）と
@@ -12,6 +13,7 @@
   2,000 分子 × 1 回。入力に S2 の private model（S2_MODEL、model_sources）を足す。他のノートブックは変えない（セルの文字列は置き換えで足す）
 """
 import argparse
+import hashlib
 import json
 import os
 import shutil
@@ -155,6 +157,31 @@ def nb(n_mol, repeat, ab=False, fp_source="foldsafe"):
                               language_info=dict(name="python")), nbformat=4, nbformat_minor=5)
 
 
+MANIFEST = "manifest.json"
+NOT_IN_MANIFEST = {MANIFEST, "dataset-metadata.json"}   # dataset の一覧には出ない／自分自身
+
+
+def write_manifest(cd):
+    """#165: 組み立てた code dir の全ファイル（相対パス・sha256・大きさ）を manifest.json に書く。
+    push 前に scripts/engine2/check_dataset_listing.py が dataset の一覧 ⊇ manifest を確かめる。"""
+    files = []
+    for dp, dns, fns in os.walk(cd):
+        dns[:] = sorted(d for d in dns if d != "__pycache__")
+        for fn in sorted(fns):
+            p = os.path.join(dp, fn)
+            rel = os.path.relpath(p, cd).replace(os.sep, "/")
+            if rel in NOT_IN_MANIFEST:
+                continue
+            with open(p, "rb") as fh:
+                b = fh.read()
+            files.append(dict(path=rel, size=len(b), sha256=hashlib.sha256(b).hexdigest()))
+    files.sort(key=lambda f: f["path"])
+    man = dict(dataset=CODE_SLUG, files=files)
+    with open(os.path.join(cd, MANIFEST), "w") as fh:
+        json.dump(man, fh, indent=1)
+    return man
+
+
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--code-dir", required=True)
@@ -173,6 +200,8 @@ def main():
         shutil.copy2(os.path.join(ROOT, "data", "holdouts", h, "drop_keys.txt"), os.path.join(cd, "drop_keys", h))
     json.dump(dict(title="casmi26 engine2 build code", id=CODE_SLUG, licenses=[dict(name="other")]),
               open(os.path.join(cd, "dataset-metadata.json"), "w"), indent=1)
+    man = write_manifest(cd)
+    print("manifest", len(man["files"]), "files", sum(f["size"] for f in man["files"]), "B")
     todo = ([(k, (*v, False, "foldsafe")) for k, v in KERNELS.items()] + [(k, (*v, True, "foldsafe")) for k, v in AB_KERNELS.items()]
             + [(k, (*v, False, "s2")) for k, v in S2_KERNELS.items()])
     for name, (n_mol, rep, ab, fps) in todo:
