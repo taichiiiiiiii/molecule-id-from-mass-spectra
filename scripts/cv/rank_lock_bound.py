@@ -38,6 +38,12 @@ def lock_bound(rr: list[float], lock: int) -> dict:
                 gain_sum=round(gain, 4), gain_bound=round(gain / n, 4) if n else None)
 
 
+def best_case(ctrl: dict, lock: int) -> dict:
+    """最善の場合の新しい rr: 動かせる分子（0 < rr < 1/(lock+1)）を 1/(lock+1) にし、ほかは変えない。"""
+    best = 1.0 / (lock + 1)
+    return {m: (best if 0 < x < best else x) for m, x in ctrl.items()}
+
+
 def main() -> None:
     ap = argparse.ArgumentParser()
     ap.add_argument("--lock", type=int, default=2)
@@ -46,7 +52,6 @@ def main() -> None:
     import mrr25
     sys.path.insert(0, str(ROOT / "scripts/ranker"))
     from train_eval import bootstrap_diff
-    best = 1.0 / (args.lock + 1)
     res = {}
     for h in HOLDOUTS:
         truth = mrr25.read_truth(ROOT / f"outputs/holdouts/{h}/truth.csv")
@@ -54,8 +59,7 @@ def main() -> None:
         ctrl = {m: mrr25.reciprocal_rank(mrr25.to_key(s), pred.get(m, [])) for m, s in truth.items()}
         rr = [ctrl[m] for m in sorted(ctrl)]
         res[h] = lock_bound(rr, args.lock)
-        new = {m: (best if 0 < x < best else x) for m, x in ctrl.items()}
-        res[h]["best_case_ci"] = bootstrap_diff(new, ctrl)
+        res[h]["best_case_ci"] = bootstrap_diff(best_case(ctrl, args.lock), ctrl)
         res[h]["mrr_ctrl"] = round(sum(rr) / len(rr), 4)
     Path(args.out).write_text(json.dumps(res, ensure_ascii=False, indent=1) + "\n")
     for h, r in res.items():

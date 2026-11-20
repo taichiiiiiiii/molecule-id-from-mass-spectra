@@ -95,7 +95,7 @@ Issue #174。計画 2026-11-20 昼 項目 4（カード t_e44c0174）。親 #3�
 - 時間の見込み（**どれも未検証**）:
   - pool・queries: RDKit の組成式を 27 万構造＋負例の表で数える。数十分の見込み
   - features: 約 26.6 万問い合わせ × 約 18 候補（4,670,052 候補）を fragfeat で特徴にする。1 候補あたりの時間の記録は公開物に無い（features の summary.json は provenance の sha256 だけ）。**1〜5 h（6 プロセス）と幅が広く、`--n-train 2000 --n-val 200` の試走で測る必要がある**
-  - train: 作者の RTX 4070 Ti SUPER で 3,182 s（14〜23 step/s）。MPS の速さは分からない。以前の FPNet では M4 Pro の MPS が Kaggle T4 の 0.15 倍だったが、FR はモデルが小さく（768k パラメータ）index_add_ が多いので同じ比は当てはまらない見込み。**1〜10 h の幅で、短い実データの試走（1 epoch の一部、5 分）で測る必要がある**。GPU 3,182 s からの換算は未検証
+  - train: 作者の RTX 4070 Ti SUPER で 3,182 s（平均 15.0 step/s、step 行の中央値 21.95、遅い区間あり。§1.1）。MPS の速さは分からない。以前の FPNet では M4 Pro の MPS が Kaggle T4 の 0.15 倍だったが、FR はモデルが小さく（768k パラメータ）index_add_ が多いので同じ比は当てはまらない見込み。**1〜10 h の幅で、短い実データの試走（1 epoch の一部、5 分）で測る必要がある**。GPU 3,182 s からの換算は未検証
 - メモリの見込み（未検証）: 特徴の store が RAM に 10.3 GB。`model.Store` は shard を全部 `np.load` してから `np.concatenate` するので、読み込みのときに一時的に約 2 倍（〜20 GB）になる見込み。共用の Mac では、shard を memmap で持つ小さな包み（上流のファイルは変えず、Store を継承した自前のクラス）にする必要がある見込み。GPU 側は CUDA のピークが 1.893 GB（fp32 + TF32）なので、MPS でも数 GB の見込み。**features 段は `pq.read_table(TRAIN, columns=[ms2_mzs, ms2_normalized_intensities, …])` で train の全行のピークを読んでから `take` する**。train.parquet を全部読むと約 33 GB（作業ルール `kanban_card_rules.md` の資源の決まり、全列のとき）。ピークの 2 列だけの大きさは未測定だが、ファイルの大半はピークなので 10 GB を大きく超える見込み（未検証）。row group ごとに読んで要る行だけ残す包みが要る
 - 重いジョブの規則（memory_pressure の関門、1 本だけ、他のプロジェクトの GPU 使用の確認）に従う。M1（#167）の本番が終わってから
 
