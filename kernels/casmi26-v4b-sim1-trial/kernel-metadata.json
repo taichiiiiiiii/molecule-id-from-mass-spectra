@@ -1,0 +1,25 @@
+{
+  "id": "taichiiiii/casmi26-v4b-sim1-trial",
+  "title": "casmi26 v4b sim1 trial",
+  "code_file": "notebook.ipynb",
+  "language": "python",
+  "kernel_type": "notebook",
+  "is_private": true,
+  "enable_gpu": true,
+  "enable_tpu": false,
+  "enable_internet": true,
+  "keywords": [
+    "gpu",
+    "chemistry"
+  ],
+  "dataset_sources": [
+    "ahmedberatozer/casmi26-training-code",
+    "ahmedberatozer/casmi26-spec-cache",
+    "ahmedberatozer/casmi26-v2-pool",
+    "ahmedberatozer/casmi26-v4b-models"
+  ],
+  "kernel_sources": [],
+  "competition_sources": [],
+  "model_sources": [],
+  "machine_shape": "NvidiaTeslaT4"
+}
