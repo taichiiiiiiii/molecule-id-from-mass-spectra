@@ -101,4 +101,4 @@ os.replace(tmp, p)
 print(json.dumps(d, ensure_ascii=False))
 PYEOF
 done
-echo "全 5 集合の rep_once.done が揃った（commit $SHA）"
+echo "全 5 集合の rep_once.done が揃った（commit ${SHA}）"
