@@ -149,3 +149,63 @@ def test_comment_body_complete_and_unreadable():
 def test_issue_is_required():
     with pytest.raises(SystemExit):
         PK.main(["--kernel", "u/k", "--log", "/dev/null"])
+
+
+# ---- 提出の採点結果の見張り（#164） ----
+SUBHDR = "ref,fileName,date,description,status,publicScore,privateScore\r\n"
+
+
+def _subcsv(rows):
+    return SUBHDR + "".join(f"{r},submission.csv,2026-11-20 05:00:00.000000,d {r},{s},{p},\r\n" for r, s, p in rows)
+
+
+@pytest.mark.parametrize("rows,ref,want,pub", [
+    ([("111", "SubmissionStatus.COMPLETE", "0.495")], "111", "COMPLETE", 0.495),
+    ([("111", "SubmissionStatus.PENDING", "")], "111", "PENDING", None),
+    ([("111", "SubmissionStatus.ERROR", "")], "111", "ERROR", None),
+    ([("222", "SubmissionStatus.COMPLETE", "0.487")], "111", "NOTFOUND", None),
+    ([("111", "SubmissionStatus.COMPLETE", "")], "111", "UNREADABLE", None),
+    ([("111", "SubmissionStatus.WEIRD", "")], "111", "UNREADABLE", None),
+])
+def test_parse_submission(rows, ref, want, pub):
+    st, p, row = PK.parse_submission(_subcsv(rows), ref)
+    assert st == want and p == pub
+
+
+@pytest.mark.parametrize("text", ["", "  ", "Authentication required. Please run kaggle auth login",
+                                  "401 Client Error: Unauthorized", "ref,fileName\r\n111,x\r\n"])
+def test_parse_submission_unreadable(text):
+    assert PK.parse_submission(text, "111")[0] == "UNREADABLE"
+
+
+def test_parse_submission_picks_ref_among_many():
+    t = _subcsv([("333", "SubmissionStatus.PENDING", ""), ("111", "SubmissionStatus.COMPLETE", "0.480")])
+    st, p, row = PK.parse_submission(t, "111")
+    assert (st, p, row["ref"]) == ("COMPLETE", 0.480, "111")
+
+
+def test_band_reading():
+    assert "床として採用" in PK.band_reading(0.495, 0.490)
+    assert "床として採用" in PK.band_reading(0.490, 0.490)
+    r = PK.band_reading(0.487, 0.490)
+    assert "再現しない" in r and "追加の提出なし" in r
+    assert PK.band_reading(None, 0.490) is None
+
+
+def test_submission_body(tmp_path):
+    row = dict(ref="111", date="2026-11-20", description="#164 床", status="SubmissionStatus.COMPLETE", publicScore="0.495")
+    b = PK.submission_body("111", "COMPLETE", 0.495, 0.490, row, "t", ["t0 PENDING", "t1 COMPLETE"], 164)
+    p = PK.write_body(str(tmp_path / "s.md"), b)
+    s = open(p).read()
+    assert "**COMPLETE**" in s and "0.495 ≥ 0.490 → 床として採用" in s and "#164" in s and "読んだ回数 2" in s
+    e = PK.submission_body("111", "ERROR", None, 0.490, None, "t", ["t0"], 164)
+    assert "**ERROR**" in e and "帯は読めない" in e
+    u = PK.submission_body("111", "UNREADABLE", None, 0.490, None, "t", ["a"] * 4, 164)
+    assert "4 回続けて" in u
+
+
+def test_submission_args_required():
+    with pytest.raises(SystemExit):
+        PK.main(["submission", "--ref", "1", "--log", "/dev/null", "--line", "0.49"])
+    with pytest.raises(SystemExit):
+        PK.main(["submission", "--ref", "1", "--issue", "164", "--log", "/dev/null"])
