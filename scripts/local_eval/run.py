@@ -200,6 +200,10 @@ def check_stages(stages: list[str]) -> None:
     assert len(fn) <= 1, "fragnn と fragnnblind は同時に使えない（#120 は別々に 1 回ずつ採点する）"
     bad = [s for s in stages if fn and s not in FRAGNN_ALLOWED and s not in FRAGNN_STAGES]
     assert not bad, f"{fn} は {bad} と併用できない（#120 の範囲外。使えるのは {FRAGNN_ALLOWED}）"
+    # rep>> #171: rep を使うのは score,prior,rep,frag だけ（他の段との併用・prior 無しを止める）
+    import rep as RP
+    RP.check_stages_rep(stages)
+    # <<rep
 
 
 # ---------------------------------------------------------------- 段 2b: sanpier（#60、等重み）
@@ -343,6 +347,12 @@ def run(holdout: str, stages: list[str], logits_run: str | None = None) -> dict:
                         nbz_s_median=round(float(np.median([p[2] for p in pairs])), 4) if pairs else None,
                         nbz_crosscheck_101=nbz_crosscheck(pairs, ROOT / f"outputs/local_eval/query_network_{holdout}.json"),
                         nbz_connected=sorted(nbz_z))
+    # rep>> #171: 印・代表・混入の検査・表を集合ごとに 1 回（scripts/local_eval/rep.py）
+    rep_ctx = None
+    if "rep" in stages:
+        import rep as RP
+        rep_ctx = RP.RepContext(holdout, pool, spectra, ROOT / f"outputs/holdouts/{holdout}/truth.csv")
+    # <<rep
     lists = {}
     for mid in truth:
         if mid not in targets:
@@ -350,12 +360,20 @@ def run(holdout: str, stages: list[str], logits_run: str | None = None) -> dict:
         idx = visible_window(pool, targets[mid], hidden)
         z = nbz_z[mid] if mid in nbz_z else zf[mid]
         rows = score_window(idx, pool, stage_z(z, zbar), fpc)
+        # rep>> #171: 窓の全候補の rep の点（§5 用の npz にも書く）
+        if rep_ctx is not None:
+            rep_ctx.score_window_rows(mid, [i for _, i in rows])
+        # <<rep
         if "sanpier" in stages:
             rows = sanpier_mix(rows, nscores[mid])
         if fragnn_stage:   # #120: score の直後、prior・frag の前（npz に分子が無ければ KeyError で止まる）
             rows = sanpier_mix(rows, fscores[mid])
         if "prior" in stages:
             rows = rerank_with_prior(rows, pool)
+        # rep>> #171: prior の後・frag の前。z(prior 後の点) + z(rep)
+        if rep_ctx is not None:
+            rows = rep_ctx.mix(mid, rows)
+        # <<rep
         if "frag" in stages:
             rows = frag_rerank(rows, pool, spectra.get(mid, []), frag, fuse, fcache, formula_of)
         lists[mid] = dedup(rows, pool, TOPN)
@@ -434,6 +452,10 @@ def run(holdout: str, stages: list[str], logits_run: str | None = None) -> dict:
         res.update(pmi_n_queries=len(zf.files) - 1, pmi_zbar_mean=round(float(zbar.mean()), 4), pmi_zbar_std=round(float(zbar.std()), 4))
     res.update(nbz_diag)   # #103: nbz の組の数・つながりのある分子（記録用）
     res.update(fragnn_diag)   # #120: 読んだ npz のパスと sha256（記録用）
+    # rep>> #171: 窓全体の点の npz と記録
+    if rep_ctx is not None:
+        res.update(rep_ctx.finish(out_dir))
+    # <<rep
     (out_dir / f"result_{tag}.json").write_text(json.dumps(res, indent=2))
     return res
 
