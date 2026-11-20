@@ -13,7 +13,7 @@ Issue #174。計画 2026-11-20 昼 項目 4（カード t_e44c0174）。親 #3�
 3. `taeyangg4/casmi26-extlib-gnps-full`（https://www.kaggle.com/datasets/taeyangg4/casmi26-extlib-gnps-full 、版 1、CC BY-NC-SA 4.0）: `BUILD.json`・`SHA256SUMS`・`ext_meta.parquet` を取得（sha256 は SHA256SUMS と一致、確認）。`kaggle datasets metadata` の description を全文読んだ
 4. `heliosli/casmi26-0-496-public-demo`（https://www.kaggle.com/code/heliosli/casmi26-0-496-public-demo 、`kaggle kernels pull -m`、ノート sha256 `87068208…`、30 セル〈コード 21〉）: kernel-metadata は全部、各セルは先頭のコメントと設定行を読んだ（セル 8 の 529 KB の埋め込みは読んでいない）。追加の 6 dataset は `kaggle datasets files`（全ページ）と metadata の description を読み、小さいファイル（`public_demo_manifest.json` 6 本、`joint-ranker/README.md`、`rt-np/README.md`、`m5-v2d/m5_manifest.json`、`rr-v3/rr3_config.json`）だけ取得
 5. 0.495 原本 `taeyangg4/casmi26-lb-0-495-network-fr-p5-tail`（pull し直し、sha256 `82a14431…` で #164 と一致、確認）: kernel-metadata とセル 35（FR 3-25）の先頭のコメントと式の行
-6. ディスカッション（`kaggle competitions topics show <slug>/<id> --format json`。この API は話題の本文を返さず、題とコメントだけ）: 757307（コメント 5 件を全部）、760376・760397（コメント 0）、745228（コメント 1）。話題の一覧 131 件のうち取得できたもの（§1.3）のコメントを taeyang・structdb・fr3to25・fr_train・extlib-gnps・pool_chemistry・MULTIPLEX で検索
+6. ディスカッション（`kaggle competitions topics show <slug>/<id> --format json`。この API は話題の本文を返さず、題とコメントだけ）: 757307（コメント 5 件を全部）、760376・760397（コメント 0）、745228（コメント 1）、746430（FRIGID の重み）。話題の一覧 174 件すべてのコメント（487 件）を語で検索（§1.3）
 7. この repo: `docs/research/final-repro-inventory.md`（R1〜R15 の主催者の答えの番号はここに合わせる）、`outputs/local_eval/net_mde.json`（`scripts/cv/net_mde.py`）、Issue #171 の採否の規則、今回の `scripts/cv/rank_lock_bound.py`
 
 ## 1. FR 3-25 の学習の入力（fr3to25-clean）
@@ -39,7 +39,7 @@ Issue #174。計画 2026-11-20 昼 項目 4（カード t_e44c0174）。親 #3�
 - taeyangg4 の dataset 一覧（`kaggle datasets list --user taeyangg4`、10 件。CASMI は fr3to25-clean と extlib-gnps-full の 2 件だけ）、ノート一覧（`kaggle kernels list --user taeyangg4`、17 件。CASMI は 0.495 原本だけ）
 - fr3to25-clean の 10 ファイル、0.495 原本のセル 35 のコメント（「Appended … by scripts/build_fr325_clean_v1.py (cell template fr3to25_cell_clean_v1.py 1.0.0)」とある。この 2 つのスクリプトも公開物には見つからない）
 - `kaggle datasets list -s fr-reranker`（4 件: agentili・taeyangg4・boomvector の frozen assets・無関係の 1 件。boomvector は中身を見ていない）
-- ディスカッション: 話題 131 件の一覧のうちコメントを取得して検索できたのは一部（API の 429 で残りを取り直した数は Issue #174 に書く）。taeyang の名のコメントと structdb・fr3to25・fr_train・pool_chemistry を含むコメントは**見つからない**。見つかった関係のあるものは 757307 の 기욱 이（2026-11-19）の質問（§2.3）だけ
+- ディスカッション: 話題の一覧 9 ページ・**174 件すべて**のコメント（487 件、2026-11-20 13:5x JST に取得）を、taeyang（投稿者名・本文）・structdb・fr3to25・fr_train・extlib-gnps・FR 3-25・pool_chemistry・MULTIPLEX・fr-reranker・FRNet で検索した。taeyang が書いた話題・コメントと、structdb・fr3to25・fr_train・pool_chemistry を含むコメントは**見つからない**。FR の入力に関係のあるものは 757307 の 기욱 이（2026-11-19）の質問（§2.3）だけ。API は話題の本文を返さないので、話題の本文は検索していない
 
 ### 1.4 判定
 - **FR 3-25 の重みは「学習コードあり・入力 6 のうち 3 が公開物に見つからない」**。R7（756893、2026-11-16「public weights are fine to load only if the code and permitted data that produced them are available, so the weights can be regenerated」）に照らすと、入力 2〜4 が出るまで「重みを作り直せる」は満たされない読み。0.495 写しを最終の自前の枠に使わない（#164 のとおり）判断は変わらない
@@ -78,7 +78,7 @@ Issue #174。計画 2026-11-20 昼 項目 4（カード t_e44c0174）。親 #3�
 ### 3.2 増えた部品の分類（6 個すべて「構造」。生成コードの有無は dataset のファイル一覧で判定）
 **最重要: 6 個とも学習済みの重みが入っていない。** 各 dataset の `public_demo_manifest.json` は `"competition_weights": false`、`"note": "This version does not contain the model weights used for the 0.494 score."`、description は「Private learned parameters are replaced with initialized demo weights (the joint ranker uses a synthetic fit). Self-tests validate this demo version only」（確認、6 本とも同じ趣旨）。`rr3_config.json` は `"chosen": "public_demo_random_initialization"`。だから **今の公開版を写しても、heliosli の部品は乱数の初期値か合成の当てはめで動く**。題名の 0.496 がどの版・どの重みで出た値かは確かめられない（未確認）
 1. `casmi26-rr-v3`（CC BY-NC-SA 4.0、200 MB）: 同じ組成式の異性体の並べ替え器（1〜2 結合切断の断片とピークの一致、グラフ網＋transformer、`fs0_lean_plain.pt` の符号化器）。セル 24、FREEZE（train の構造の候補は位置を動かさない）、lib_max ≥ 0.9 の分子は触らない。**構造（学習したモデル）**。生成コード: 推論・データ・モデルのコード（`rr_data.py`・`rr_model.py`・`rr_frag.py` ほか）はあるが、学習スクリプトは一覧に見つからない
-2. `casmi26-frigid-e1`（other、1.6 GB）: FRIGID（de novo 生成、上流の `frigid_src/dlm`・`mist`）＋ E1 指紋、2 枚目の T4 で背景に回し、条件付きで 2 位に入れる（セル 11・28）。**構造（新しい候補源）**。生成コード: 上流のモデルコードと wheel はあるが、E1 の学習スクリプトは見つからない。`DLM.ckpt`（1.3 GB）は置き換え一覧に無い（上流の重みかは未確認）
+2. `casmi26-frigid-e1`（other、1.6 GB）: FRIGID（de novo 生成、上流の `frigid_src/dlm`・`mist`）＋ E1 指紋、2 枚目の T4 で背景に回し、条件付きで 2 位に入れる（セル 11・28）。**構造（新しい候補源）**。生成コード: 上流のモデルコードと wheel はあるが、E1 の学習スクリプトは見つからない。`DLM.ckpt`（1.3 GB）は置き換え一覧に無い（上流の重みかは未確認）。主催者は 746430（Marie Killian 2026-10-13）で「the official FRIGID checkpoints are allowed … but must provide the original training code and access to the permitted training data needed to reproduce the weights」と答えている（確認）。E1 は公式の FRIGID の重みではない（heliosli の学習、demo に置き換え済み）
 3. `casmi26-joint-ranker`（other、8 KB）: LightGBM lambdarank（`joint_scn.txt`）で PubChem 層＋天然物の表の同組成式の候補を並べ、1 位を見直す（セル 26、CV-JOINT、margin ≥ 2.66 で 1 位を入れ替え）。**構造（学習したランカー）**。生成コード: 見つからない（モデルの txt と特徴の json だけ）
 4. `casmi26-m5-v2d`（CC0-1.0、85 MB）: M2・M3（5 fold）・ICE-T（ms-pred の ICEBERG 系の fullT）でリストの中の異性体を判定（セル 27・29、M5_MODE swap）。**構造（学習したモデル）**。生成コード: **あり**（`isomer/train_m2.py`・`isomer/m3_fit_v2.py`、ms-pred の train スクリプト群）。ただし重みは demo
 5. `casmi26-pxv2-deploy`（CC0-1.0、35 MB）: PX v2（joint の上位 20 を joint + 1.0 × z で再採点、セル 26 の中）。**構造（学習したモデル）**。生成コード: 推論・データ・モデルのコードだけ、学習スクリプトは見つからない
