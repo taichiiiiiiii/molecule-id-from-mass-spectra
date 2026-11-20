@@ -22,7 +22,7 @@ Issue #174。計画 2026-11-20 昼 項目 4（カード t_e44c0174）。親 #3�
 - 学習スクリプト `fr_train_clean_v1.py` 1.0.0（sha256 `ea363ad5…`、SHA256SUMS・provenance の `script_sha256` と一致）。5 段: `pool`（CPU）→ `queries`（CPU）→ `features`（CPU、6 プロセス）→ `verify` → `train`（GPU）
 - 問い合わせ: train の構造ごとに 1 つ（metric InChIKey-14）、1 つの ingest_lib から k 本（k は見える test の分布 `K_P` で 1〜8）。train 254,971・val 10,812（構造の 4% を `sha256(seed:key)` で val）。候補 = 正解 + 同じ組成式の負例 16（Tanimoto 上位 8 + 乱択）+ ±0.02 Da の別組成式 4。train の候補 4,480,060・val 189,992、`val_masked_leak` 0
 - 学習: FRNet（d 128、5 層、767,942 パラメータ）、listwise 損失、AdamW lr 5e-4・wd 1e-4、bq 64、12 epoch（47,808 step、warmup 500、cosine）、seed 20261113。best epoch 9、val group MRR 0.8892（最終 epoch は 0.8871）、最後の train_sub_mrr 0.924
-- **GPU は Kaggle ではなく作者の手元の NVIDIA GeForce RTX 4070 Ti SUPER**（`info.gpu`、メモリの上限 5.5 GB に固定、ピーク 1.893 GB）。学習 3,182.5 s、ログの速さ 14〜23 step/s。特徴の store は 10,265,459,856 B（RAM、読み込み 146 s）
+- **GPU は Kaggle ではなく作者の手元の NVIDIA GeForce RTX 4070 Ti SUPER**（`info.gpu`、メモリの上限 5.5 GB に固定、ピーク 1.893 GB）。学習 3,182.5 s（47,808 step なので平均 15.0 step/s）。ログの step 行 239 本の速さは中央値 21.95 step/s（最小 1.24・最大 203.4）、step 8400〜12400 の 20 本は 7 step/s 未満で、遅い区間がある（理由は書かれていない）。特徴の store は 10,265,459,856 B（RAM、読み込み 146 s）
 - 決定性: 「seeded … CUDA index_add_ atomics and TF32 make runs close but not bit-identical」（provenance の記載、主張）
 
 ### 1.2 入力の一覧（n = 6、スクリプトの `WHITELIST` で sha256 を assert する固定の入力。これ以外は読まないとスクリプトと SOURCE.md が書く）
@@ -38,8 +38,8 @@ Issue #174。計画 2026-11-20 昼 項目 4（カード t_e44c0174）。親 #3�
 ### 1.3 探した場所（「無い」ではなく「ここには見つからない」）
 - taeyangg4 の dataset 一覧（`kaggle datasets list --user taeyangg4`、10 件。CASMI は fr3to25-clean と extlib-gnps-full の 2 件だけ）、ノート一覧（`kaggle kernels list --user taeyangg4`、17 件。CASMI は 0.495 原本だけ）
 - fr3to25-clean の 10 ファイル、0.495 原本のセル 35 のコメント（「Appended … by scripts/build_fr325_clean_v1.py (cell template fr3to25_cell_clean_v1.py 1.0.0)」とある。この 2 つのスクリプトも公開物には見つからない）
-- `kaggle datasets list -s fr-reranker`（4 件: agentili・taeyangg4・boomvector の frozen assets・無関係の 1 件。boomvector は中身を見ていない）
-- ディスカッション: 話題の一覧 9 ページ・**174 件すべて**のコメント（487 件、2026-11-20 13:5x JST に取得）を、taeyang（投稿者名・本文）・structdb・fr3to25・fr_train・extlib-gnps・FR 3-25・pool_chemistry・MULTIPLEX・fr-reranker・FRNet で検索した。taeyang が書いた話題・コメントと、structdb・fr3to25・fr_train・pool_chemistry を含むコメントは**見つからない**。FR の入力に関係のあるものは 757307 の 기욱 이（2026-11-19）の質問（§2.3）だけ。API は話題の本文を返さないので、話題の本文は検索していない
+- `kaggle datasets list -s fr-reranker`（4 件: agentili・taeyangg4・`boomvector/casmi-2026-reranker-frozen-assets`・無関係の 1 件）。boomvector はファイル一覧（ランカーの重み・`known_metric_keys.parquet`・報告の json など）を見て、structure_keys・structdb・pool_chemistry の名のファイルが無いことを確かめた（中身は読んでいない）
+- ディスカッション: 話題の一覧 9 ページ・**174 件すべて**のコメント（487 件、2026-11-20 13:5x JST に取得）を、taeyang（投稿者名・本文）・structdb・fr3to25・fr_train・extlib-gnps・FR 3-25・pool_chemistry・MULTIPLEX・fr-reranker・FRNet で検索した。taeyang が書いた話題・コメントと、structdb・fr3to25・fr_train・pool_chemistry を含むコメントは**見つからない**。FR の入力に関係するコメントは 0 件。当たったのは extlib に関係する 757307 の 기욱 이（2026-11-19、MULTIPLEX の語）の質問（§2.3）だけ（ほかに FRIGID の語で 746430 など、§3.2 で使う）。API は話題の本文を返さないので、話題の本文は検索していない
 
 ### 1.4 判定
 - **FR 3-25 の重みは「学習コードあり・入力 6 のうち 3 が公開物に見つからない」**。R7（756893、2026-11-16「public weights are fine to load only if the code and permitted data that produced them are available, so the weights can be regenerated」）に照らすと、入力 2〜4 が出るまで「重みを作り直せる」は満たされない読み。0.495 写しを最終の自前の枠に使わない（#164 のとおり）判断は変わらない
@@ -51,7 +51,7 @@ Issue #174。計画 2026-11-20 昼 項目 4（カード t_e44c0174）。親 #3�
 - 198,581 行・147,414 構造。列は inchikey14・normalized_smiles・adduct・ionization_mode・instrument_type・precursor_mz・source_library・source_id・licence の 9 つ
 - **194,652 行が GNPS MULTIPLEX-SYNTHESIS-LIBRARY-ALL**（ext_meta では PARTITION-1〜6 に分かれ、合計が BUILD.json の 194,652 と一致）。licence は全行「GNPS library (CC0 for deposited spectra); propagated-type library」。(inchikey14, adduct) ごとに最大 1 行（確認。description の「one spectrum per InChIKey-14 and adduct」と合う）
 - 残り 3,929 行は GNPS2 の各ライブラリ・MassBank・MS2DeepScore の訓練スペクトル・MSnLib・MoNA・MassSpecGym など。licence 列は全行「per source library (data/external/*/SOURCE.md)」で、**その SOURCE.md は dataset に無い**ので、この 3,929 行の行ごとのライセンスはファイルからは分からない
-- source_id: CCMSLIB（GNPS の accession）197,466 行、MSBNK 1,004、MSnLibID 50、MoNA 30 ほか。空は 0。**同じ accession が 2 行に出るものが 1,680 個（3,360 行）**: 1,679 個は同じ構造・同じ precursor で adduct の書き方だけ違う（例 `[M+H-2H2O]+` と `[M-2H2O+H]+`）、1 個は `[M-H]-` と `[M+H]+`（gnps2:SUMNER と ms2deepscore の両方から入った行）
+- source_id: CCMSLIB（GNPS の accession）197,466 行、MSBNK 1,004、MSnLibID 50、MoNA 30 ほか。空は 0。**同じ source_id が 2 行に出るものが 1,680 個（3,360 行）**: ① MULTIPLEX の 1,675 個は同じ構造・同じ precursor で adduct の書き方だけ違う（`[M+H-2H2O]+` と `[M-2H2O+H]+`）、② MassBank:BS の 4 個（MSBNK-BS-…）は `[M+HCOO]-` と `[M-H]-` で adduct そのものが違うのに precursor_mz が同じ値、③ 1 個（CCMSLIB00004683499）は gnps2:SUMNER の `[M-H]-` と ms2deepscore の `[M+H]+` で、後者は ionization_mode が negative なのに adduct が正イオン（矛盾）。組み直すときは adduct の書き方の正規化と、②③の扱いを決める必要がある
 - 装置: Orbitrap 系がほとんど（LC-ESI-Orbitrap 196,075 行）。CASMI 2012 の記録が 1 行（ms2deepscore の正例 `MSBNK-CASMI_2012-SMI00142`）
 - ピーク: `ext_mz`・`ext_in` は float32 [N,128]、m/z 昇順、sqrt(強度/最大)、0 詰め（BUILD.json の format）。**128 本の選び方（強度の上位か）と前処理は書かれていない**（未確認）
 
@@ -76,7 +76,7 @@ Issue #174。計画 2026-11-20 昼 項目 4（カード t_e44c0174）。親 #3�
 - つまり **0.496 は 0.495 の上に足したものではなく別の系統**。セル 0 の題は「LB 0.477 · Two 0.472 Fixes, Merged the Right Way」で、土台は busyaprime / Roman Tamrazov（Spectral Parallax）系の 0.477 ノート（v4g の資産の上）。その後ろに heliosli のセル 11・23〜29 が足されている
 
 ### 3.2 増えた部品の分類（6 個すべて「構造」。生成コードの有無は dataset のファイル一覧で判定）
-**最重要: 6 個とも学習済みの重みが入っていない。** 各 dataset の `public_demo_manifest.json` は `"competition_weights": false`、`"note": "This version does not contain the model weights used for the 0.494 score."`、description は「Private learned parameters are replaced with initialized demo weights (the joint ranker uses a synthetic fit). Self-tests validate this demo version only」（確認、6 本とも同じ趣旨）。`rr3_config.json` は `"chosen": "public_demo_random_initialization"`。だから **今の公開版を写しても、heliosli の部品は乱数の初期値か合成の当てはめで動く**。題名の 0.496 がどの版・どの重みで出た値かは確かめられない（未確認）
+**最重要: 競技で学習した重み（0.494 の重み）は 6 個とも入っていない（manifest・description の主張）。** 各 dataset の `public_demo_manifest.json` は `"competition_weights": false`、`"note": "This version does not contain the model weights used for the 0.494 score."`、description は「It is not a reproduction package for the 0.494 leaderboard result and has no claimed leaderboard score」「Private learned parameters are replaced with initialized demo weights (the joint ranker uses a synthetic fit). Self-tests validate this demo version only」（確認、6 本とも同じ文）。同じ description に「upstream public assets are retained」ともあり、置き換えの一覧に無い大きな重み（frigid-e1 の `DLM.ckpt`、m5-v2d の fullT の `gen.pt`・`inten.pt`）は上流の公開の重みの可能性がある（未確認）。`rr3_config.json` は `"chosen": "public_demo_random_initialization"`。だから **今の公開版を写しても、heliosli が競技で学習した部品（置き換えの一覧のもの）は乱数の初期値か合成の当てはめで動く**。題名の 0.496 がどの版・どの重みで出た値かは確かめられない（未確認）
 1. `casmi26-rr-v3`（CC BY-NC-SA 4.0、200 MB）: 同じ組成式の異性体の並べ替え器（1〜2 結合切断の断片とピークの一致、グラフ網＋transformer、`fs0_lean_plain.pt` の符号化器）。セル 24、FREEZE（train の構造の候補は位置を動かさない）、lib_max ≥ 0.9 の分子は触らない。**構造（学習したモデル）**。生成コード: 推論・データ・モデルのコード（`rr_data.py`・`rr_model.py`・`rr_frag.py` ほか）はあるが、学習スクリプトは一覧に見つからない
 2. `casmi26-frigid-e1`（other、1.6 GB）: FRIGID（de novo 生成、上流の `frigid_src/dlm`・`mist`）＋ E1 指紋、2 枚目の T4 で背景に回し、条件付きで 2 位に入れる（セル 11・28）。**構造（新しい候補源）**。生成コード: 上流のモデルコードと wheel はあるが、E1 の学習スクリプトは見つからない。`DLM.ckpt`（1.3 GB）は置き換え一覧に無い（上流の重みかは未確認）。主催者は 746430（Marie Killian 2026-10-13）で「the official FRIGID checkpoints are allowed … but must provide the original training code and access to the permitted training data needed to reproduce the weights」と答えている（確認）。`e1.ckpt` は manifest の置き換え一覧にあり demo の重み（確認）。元の E1 が誰の学習かは未確認
 3. `casmi26-joint-ranker`（other、8 KB）: LightGBM lambdarank（`joint_scn.txt`）で PubChem 層＋天然物の表の同組成式の候補を並べ、1 位を見直す（セル 26、CV-JOINT、margin ≥ 2.66 で 1 位を入れ替え）。**構造（学習したランカー）**。生成コード: 見つからない（モデルの txt と特徴の json だけ）
@@ -96,7 +96,7 @@ Issue #174。計画 2026-11-20 昼 項目 4（カード t_e44c0174）。親 #3�
   - pool・queries: RDKit の組成式を 27 万構造＋負例の表で数える。数十分の見込み
   - features: 約 26.6 万問い合わせ × 約 18 候補（4,670,052 候補）を fragfeat で特徴にする。1 候補あたりの時間の記録は公開物に無い（features の summary.json は provenance の sha256 だけ）。**1〜5 h（6 プロセス）と幅が広く、`--n-train 2000 --n-val 200` の試走で測る必要がある**
   - train: 作者の RTX 4070 Ti SUPER で 3,182 s（14〜23 step/s）。MPS の速さは分からない。以前の FPNet では M4 Pro の MPS が Kaggle T4 の 0.15 倍だったが、FR はモデルが小さく（768k パラメータ）index_add_ が多いので同じ比は当てはまらない見込み。**1〜10 h の幅で、短い実データの試走（1 epoch の一部、5 分）で測る必要がある**。GPU 3,182 s からの換算は未検証
-- メモリの見込み（未検証）: 特徴の store が RAM に 10.3 GB。`model.Store` は shard を全部 `np.load` してから `np.concatenate` するので、読み込みのときに一時的に約 2 倍（〜20 GB）になる見込み。共用の Mac では、shard を memmap で持つ小さな包み（上流のファイルは変えず、Store を継承した自前のクラス）にする必要がある見込み。GPU 側は CUDA のピークが 1.893 GB（fp32 + TF32）なので、MPS でも数 GB の見込み。**features 段は `pq.read_table(TRAIN, columns=[ms2_mzs, ms2_normalized_intensities, …])` で train の全行のピークを読んでから `take` する**ので、そのままだと約 30 GB を超える見込み（`data/train.parquet` の全ピークは約 33 GB、casmi26.md）。row group ごとに読んで要る行だけ残す包みが要る
+- メモリの見込み（未検証）: 特徴の store が RAM に 10.3 GB。`model.Store` は shard を全部 `np.load` してから `np.concatenate` するので、読み込みのときに一時的に約 2 倍（〜20 GB）になる見込み。共用の Mac では、shard を memmap で持つ小さな包み（上流のファイルは変えず、Store を継承した自前のクラス）にする必要がある見込み。GPU 側は CUDA のピークが 1.893 GB（fp32 + TF32）なので、MPS でも数 GB の見込み。**features 段は `pq.read_table(TRAIN, columns=[ms2_mzs, ms2_normalized_intensities, …])` で train の全行のピークを読んでから `take` する**。train.parquet を全部読むと約 33 GB（作業ルール `kanban_card_rules.md` の資源の決まり、全列のとき）。ピークの 2 列だけの大きさは未測定だが、ファイルの大半はピークなので 10 GB を大きく超える見込み（未検証）。row group ごとに読んで要る行だけ残す包みが要る
 - 重いジョブの規則（memory_pressure の関門、1 本だけ、他のプロジェクトの GPU 使用の確認）に従う。M1（#167）の本番が終わってから
 
 ### (b) v3 で測る fold-safe 版
@@ -113,7 +113,7 @@ Issue #174。計画 2026-11-20 昼 項目 4（カード t_e44c0174）。親 #3�
 
 ### 5.2 採否の規則（事前登録の案。Issue #171 と同じ形）
 - 対照 `score,prior,frag`（v3_c1 0.8535 / v3_c2 0.0000 / enveda_v1 0.8376 / v3_c2n 0.6284、n 200/200/200/195）。新しい並べ替え器なので、(答えの出所 × 参照の有無) の 4 集合 **すべて**で測る: v3_c1（正解はプールにある・参照は他の装置だけ）、v3_c2（正解がプールに無い）、enveda_v1（正解の参照を隠す）、v3_c2n（正解はプールにある・参照なし）
-- **採用 ⇔ 4 集合すべてで「新 − 対照」の 95% 区間（分子ブートストラップ 2,000 回、seed 0）の下限 ≥ −0.02、かつ少なくとも 1 集合で下限 > 0**。集合が 1 つでも欠ければコードが採用を拒む。v3_c2 は並べ替えだけの段なので rr が全部 0 を assert。C1（v3_c1）と C2（v3_c2）を必ず書く
+- **採用 ⇔ 4 集合すべてで「新 − 対照」の 95% 区間（分子ブートストラップ 2,000 回、seed 0、`scripts/ranker/train_eval.bootstrap_diff`、返る 4 桁に丸めた lo で判定＝ #171 と同じ）の下限 ≥ −0.02、かつ少なくとも 1 集合で下限 > 0**。集合が 1 つでも欠ければコードが採用を拒む。v3_c2 は並べ替えだけの段なので rr が全部 0 を assert。C1（v3_c1）と C2（v3_c2）を必ず書く
 - 集合ごとの MDE（`outputs/local_eval/net_mde.json`、2.8·sd(Δrr)/√n、既にある変種の最小・中央値・最大）: v3_c1 0.0176 / 0.0324 / 0.0434、v3_c2 定義できない（対照が全部 0）、enveda_v1 0.0175 / 0.0321 / 0.0401、v3_c2n 0.0171 / 0.0428 / 0.0538
 
 ### 5.3 届く伸びの上限（`scripts/cv/rank_lock_bound.py`、確認）
@@ -124,13 +124,13 @@ Issue #174。計画 2026-11-20 昼 項目 4（カード t_e44c0174）。親 #3�
 - v3_c2n: 動かせる分子 32、上限 **0.0298**（MDE の最小 0.0171 と中央値 0.0428 の間）
 - 照合: 同じスクリプトの `--lock 1` は `net_mde.json` の `gain_sum_lock1`（v3_c1 3.2917）、`--lock 0` は `gain_sum_unlocked`（26.2917）と一致（確認）
 
-**読み**: 原本どおりの置き場所（3〜25 位）では、v3_c1・enveda_v1 は上限そのものが MDE より小さく、決まるのは v3_c2n だけ。採否の規則の「少なくとも 1 集合で下限 > 0」は v3_c2n でしか満たしようがない。0.495 の盤面では 3 位以下に正解がある分子がもっと多い可能性がある（縮小版の対照は 1・2 位に正解が多い）ので、**v3 で FR 3-25 を測っても「決まらない」になる見込みが高い**。次の計画の選択肢（どれを採るかはこの調査では決めない）:
+**読み**: 原本どおりの置き場所（3〜25 位）では、v3_c1・enveda_v1 は上限そのものが既存の変種の MDE より小さいので、伸びを検出するのは難しい見込み。ただし MDE は既存の変種の sd(Δrr) からの計画用の目安で、少数の分子を一方向にだけ動かす段には当てはまらない。最善の場合（v3_c1 で動かせる 5 分子が全部 3 位に上がり、他は変わらない）を採否と同じ `bootstrap_diff`（2,000 回・seed 0）に通すと 95% 区間は [0.0007, 0.0085]、enveda_v1 の 8 分子では [0.0023, 0.0119]、v3_c2n の 32 分子では [0.0204, 0.0404]（`rank_lock_bound.py` の `best_case_ci`。独立レビューの指摘を受けて足した）で、負の側（3 位の正解が下がる）が無ければ下限 > 0 にはなり得る。実際には 3 位の正解が下がる分子が出うるので、v3_c1・enveda_v1 で下限 > 0 になる見込みは低い。0.495 の盤面では 3 位以下に正解がある分子がもっと多い可能性がある（縮小版の対照は 1・2 位に正解が多い）ので、**v3 で FR 3-25 を測っても「決まらない」になる見込みが高い**。次の計画の選択肢（どれを採るかはこの調査では決めない）:
 - (i) FR を縮小版の別の置き場所（prior の後の上位 60 に z(fr) を等重みで足す＝ rep・lfus と同じ位置、1 位の固定なし）で測る。上限は lock 0 で v3_c1 0.1315・enveda_v1 0.1274・v3_c2n 0.2434 と大きい。ただしこれは 0.495 の FR 3-25 とは別の使い方（新しい構造）として事前登録する
 - (ii) v3 では測らず、(a) で作り直した FR の重みを 0.495 床の FR の重みと入れ替える診断提出（帯は Public の SE ≈ 0.035 から、間は「決まらない」）で、再現性の置き換えとして読む
 
 ## 6. まとめ（受け入れ条件との対応）
 - FR の学習の入力: 6 個。確認 3（train.parquet・fragfeat.py・model.py）、見つからない 3（structure_keys・structdb_v1・pool_chemistry。探した場所は §1.3）。自前の写しで入力 2〜4 を許可データから作り直す道は成り立つ見込み
 - extlib: MULTIPLEX 194,652 行は accession で選び直せる。ピークの前処理と残り 3,929 行の行ごとのライセンスが穴。GNPS-NIST14-MATCHES 117 行は除く案（R11 は文が切れていて、760376 に答えが無い）
-- heliosli 0.496: 0.495 の上ではなく 0.477 系の別系統。増えた 6 部品はすべて構造（学習したモデル 5・新しい候補源 1）で、**どれも競技で学習した重みが入っていない demo 版**。学習コードがあるのは m5 だけ
+- heliosli 0.496: 0.495 の上ではなく 0.477 系の別系統。増えた 6 部品はすべて構造（学習したモデル 5・新しい候補源 1）で、**どれも競技で学習した重み（0.494 の重み）が入っていない demo 版**（上流の公開の重みは残っている可能性あり）。学習コードがあるのは m5 だけ
 - 学習の見積もり: (a) features 1〜5 h・train 1〜10 h・RAM 10〜20 GB（どれも未検証、試走で測る）、(b) その約 0.8 倍
 - v3 の 4 集合の規則と MDE は §5.2、原本の置き場所の上限は §5.3（v3_c1 0.0040・enveda_v1 0.0065・v3_c2n 0.0298・v3_c2 0）
