@@ -145,7 +145,9 @@ def main(argv=None):
         cj = [p for p in glob.glob(os.path.join(a.fetch_dir, "**", "check.json"), recursive=True)]
         if cj:
             check = open(cj[0]).read()
-        logs = sorted(glob.glob(os.path.join(a.fetch_dir, "*.log")))
+        # カーネル自体のログ（<slug>.log）を先に、無ければ他の *.log（build.log など）
+        own = os.path.join(a.fetch_dir, a.kernel.split("/")[-1] + ".log")
+        logs = ([own] if os.path.isfile(own) else []) + sorted(p for p in glob.glob(os.path.join(a.fetch_dir, "*.log")) if p != own)
         if state in ("ERROR", "CANCEL"):
             tail = log_tail(open(logs[0]).read()) if logs else "（ログを取り出せなかった）"
     elif state in ("ERROR", "CANCEL"):
