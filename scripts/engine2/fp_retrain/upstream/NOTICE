@@ -1,0 +1,62 @@
+CASMI legacy-v2 original and reconstructed campaign source
+Copyright 2026 cubres
+
+The owner makes ONLY the following 29 source-file paths, relative to this
+reproduction/legacy-v2 directory, available under the Apache License, Version 2.0.
+The complete license text is in LICENSE-SOURCE. Exact reviewed source hashes,
+header findings and provenance categories are recorded in SOURCE_LICENSE_AUDIT.json.
+
+  public_source/build_coconut.py
+  public_source/build_dataset.py
+  public_source/build_fps.py
+  public_source/build_pool.py
+  public_source/demo_preparation_synthetic.py
+  public_source/fpmodel.py
+  public_source/prepare_legacy_exports.py
+  public_source/speclib.py
+  public_source/train_fp.py
+  full_fingerprint_lineage/build_clean_full_fingerprints.py
+  checkpoint_lineage/deterministic_training_launcher.py
+  checkpoint_lineage/original_sources/fpmodel.py
+  checkpoint_lineage/original_sources/train_fp3.py
+  checkpoint_lineage/original_sources/train_fp4.py
+  ranker_lineage/original_sources/build_dataset.py
+  ranker_lineage/original_sources/build_fps.py
+  ranker_lineage/original_sources/casmi_core.py
+  ranker_lineage/original_sources/fpmodel.py
+  ranker_lineage/original_sources/hard_logits_combo.py
+  ranker_lineage/original_sources/hard_logits_m1.py
+  ranker_lineage/original_sources/make_ranker3.py
+  ranker_lineage/original_sources/model_logits_hard.py
+  ranker_lineage/original_sources/rankfeat.py
+  ranker_lineage/original_sources/score_model.py
+  ranker_lineage/original_sources/train_fp.py
+  ranker_lineage/original_sources/train_fp3.py
+  ranker_lineage/ORIGINAL_LOCAL_RANKER_FIT_EXCERPT.txt
+  ranker_lineage/original_sources/engine.py
+  ranker_lineage/original_sources/speclib.py
+
+The original file bytes, source headers, method descriptions, historical comments
+and any existing attribution notices remain unchanged. The FPNet header's
+"CSI:FingerID-style" description and its m/z embedding docstring crediting
+"Voronov et al." are retained as method context. These credits do not imply that
+third-party implementation code is included. This grant does not grant rights
+to CSI:FingerID, SIRIUS, Voronov et al. implementations, or other third-party code,
+data, dependency, patent or trademark beyond rights actually licensable under
+Apache License 2.0 by the contributing copyright owner.
+
+This notice does not license external dependencies or inputs, candidate structures,
+spectra, role assignments, model weights, caches, third-party notebooks, other
+repository files, or the thirteen unlisted documentation/metadata/dependency-list
+files from the reviewed legacy release. Imported library implementations retain
+their own licenses. No repository-wide or upstream-data license is inferred.
+
+Three listed sources are new campaign reconstruction/demo/recipe code, not
+recovered historical launchers: public_source/prepare_legacy_exports.py,
+public_source/demo_preparation_synthetic.py, and
+checkpoint_lineage/deterministic_training_launcher.py. The listed ranker TXT file
+is an exact source excerpt; source comments are not newly verified score claims.
+
+LICENSE-SOURCE is the unmodified official Apache License 2.0 text:
+https://www.apache.org/licenses/LICENSE-2.0.txt
+SHA256: cfc7749b96f63bd31c3c42b5c471bf756814053e847c10f3eb003417bc523d30
