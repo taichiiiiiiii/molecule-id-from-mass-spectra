@@ -411,9 +411,9 @@ class RepContext:
             assert dk_sha == E180_DROP_SHA256, f"e180_c2k の drop_keys.txt が事前登録と違う: {dk_sha}"
             man_sha = None
         else:
-            man_sha = json.loads(man.read_text())["after"]["sha256"] if man.is_file() else None
-            if man_sha is not None:
-                assert dk_sha == man_sha, "drop_keys.txt が drop_keys_manifest.json の after.sha256 と違う"
+            assert man.is_file(), f"drop_keys_manifest.json が無い: {man}"   # 補足 1-5(1)
+            man_sha = json.loads(man.read_text())["after"]["sha256"]
+            assert dk_sha == man_sha, "drop_keys.txt が drop_keys_manifest.json の after.sha256 と違う"
         lib_ix = lib_ix_from_build(ROOT / "data/casmi26-fpnet-code/casmi/build.py")
         st = pd.read_parquet(workdir / "train_structs.parquet", columns=["inchikey14", "key", "rawkey", "smiles", "sid"])
         assert (st.sid.values == np.arange(len(st))).all(), "train_structs の sid が行の番号でない"
