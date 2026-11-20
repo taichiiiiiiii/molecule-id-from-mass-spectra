@@ -296,3 +296,19 @@ def test_run_order_rep_after_prior_before_frag():
     i_frag = loop.index("rows = frag_rerank(")
     assert loop.index("rows = score_window(") < i_win < i_prior < i_rep < i_frag
 
+
+# ---------------------------------------------------------------- 1 回だけの起動スクリプト（#171 §4、レビュー記録の決めごと 1・2）
+def test_run_rep_once_script_shape():
+    import subprocess
+    p = ROOT / "scripts/local_eval/run_rep_once.sh"
+    src = p.read_text()
+    assert subprocess.run(["bash", "-n", str(p)]).returncode == 0
+    assert "SETS=(v3_c1 v3_c2 enveda_v1 v3_c2n e180_c2k)" in src
+    # python を memguard に直接渡す（間に何も挟まない）
+    assert 'MIN_FREE_PCT=15 /bin/bash "$MEMGUARD" "$log" "${cmd[@]}"' in src
+    assert 'cmd=("$PY" scripts/local_eval/run.py --holdout "$h" --stages score,prior,rep,frag)' in src
+    assert 'cmd=("$PY" scripts/local_eval/rep.py window --holdout "$h")' in src
+    for bad in ("uv run", "caffeinate", "bash -c", "env "):
+        assert bad not in src.split("set -u", 1)[1]
+    assert 'if [ -e "$done_f" ]' in src and "rep_once.done" in src
+    assert 'if [ "$rc" -ne 0 ]' in src and "exit 3" in src
