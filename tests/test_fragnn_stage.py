@@ -131,7 +131,7 @@ def test_fragnn_mix_is_sanpier_mix_and_nan_rules():
 
 def test_run_source_applies_fragnn_after_score_before_prior():
     src = (ROOT / "scripts/local_eval/run.py").read_text()
-    a = src.index("rows = score_window(idx, pool, stage_z(z, zbar), fpc)")
+    a = src.index("rows = (cos_window if \"cos\" in stages else score_window)(idx, pool, stage_z(z, zbar), fpc)")   # #140 で cos を足した
     b = src.index("rows = sanpier_mix(rows, fscores[mid])")
     c = src.index("rows = rerank_with_prior(rows, pool)")
     assert a < b < c
