@@ -5,6 +5,7 @@ SearchCfg の既定値）で、問い合わせスペクトルと候補の参照�
 from __future__ import annotations
 
 import json
+import os
 import sys
 from pathlib import Path
 
@@ -14,8 +15,8 @@ import pyarrow as pa
 import pyarrow.compute as pc
 import pyarrow.parquet as pq
 
-ROOT = Path(__file__).resolve().parents[2]
-sys.path.insert(0, str(ROOT / "data/ext/v4g/casmi26-v3-models/code"))
+ROOT = Path(os.environ.get("LOCAL_EVAL_ROOT", Path(__file__).resolve().parents[2]))   # #150: run.py と同じ
+sys.path.insert(0, os.environ.get("CASMI_CODE", str(ROOT / "data/ext/v4g/casmi26-v3-models/code")))
 ENVEDA = {"enveda-180", "enveda-np-examples"}
 
 
