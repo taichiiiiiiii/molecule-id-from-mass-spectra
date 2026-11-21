@@ -101,6 +101,10 @@ def test_notebook_compiles_and_passes_only_fixed_args(session):
     # self-check and rehearsal gate the training
     assert main.index("raise SystemExit('self-check failed") < main.index("r = run_train(RUN, extra, LOG)")
     assert main.index("raise SystemExit('rehearsal failed") < main.index("r = run_train(RUN, extra, LOG)")
+    # outputs and the report are written before the informational log summary, which cannot abort the cell
+    assert main.index("write_report()                            # outputs") < main.index("ns['summarize'](text")
+    assert "except Exception as e:\n    REPORT['summary_error'] = repr(e)" in main
+    assert "REPORT['status'] = 'nonfinite_stop'" in main
     assert mk.push_size(nb) < 1_000_000
 
 

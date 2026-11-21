@@ -376,6 +376,7 @@ def test_notebook_two_sessions_on_fake_kaggle(tmp_path):
     out2 = tmp_path / "out2"
     rep2 = run(2, out2, inp2, 10.5)
     assert rep2["status"] == "ok" and rep2["resumed_from"]["step"] == rep1["resume_step"]
+    assert rep2["final_step"] == N and rep2["nonfinite"] is False and "summary" in rep2 and "summary_error" not in rep2
     assert rep2["resumed_from"]["resume_sha256"] == rep1["resume_sha256"]
     assert (out2 / "fpnet_final.pt").exists() and not (out2 / "fpnet_resume.pt").exists()
     fin = torch.load(out2 / "fpnet_final.pt", weights_only=False)

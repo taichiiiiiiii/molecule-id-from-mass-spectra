@@ -280,11 +280,11 @@ r = run_train(RUN, extra, LOG)
 text = r['text']; print(text[-3000:])
 REPORT['command'] = r['cmd']; REPORT['returncode'] = r['returncode']; REPORT['seconds_train_process'] = r['seconds']
 REPORT['peak'] = r['peak']
-ns = {}
-exec(compile(REPORT_SRC, 'fpnet_full_report', 'exec'), ns)
-REPORT['summary'] = ns['summarize'](text, r['start_sec'])
 done, sdone = 'ALL_DONE' in text, 'SESSION_DONE' in text
-if r['returncode'] == 0 and done:
+REPORT['nonfinite'] = 'non-finite loss at step' in text      # kit: breaks, then final eval + ALL_DONE (unchanged)
+if r['returncode'] == 0 and done and REPORT['nonfinite']:
+    REPORT['status'] = 'nonfinite_stop'
+elif r['returncode'] == 0 and done:
     REPORT['status'] = 'ok'
 elif r['returncode'] == 0 and sdone and (RUN / 'fpnet_resume.pt').exists():
     REPORT['status'] = 'session_done'
@@ -301,6 +301,16 @@ if REPORT['status'] == 'session_done':
     ck = torch.load(OUT / 'fpnet_resume.pt', map_location='cpu', weights_only=False)
     REPORT['resume_sha256'] = REPORT.pop('fpnet_resume_sha256'); REPORT['resume_step'] = ck['step']
     REPORT['resume_lr'] = ck['lr']; REPORT['resume_elapsed_s'] = ck['elapsed']; del ck
+if (OUT / 'fpnet_final.pt').exists():
+    import torch
+    REPORT['final_step'] = torch.load(OUT / 'fpnet_final.pt', map_location='cpu', weights_only=False)['step']
+write_report()                            # outputs and status are on disk before the (informational) log summary
+try:
+    ns = {}
+    exec(compile(REPORT_SRC, 'fpnet_full_report', 'exec'), ns)
+    REPORT['summary'] = ns['summarize'](text, r['start_sec'])
+except Exception as e:
+    REPORT['summary_error'] = repr(e)
 shutil.rmtree(CODE, ignore_errors=True); shutil.rmtree(OUT / 'numba_cache', ignore_errors=True)
 shutil.rmtree(RUN, ignore_errors=True)   # work/ = symlinks only; .pt files were copied to /kaggle/working above
 write_report()
