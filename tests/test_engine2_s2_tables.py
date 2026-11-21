@@ -78,7 +78,7 @@ def test_i_s2_logits_builds_engine_inputs(monkeypatch):
     assert all(np.array_equal(a, c) and np.array_equal(b, d) for (a, b), (c, d) in zip(seen["specs"], ref_specs))
     assert seen["prec"].dtype == np.float32 and np.array_equal(seen["prec"], L["prec"][rows].astype(np.float32))
     assert seen["adduct"] == list(add[rows].astype(str)) and seen["instr"] == ["Orbitrap"] * len(rows)
-    assert np.array_equal(seen["ce"], np.array([E.parse_ce(v) for v in meta["ce"][rows]], np.float32))
+    assert np.array_equal(seen["ce"], np.array([BT.s2_ce(v) for v in meta["ce"][rows]], np.float32))   # #180
     assert np.array_equal(seen["mode"], np.where(L["pol"][rows] == 1, 1.0, -1.0))
 
 

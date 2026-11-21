@@ -395,18 +395,33 @@ def load_s2(model_path, dev="cpu"):
     return single, merged, nbits
 
 
+S2_CE_MISSING = 25.0   # #180: S2 の学習（train_fp3.py 65 行）は CE の欠け（spec.npz の −1）を 25.0 にする。それに合わせる
+
+
+def s2_ce(v):
+    """S2 に渡す 1 スペクトルの CE。E.parse_ce の値が非有限（CE が None・[None]・[nan] など）なら、学習と同じ 25.0。
+    parse_ce(None) は例外にならず nan を返すので、そのまま渡すとモデル入力 ce/100 が nan になり全ビット NaN になる（#180）。"""
+    c = base_fs.engine().parse_ce(v)
+    return float(c) if np.isfinite(c) else S2_CE_MISSING
+
+
 def s2_logits(models, L, meta, rows, add):
     """1 分子の S2 のロジット。推論の casmi_engine.compute_channels と同じ入力の作り方（specs は query_specs、
-    prec は float32、adduct・instrument_type は文字列、ce は parse_ce、mode は ±1）で pv_fp.molecule_logits。
-    models = (single, merged, dev)。merged が空なら single の各スペクトルの平均だけ。"""
-    E = base_fs.engine()
+    prec は float32、adduct・instrument_type は文字列、ce は parse_ce〈非有限なら学習と同じ 25.0、s2_ce〉、mode は ±1）で
+    pv_fp.molecule_logits。models = (single, merged, dev)。merged が空なら single の各スペクトルの平均だけ。"""
+    E = base_fs.engine()  # noqa: F841  （eng/ を sys.path に置く）
     import pv_fp
     specs = query_specs(L, rows)
     modes = np.where(np.asarray(meta["mode"][rows]) == "positive", 1.0, -1.0)
-    ces = np.array([E.parse_ce(v) for v in meta["ce"][rows]], np.float32)
+    ces = np.array([s2_ce(v) for v in meta["ce"][rows]], np.float32)
+    assert np.isfinite(ces).all(), f"S2 に渡す CE に非有限: {ces[~np.isfinite(ces)][:5]}"
     z = pv_fp.molecule_logits(models, specs, L["prec"][rows].astype(np.float32), list(np.asarray(add, dtype=str)),
                               list(np.asarray(meta["instr"][rows], dtype=str)), ces, modes)
-    return None if z is None else np.asarray(z, np.float32)
+    if z is None:
+        return None
+    z = np.asarray(z, np.float32)
+    assert np.isfinite(z).all(), f"S2 のロジットに非有限: {int((~np.isfinite(z)).sum())} / {z.size} ビット"
+    return z
 
 
 def sha256(path):
@@ -508,6 +523,8 @@ def build(E, L, meta, I, queries, fold, banks, bits, workers, log=print, raw=Non
                 zcache[(s, ik)] = dict(z=z, rows=rows, add=add, k=k)
         if z is None:
             rep["dropped_no_logits"] += 1; continue
+        if fp_source == "s2":                   # #180: 表の行（rank_train の FP 12 列）を作る前に止める
+            assert np.isfinite(np.asarray(z, np.float32)).all(), f"S2 のロジットに非有限: {s} {ik}"
         if channels_impl == "pair":
             ch1, ch2 = channels_pair(E, L, I, query_specs(L, rows), L["prec"][rows].astype(np.float64), modes, target,
                                      rows, truth_rows, p, truth_rows)
@@ -583,6 +600,7 @@ def save_logits(out, zl, tag=""):
     os.makedirs(out, exist_ok=True)
     path = os.path.join(out, f"own_fp_logits{tag}.npz")
     Z = np.stack([np.asarray(z, np.float32) for *_, z in zl]) if zl else np.zeros((0, 0), np.float32)
+    assert np.isfinite(Z).all(), f"own_fp_logits の Z に非有限: {int((~np.isfinite(Z).all(1)).sum())} 分子"   # #180
     np.savez(path, Z=Z, set=np.array([x[0] for x in zl], dtype="U16"), ik=np.array([x[1] for x in zl], dtype="U32"),
              fold=np.array([x[2] for x in zl], np.int8))
     return path
