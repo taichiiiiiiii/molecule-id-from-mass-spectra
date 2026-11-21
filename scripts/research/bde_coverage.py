@@ -97,6 +97,9 @@ TABLES = {
     "bdedb2_single": parse_keys(
         "C-H C-C C-N H-N C-O H-O C-S C-F N-O N-N N-S C-Cl H-S C-I O-P C-P O-O O-S H-P N-P Br-C Cl-N F-N F-S"),
 }
+# T1+T5（1 回目の測定〈commit d5d3592〉の後に足した組み合わせ。docs §3.2）: 値は T1 を先に引き、T1 に無いキーだけ
+# T5 の組ごとの代表値を使う。キーは和集合（T1 に足されるのは N-S・O-S の 2 つ）
+TABLES["openstax_plus_bdedb2"] = TABLES["openstax_t7_2"] | TABLES["bdedb2_single"]
 
 
 def bond_key(bond, mode: str):

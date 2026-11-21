@@ -20,7 +20,8 @@ def test_table_sizes_are_fixed():
     # 出典の表から数えた項目数（docs/research/bde-table-source.md §1）。キーを足し引きしたら落ちる
     assert {k: len(v) for k, v in B.TABLES.items()} == {
         "openstax_t7_2": 68, "wikipedia_bde": 13, "huheey_libretexts": 58,
-        "metfrag_default_keys": 76, "bdedb2_single": 24}
+        "metfrag_default_keys": 76, "bdedb2_single": 24, "openstax_plus_bdedb2": 70}
+    assert B.TABLES["openstax_plus_bdedb2"] - B.TABLES["openstax_t7_2"] == {("N", "S", 1), ("O", "S", 1)}
     assert all(o in (1, 2, 3) for t in B.TABLES.values() for _, _, o in t)
 
 
