@@ -1,7 +1,10 @@
 """Issue #82: 全 train の FPNet を作り直すカーネルの生成と、ログからの外挿。"""
+import hashlib
 import json
 import sys
 from pathlib import Path
+
+import pytest
 
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "scripts/train"))
@@ -62,23 +65,43 @@ def test_session_limit_over_11h():
     assert e["one_session"] is False and abs(e["total_hours"] - 12) < 1e-9
 
 
-def test_notebook_compiles_and_passes_only_fixed_args():
-    nb = mk.build_notebook(mk.SMOKE_STEPS)
+HYPER_FLAGS = ("--bs", "--lr", "--wd", "--warmup", "--merge_p", "--w_bce", "--w_el", "--workers", "--seed", "--layers",
+               "--d'", "--eval_every", "--tag", "--bias_init", "--segment_minutes", "--smoke_steps", "--eval_groups")
+
+
+@pytest.mark.parametrize("session", [1, 2])
+def test_notebook_compiles_and_passes_only_fixed_args(session):
+    nb = mk.build_notebook(session)
     src = [c["source"] for c in nb["cells"] if c["cell_type"] == "code"]
     for s in src:
         compile(s, "cell", "exec")
     ns = {}
     exec(src[0], ns)
-    assert ns["SMOKE_STEPS"] == 2000 and ns["PROD_STEPS"] == 82855
-    assert ns["FIXED_ARGS"] == ["--holdout", "", "--hours", "1000"]
-    compile(ns["REPORT_SRC"], "report", "exec")
+    assert ns["SESSION"] == session and ns["PROD_STEPS"] == 82855 and ns["SESSION_HOURS"] == 10.5
+    assert ns["FIXED_ARGS"] == ["--holdout", "", "--hours", "1000", "--max_steps", "82855"]
+    for k in ("REPORT_SRC", "MAKE_T4_SRC", "FR_SRC"):
+        compile(ns[k], k, "exec")
+    # the embedded derivation reproduces the committed train_fpnet_t4.py from the kit file
+    g = {"__name__": "make_t4"}
+    exec(compile(ns["MAKE_T4_SRC"], "make_t4", "exec"), g)
+    t4 = g["derive"]((ROOT / "scripts/train/fpnet_kit/train_fpnet_orig.py").read_bytes().decode())
+    assert hashlib.sha256(t4.encode()).hexdigest() == ns["T4_SHA"]
+    assert hashlib.sha256(ns["FR_SRC"].encode()).hexdigest() == ns["FR_SHA"]
     main = src[1]
-    for flag in ("--bs", "--lr", "--wd", "--warmup", "--merge_p", "--w_bce", "--w_el", "--workers", "--seed", "--layers",
-                 "--d'", "--eval_every", "--tag", "--bias_init", "--segment_minutes", "--smoke_steps"):
-        assert flag not in main, flag
-    assert "'--max_steps', str(STEPS)" in main
+    # kit hyper-parameter flags appear only in the rehearsal line (--seed 1 --tag rehearsal), never for production
+    lines = [l for l in main.splitlines() if not l.lstrip().startswith("#") and any(f in l for f in HYPER_FLAGS)]
+    assert lines == ["common = ['--seed', '1', '--tag', 'rehearsal', '--session_hours', str(REHEARSAL_HOURS)]"], lines
+    assert "extra = ['--session_hours', str(SESSION_HOURS)]" in main
+    assert "extra += ['--session', str(SESSION), '--resume_from', str(RUN / 'fpnet_resume.pt')]" in main
+    assert "r = run_train(RUN, extra, LOG)" in main
     assert "check_inputs" not in main          # no hand-made gate json
-    assert mk.build_notebook(0)["cells"][1]["source"].startswith("SMOKE_STEPS = 0")
+    # rehearsal lives outside /kaggle/working and is deleted before production
+    assert "REH = Path('/tmp/fpnet_rehearsal')" in main
+    assert main.index("shutil.rmtree(REH, ignore_errors=True)\nlog('REHEARSAL'") < main.index("r = run_train(RUN, extra, LOG)")
+    # self-check and rehearsal gate the training
+    assert main.index("raise SystemExit('self-check failed") < main.index("r = run_train(RUN, extra, LOG)")
+    assert main.index("raise SystemExit('rehearsal failed") < main.index("r = run_train(RUN, extra, LOG)")
+    assert mk.push_size(nb) < 1_000_000
 
 
 def test_expected_hashes_match_issue_table():
@@ -89,14 +112,19 @@ def test_expected_hashes_match_issue_table():
     assert all(len(v) == 64 for v in e.values())
     assert set(mk.WORK_LINKS) == {"spec_off.npy", "spec_mz.npy", "spec_it.npy", "spec_meta.parquet", "split.parquet",
                                   "train_structs.parquet", "pool_meta.parquet", "pool_fp.npy", "fp_bits.npy"}
-    md = mk.metadata()
-    assert md["is_private"] and md["enable_gpu"] and md["id"] == mk.SLUG
-    assert sorted(md["dataset_sources"]) == sorted({s for s, _ in mk.WORK_LINKS.values()} |
-                                                   {"ahmedberatozer/casmi26-v4b-models"})
+    for session in (1, 2):
+        md = mk.metadata(session)
+        assert md["is_private"] and md["enable_gpu"] and md["machine_shape"] == "NvidiaTeslaT4"
+        assert sorted(md["dataset_sources"]) == sorted({s for s, _ in mk.WORK_LINKS.values()} |
+                                                       {"ahmedberatozer/casmi26-v4b-models"})
+    assert mk.metadata(1)["id"] == mk.SLUG_S1 and mk.metadata(1)["kernel_sources"] == []
+    assert mk.metadata(2)["id"] == mk.SLUG_S2 and mk.metadata(2)["kernel_sources"] == [mk.SLUG_S1]
+    assert mk.metadata(2)["title"] == "casmi26 fpnet full train s2"
 
 
-def test_committed_kernel_matches_generator():
-    kdir = ROOT / "kernels/fpnet_full_train"
+@pytest.mark.parametrize("session", [1, 2])
+def test_committed_kernel_matches_generator(session):
+    kdir = mk.kernel_dir(session)
     nb = json.loads((kdir / "notebook.ipynb").read_text())
-    assert nb == json.loads(json.dumps(mk.build_notebook(mk.SMOKE_STEPS)))
-    assert json.loads((kdir / "kernel-metadata.json").read_text()) == mk.metadata()
+    assert nb == json.loads(json.dumps(mk.build_notebook(session)))
+    assert json.loads((kdir / "kernel-metadata.json").read_text()) == mk.metadata(session)
