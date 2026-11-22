@@ -16,6 +16,7 @@
     python scripts/eda/mass_error_adduct.py train
     python scripts/eda/mass_error_adduct.py frag
     python scripts/eda/mass_error_adduct.py holdouts
+    python scripts/eda/mass_error_adduct.py width      # §5-3 の案の窓の半幅（train.json と holdouts.json から）
 
 純粋な関数（CI でテストする）は rdkit・casmi を import しない。
 """
@@ -445,11 +446,43 @@ def phase_holdouts() -> dict:
     return out
 
 
+def molecule_half_width(instr, adduct, table: dict) -> float:
+    """§5-3 の案（#195 A11 の 99% 点の幅）: 分子のスペクトルの（装置, 付加イオン）の組ごとの |ppm| 99% 点の最大値。
+    組が表に無ければその装置の「その他」、それも無ければ nan。"""
+    vals = []
+    for i, a in zip(instr, adduct):
+        v = table.get((str(i), str(a)), table.get((str(i), "その他")))
+        if v is not None:
+            vals.append(float(v))
+    return max(vals) if vals else float("nan")
+
+
+def phase_width() -> dict:
+    """§5-3 の案の窓の半幅を、v3 の 4 集合の分子ごとに出す（採点はしない）。"""
+    import pandas as pd
+    t = json.loads((OUT / "train.json").read_text())
+    table = {(r["instrument"], r["adduct"]): r["abs_p99"] for r in t["by_instrument_adduct"]}
+    h = json.loads((OUT / "holdouts.json").read_text())
+    res = dict(issue=ISSUE, rule="分子の（装置, 付加イオン）の組の train |ppm| 99% 点の最大値", sets={})
+    for name in HOLDOUTS:
+        te = pd.read_parquet(ROOT / f"data/holdouts/{name}/test.parquet", columns=["molecule_id", "instrument_type", "adduct"])
+        hw = {m: molecule_half_width(sub.instrument_type, sub.adduct, table) for m, sub in te.groupby("molecule_id")}
+        v = np.array(list(hw.values()), np.float64)
+        outm = {r["molecule_id"]: r["ppm"] for r in h["sets"][name]["a12_molecules"]["rows"]}
+        res["sets"][name] = dict(n=int(len(v)), n_nan=int(np.isnan(v).sum()), median=round(float(np.nanmedian(v)), 3),
+                                 min=round(float(np.nanmin(v)), 3), max=round(float(np.nanmax(v)), 3),
+                                 n_lt10=int((v < PPM).sum()), n_gt10=int((v > PPM).sum()), n_gt1000=int((v > 1000).sum()),
+                                 n_out_window_now=len(outm),
+                                 n_out_window_enter=int(sum(abs(p) <= hw.get(m, 0) for m, p in outm.items())))
+    (OUT / "width.json").write_text(json.dumps(res, ensure_ascii=False, indent=1))
+    return res
+
+
 def main() -> None:
     ph = sys.argv[1] if len(sys.argv) > 1 else ""
-    fn = dict(train=phase_train, frag=phase_frag, holdouts=phase_holdouts).get(ph)
+    fn = dict(train=phase_train, frag=phase_frag, holdouts=phase_holdouts, width=phase_width).get(ph)
     if fn is None:
-        raise SystemExit("usage: mass_error_adduct.py train|frag|holdouts")
+        raise SystemExit("usage: mass_error_adduct.py train|frag|holdouts|width")
     r = fn()
     print(json.dumps({k: v for k, v in r.items() if k not in ("sets", "by_instrument_adduct")}, ensure_ascii=False)[:3000])
 

@@ -84,3 +84,10 @@ def test_multi_adduct_consistency():
     nm = [300.0, 300.0003, 300.0, 322.0, 200.0]
     r = M.multi_adduct_consistency(mol, add, nm)
     assert r["n_molecules"] == 3 and r["n_multi_adduct"] == 2 and r["n_consistent"] == 1
+
+
+def test_molecule_half_width():
+    table = {("timsTOF", "[M+H]+"): 4.1, ("timsTOF", "その他"): 5.5, ("qTof", "[M+H]+"): 1e6}
+    assert M.molecule_half_width(["timsTOF", "timsTOF"], ["[M+H]+", "[M+K]+"], table) == 5.5
+    assert M.molecule_half_width(["timsTOF", "qTof"], ["[M+H]+", "[M+H]+"], table) == 1e6
+    assert math.isnan(M.molecule_half_width(["Orbitrap"], ["[M+H]+"], table))
