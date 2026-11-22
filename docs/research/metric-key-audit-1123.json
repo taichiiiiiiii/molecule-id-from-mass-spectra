@@ -1,0 +1,202 @@
+{
+ "rdkit_pinned": "2026.03.3",
+ "rdkit_venv": "2026.09.1",
+ "sets": {
+  "v3_c1": {
+   "truth_unique_smiles": 200,
+   "truth_cur_ne_official": 0,
+   "truth_procedure_only": 0,
+   "truth_version_only": 0,
+   "truth_new_ne_official": 0,
+   "truth_official_none": 0,
+   "truth_cur_ne_official_frac": 0.0,
+   "candidates_unique_smiles": 4759,
+   "candidates_cur_ne_official": 0,
+   "candidates_procedure_only": 0,
+   "candidates_version_only": 0,
+   "candidates_new_ne_official": 0,
+   "candidates_official_none": 0,
+   "candidates_cur_ne_official_frac": 0.0,
+   "n": 200,
+   "mrr_cur": 0.8535,
+   "mrr_official": 0.8535,
+   "mrr_official_full_call": 0.8535,
+   "mrr_new_local": 0.8535,
+   "molecules_rr_changed_cur_vs_official": [],
+   "molecules_rr_changed_new_vs_official": [],
+   "dup_official": {
+    "dup_slots": 0,
+    "rows_with_dup": 0,
+    "rows": 200,
+    "slots": 4815,
+    "unkeyed_slots": 0
+   },
+   "dup_cur": {
+    "dup_slots": 0,
+    "rows_with_dup": 0,
+    "rows": 200,
+    "slots": 4815,
+    "unkeyed_slots": 0
+   }
+  },
+  "v3_c2": {
+   "truth_unique_smiles": 200,
+   "truth_cur_ne_official": 0,
+   "truth_procedure_only": 0,
+   "truth_version_only": 0,
+   "truth_new_ne_official": 0,
+   "truth_official_none": 0,
+   "truth_cur_ne_official_frac": 0.0,
+   "candidates_unique_smiles": 4786,
+   "candidates_cur_ne_official": 0,
+   "candidates_procedure_only": 0,
+   "candidates_version_only": 0,
+   "candidates_new_ne_official": 0,
+   "candidates_official_none": 0,
+   "candidates_cur_ne_official_frac": 0.0,
+   "n": 200,
+   "mrr_cur": 0.0,
+   "mrr_official": 0.0,
+   "mrr_official_full_call": 0.0,
+   "mrr_new_local": 0.0,
+   "molecules_rr_changed_cur_vs_official": [],
+   "molecules_rr_changed_new_vs_official": [],
+   "dup_official": {
+    "dup_slots": 0,
+    "rows_with_dup": 0,
+    "rows": 200,
+    "slots": 4846,
+    "unkeyed_slots": 0
+   },
+   "dup_cur": {
+    "dup_slots": 0,
+    "rows_with_dup": 0,
+    "rows": 200,
+    "slots": 4846,
+    "unkeyed_slots": 0
+   }
+  },
+  "enveda_v1": {
+   "truth_unique_smiles": 200,
+   "truth_cur_ne_official": 0,
+   "truth_procedure_only": 0,
+   "truth_version_only": 0,
+   "truth_new_ne_official": 0,
+   "truth_official_none": 0,
+   "truth_cur_ne_official_frac": 0.0,
+   "candidates_unique_smiles": 4789,
+   "candidates_cur_ne_official": 0,
+   "candidates_procedure_only": 0,
+   "candidates_version_only": 0,
+   "candidates_new_ne_official": 0,
+   "candidates_official_none": 0,
+   "candidates_cur_ne_official_frac": 0.0,
+   "n": 200,
+   "mrr_cur": 0.8376,
+   "mrr_official": 0.8376,
+   "mrr_official_full_call": 0.8376,
+   "mrr_new_local": 0.8376,
+   "molecules_rr_changed_cur_vs_official": [],
+   "molecules_rr_changed_new_vs_official": [],
+   "dup_official": {
+    "dup_slots": 0,
+    "rows_with_dup": 0,
+    "rows": 200,
+    "slots": 4837,
+    "unkeyed_slots": 0
+   },
+   "dup_cur": {
+    "dup_slots": 0,
+    "rows_with_dup": 0,
+    "rows": 200,
+    "slots": 4837,
+    "unkeyed_slots": 0
+   }
+  },
+  "v3_c2n": {
+   "truth_unique_smiles": 195,
+   "truth_cur_ne_official": 0,
+   "truth_procedure_only": 0,
+   "truth_version_only": 0,
+   "truth_new_ne_official": 0,
+   "truth_official_none": 0,
+   "truth_cur_ne_official_frac": 0.0,
+   "candidates_unique_smiles": 3725,
+   "candidates_cur_ne_official": 0,
+   "candidates_procedure_only": 0,
+   "candidates_version_only": 0,
+   "candidates_new_ne_official": 0,
+   "candidates_official_none": 0,
+   "candidates_cur_ne_official_frac": 0.0,
+   "n": 195,
+   "mrr_cur": 0.6284,
+   "mrr_official": 0.6284,
+   "mrr_official_full_call": 0.6284,
+   "mrr_new_local": 0.6284,
+   "molecules_rr_changed_cur_vs_official": [],
+   "molecules_rr_changed_new_vs_official": [],
+   "dup_official": {
+    "dup_slots": 0,
+    "rows_with_dup": 0,
+    "rows": 195,
+    "slots": 3785,
+    "unkeyed_slots": 0
+   },
+   "dup_cur": {
+    "dup_slots": 0,
+    "rows_with_dup": 0,
+    "rows": 195,
+    "slots": 3785,
+    "unkeyed_slots": 0
+   }
+  },
+  "lb495_v1_commit": {
+   "dup_official": {
+    "dup_slots": 0,
+    "rows_with_dup": 0,
+    "rows": 400,
+    "slots": 10000,
+    "unkeyed_slots": 0
+   },
+   "dup_cur": {
+    "dup_slots": 0,
+    "rows_with_dup": 0,
+    "rows": 400,
+    "slots": 10000,
+    "unkeyed_slots": 0
+   }
+  },
+  "lb487_ownfpnet_commit": {
+   "dup_official": {
+    "dup_slots": 0,
+    "rows_with_dup": 0,
+    "rows": 400,
+    "slots": 688,
+    "unkeyed_slots": 0
+   },
+   "dup_cur": {
+    "dup_slots": 0,
+    "rows_with_dup": 0,
+    "rows": 400,
+    "slots": 688,
+    "unkeyed_slots": 0
+   }
+  },
+  "lb487_ownfpnet_baseline": {
+   "dup_official": {
+    "dup_slots": 0,
+    "rows_with_dup": 0,
+    "rows": 400,
+    "slots": 688,
+    "unkeyed_slots": 0
+   },
+   "dup_cur": {
+    "dup_slots": 0,
+    "rows_with_dup": 0,
+    "rows": 400,
+    "slots": 688,
+    "unkeyed_slots": 0
+   }
+  }
+ }
+}
