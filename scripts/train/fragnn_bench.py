@@ -309,6 +309,162 @@ def pack_spectra(rows: list) -> dict:
     return out
 
 
+# ---------------------------------------------------------------- v2（#196 の事前登録 (a)・(h)。v1 の関数は変えない）
+# データのページ（2026-11-23 に読んだ data-description）: 「Test spectra use one of ten adducts」
+TEST_ADDUCTS = ("[M+H]+", "[M+NH4]+", "[M-H2O+H]+", "[M-2H2O+H]+", "[M+Na]+", "[M+K]+",
+                "[M-H]-", "[M-H2O-H]-", "[M+CH2O2-H]-", "[M+Cl]-")
+ABOVE_PREC_DA = 2.0            # P5': 「Peaks above precursor + 2 Da were removed」
+TOP_PEAKS_V2 = 64              # P2（#193 の値 1 つ）
+F_SPEC_V2 = 4                  # P8(a): mode・本数・CE・timsTOF の印
+MERGE_P, MERGE_KMAX, MERGE_TOL = 0.3, 4, 0.005   # P4: FPNet traindata の merge_p・peers の kmax・merge_spectra の tol
+MERGE_SEED_TAG = 2             # merge の乱数 = default_rng([SEED, 2, step])
+TIMSTOF = "timsTOF"
+
+
+def keep_adduct(adduct) -> bool:
+    """P1: 隠れテストの 10 種の付加イオンなら True。"""
+    return adduct in TEST_ADDUCTS
+
+
+def drop_above_precursor(mz, it, prec, da: float = ABOVE_PREC_DA):
+    """P5': m/z > prec + da のピークを除く（prec が有限でなければそのまま）。"""
+    mz = np.asarray(mz, np.float64).ravel(); it = np.asarray(it, np.float64).ravel()
+    n = min(len(mz), len(it)); mz, it = mz[:n], it[:n]
+    if prec is None or not np.isfinite(prec):
+        return mz, it
+    k = mz <= float(prec) + da
+    return mz[k], it[k]
+
+
+def merge_peak_lists(pairs, tol: float = MERGE_TOL, k: int = TOP_PEAKS_V2):
+    """P4: FPNet の merge_spectra と同じ規則（各本を最大 1 に正規化、m/z の昇順で tol 未満の隣は強い方を残す）の後に
+    top_peaks で上位 k 本。返り値は m/z の昇順（#196 の費用の測定の fragnn_v2_bench.merge_peak_lists と同じ）。"""
+    mzs, its = [], []
+    for mz, it in pairs:
+        mz = np.asarray(mz, np.float64).ravel(); it = np.asarray(it, np.float64).ravel()
+        ok = np.isfinite(mz) & np.isfinite(it) & (it > 0)
+        mz, it = mz[ok], it[ok]
+        if len(mz) == 0:
+            continue
+        mzs.append(mz); its.append(it / it.max())
+    if not mzs:
+        return np.zeros(0), np.zeros(0)
+    mz = np.concatenate(mzs); it = np.concatenate(its)
+    o = np.argsort(mz, kind="stable"); mz, it = mz[o], it[o]
+    keep = np.ones(len(mz), bool)
+    last = 0
+    for j in range(1, len(mz)):
+        if mz[j] - mz[last] < tol:
+            if it[j] >= it[last]:
+                keep[last] = False; last = j
+            else:
+                keep[j] = False
+        else:
+            last = j
+    return top_peaks(mz[keep], it[keep], k=k)
+
+
+def peers(rng, members, i: int, kmax: int = MERGE_KMAX) -> list:
+    """P4: FPNet traindata.peers と同じ引き方。群の大きさ 1 なら [i]、そうでなければ n ~ U{2..min(kmax, |群|)} 本を
+    置き換えなしで引き、i が入っていなければ先頭を i にする。"""
+    members = np.asarray(members, np.int64)
+    if len(members) <= 1:
+        return [int(i)]
+    n = int(rng.integers(2, min(kmax, len(members)) + 1))
+    pick = rng.choice(members, size=min(n, len(members)), replace=False)
+    if i not in pick:
+        pick[0] = i
+    return [int(x) for x in pick]
+
+
+def spec_feat_v2(mode, n_peaks: int, ce, instrument) -> tuple:
+    """(mode ±1, log1p(本数)/log(65), CE/100（無ければ 0、v1 と同じ）, timsTOF なら 1)。"""
+    return (1.0 if (mode or 1) > 0 else -1.0, math.log1p(n_peaks) / math.log(TOP_PEAKS_V2 + 1),
+            float(ce or 0.0) / 100.0, 1.0 if instrument == TIMSTOF else 0.0)
+
+
+def pack_spectra_v2(rows: list, k: int = TOP_PEAKS_V2) -> dict:
+    """v2 の詰め方: 各本に P5'（prec + 2 Da より上を除く）→ 上位 k 本（P2）→ shift は v1 と同じ → spec_feat は F_SPEC_V2 列
+    （P8(a)）。rows: dict(mz, it, prec, adduct, mode, ce, instrument)。merge 済みの本にもそのまま使える（P5' は冪等）。
+    v1 の pack_spectra と同じ鍵に、ce（float64、merge の CE 平均に使う）と tims（0/1）を足す。"""
+    n = len(rows)
+    out = dict(mz=np.zeros((n, k)), it=np.zeros((n, k)), n=np.zeros(n, np.int64), prec=np.zeros(n),
+               sh_v=np.zeros((n, 12)), sh_c=np.zeros((n, 12), np.int8), sh_d=np.zeros((n, 12), np.int8),
+               sh_n=np.zeros(n, np.int64), spec_feat=np.zeros((n, F_SPEC_V2), np.float32), ce=np.zeros(n),
+               tims=np.zeros(n, np.int8))
+    for i, r in enumerate(rows):
+        mz, it = drop_above_precursor(r["mz"], r["it"], r["prec"])
+        mz, it = top_peaks(mz, it, k=k)
+        m = len(mz)
+        out["mz"][i, :m], out["it"][i, :m], out["n"][i], out["prec"][i] = mz, it, m, float(r["prec"])
+        v, c, d = shift_table(r.get("adduct"), r.get("mode"))
+        out["sh_v"][i, :len(v)], out["sh_c"][i, :len(v)], out["sh_d"][i, :len(v)], out["sh_n"][i] = v, c, d, len(v)
+        out["spec_feat"][i] = spec_feat_v2(r.get("mode"), m, r.get("ce"), r.get("instrument"))
+        out["ce"][i] = float(r.get("ce") or 0.0)
+        out["tims"][i] = 1 if r.get("instrument") == TIMSTOF else 0
+    return out
+
+
+SPEC_KEYS = ("mz", "it", "n", "prec", "sh_v", "sh_c", "sh_d", "sh_n", "spec_feat")
+
+
+def merge_group_keys(pos_struct, adduct_code, tims) -> np.ndarray:
+    """P4 の群の鍵 (構造, 付加イオン, timsTOF の印) を 1 つの整数に。"""
+    return (np.asarray(pos_struct, np.int64) * 64 + np.asarray(adduct_code, np.int64)) * 2 + np.asarray(tims, np.int64)
+
+
+def group_members(keys, rows) -> dict:
+    """鍵 → その鍵を持つ rows（スペクトルの番号）の配列（rows の順）。学習の行だけを渡す（内部検証は merge しない）。"""
+    keys = np.asarray(keys, np.int64); rows = np.asarray(rows, np.int64)
+    k = keys[rows]
+    o = np.argsort(k, kind="stable"); ks = k[o]
+    b = np.flatnonzero(np.diff(ks)) + 1
+    st = np.concatenate([[0], b]).astype(np.int64); en = np.concatenate([b, [len(ks)]]).astype(np.int64)
+    return {int(ks[s]): rows[o[s:e]] for s, e in zip(st, en)}
+
+
+def merged_row(spec: dict, idxs: list, i: int) -> dict:
+    """idxs（i を含む）の本を merge した 1 本の詰めた値。precursor・shift・mode・timsTOF の印は i のもの、
+    CE は値のある本（0 でない）の平均（無ければ 0）。"""
+    pairs = [(spec["mz"][j, :spec["n"][j]], spec["it"][j, :spec["n"][j]]) for j in idxs]
+    mz, it = merge_peak_lists(pairs)
+    ces = [float(spec["ce"][j]) for j in idxs if spec["ce"][j]]
+    ce = float(np.mean(ces)) if ces else 0.0
+    sf = spec["spec_feat"][i]
+    return dict(mz=mz, it=it, n=len(mz), ce=ce,
+                spec_feat=spec_feat_v2(sf[0], len(mz), ce, TIMSTOF if spec["tims"][i] else None))
+
+
+def merge_batch(step: int, bi, spec: dict, gkey, groups: dict, p: float = MERGE_P, seed: int = SEED) -> tuple:
+    """P4（学習のバッチだけ）: バッチの各本 i（bi の順）について、乱数 default_rng([seed, 2, step]) で確率 p で
+    同じ群の 2〜4 本を merge する。返り値 = (バッチの詰めた値〈行 = bi の順〉, merge した本の数)。"""
+    rng = np.random.default_rng([seed, MERGE_SEED_TAG, step])
+    bi = np.asarray(bi, np.int64)
+    out = {k: spec[k][bi].copy() for k in SPEC_KEYS}
+    n_merged = 0
+    for r, i in enumerate(bi):
+        if rng.random() < p:
+            idxs = peers(rng, groups[int(gkey[i])], int(i))
+            if len(idxs) > 1:
+                m = merged_row(spec, idxs, int(i))
+                out["mz"][r] = 0.0; out["it"][r] = 0.0
+                out["mz"][r, :m["n"]], out["it"][r, :m["n"]], out["n"][r] = m["mz"], m["it"], m["n"]
+                out["spec_feat"][r] = m["spec_feat"]
+                n_merged += 1
+    return out, n_merged
+
+
+def infer_chunks(adducts, tims, kmax: int = MERGE_KMAX) -> list:
+    """#196 (h) の推論の形: 分子の本（出てくる順）を (付加イオン, timsTOF の印) が同じものの群にし（群は最初に出た順）、
+    各群を順に kmax 本ずつの塊に切る（最後の塊は 1〜kmax 本）。返り値 = 塊ごとの本の番号のリスト。"""
+    order, groups = [], {}
+    for j, key in enumerate(zip(adducts, tims)):
+        if key not in groups:
+            groups[key] = []; order.append(key)
+        groups[key].append(j)
+    return [g[s:s + kmax] for key in order for g in [groups[key]] for s in range(0, len(g), kmax)]
+
+
 def extrapolate(n_union: int, sec_per_struct: float, sec_spectra: float, sec_per_step: float, sec_fwd_batch: float,
                 steps: int = STEPS_JUDGE, n_val: int = N_VAL_SPECTRA, eval_every: int = EVAL_EVERY,
                 limit_h: float = LIMIT_HOURS, sec_pack_per_spectrum: float = 0.0,
@@ -328,7 +484,8 @@ def extrapolate(n_union: int, sec_per_struct: float, sec_spectra: float, sec_per
 
 # ---------------------------------------------------------------- モデル（torch はここで初めて読む）
 
-def build_model():
+def build_model(f_spec: int = F_SPEC):
+    """f_spec: スペクトルの特徴の数（v1 = F_SPEC 3、v2 = F_SPEC_V2 4。ρ の入力だけが変わる）。"""
     import torch
     from torch import nn
 
@@ -336,7 +493,7 @@ def build_model():
         def __init__(self):
             super().__init__()
             self.phi = nn.Sequential(nn.Linear(F_PEAK, 128), nn.ReLU(), nn.Linear(128, 128), nn.ReLU())
-            self.rho = nn.Sequential(nn.Linear(256 + F_PAIR + F_SPEC, 256), nn.ReLU(), nn.Dropout(0.1),
+            self.rho = nn.Sequential(nn.Linear(256 + F_PAIR + f_spec, 256), nn.ReLU(), nn.Dropout(0.1),
                                      nn.Linear(256, 128), nn.ReLU(), nn.Linear(128, 1))
 
         def forward(self, feats, valid, pair, spec):
