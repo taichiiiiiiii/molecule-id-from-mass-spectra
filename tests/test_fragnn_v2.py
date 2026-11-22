@@ -447,11 +447,16 @@ def test_gate_classify():
         "  104 9000000 /Applications/Google Chrome Helper (Renderer)",
         "  105 100000 /usr/bin/python3 other_small.py",
         "  106 5000000 /usr/bin/time -l /x/bin/python fragnn_train.py",
+        "  107 3984588 /opt/homebrew/Cellar/python@3.12/3.12.7/Frameworks/Python.framework/Versions/3.12/Resources/"
+        "Python.app/Contents/MacOS/Python tools/generate.py",
+        "  108 4000000 /Library/Frameworks/Python.framework/Versions/3.12/Resources/Python.app/Contents/MacOS/Python "
+        "/x/fragnn_train.py --v2",
+        "  109 4000000 /Users/x/My Env/.venv/bin/Python3 big.py",
     ]
     c = gate.classify(lines, me=-1)
-    assert [x.split()[0] for x in c["own_heavy"]] == ["102"]
-    assert [x.split()[0] for x in c["big_other"]] == ["101"]
-    assert gate.classify(lines, me=101)["big_other"] == []
+    assert [x.split()[0] for x in c["own_heavy"]] == ["102", "108"]
+    assert [x.split()[0] for x in c["big_other"]] == ["101", "107", "109"]   # framework 版の Python も数える
+    assert [x.split()[0] for x in gate.classify(lines, me=101)["big_other"]] == ["107", "109"]
 
 
 def _fake_gate(tmp_path, rc):

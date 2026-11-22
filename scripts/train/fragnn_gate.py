@@ -56,12 +56,14 @@ def _first_token(cmd: str) -> str:
 
 
 def is_python_or_mlx(cmd: str) -> bool:
-    """python（パスに空白があっても /bin/python を含めば）か MLX（コマンドに mlx を含む）か。シェル・time の行は数えない。"""
+    """python か MLX か。python = 先頭の語の basename が（大文字小文字を区別せず）python で始まる、またはコマンドに
+    /bin/python（パスに空白がある venv）か Python.app/（macOS の framework 版、…/Python.app/Contents/MacOS/Python）を
+    含む。MLX = コマンドに mlx を含む。シェル・time の行は数えない。"""
     first = os.path.basename(_first_token(cmd))
     if first in ("bash", "sh", "zsh", "time") or _first_token(cmd) == "/usr/bin/time":
         return False
     low = cmd.lower()
-    return first.startswith("python") or "/bin/python" in cmd or "mlx" in low
+    return first.lower().startswith("python") or "/bin/python" in low or "python.app/" in low or "mlx" in low
 
 
 def classify(ps_lines, me: int, big_gib: float = BIG_RSS_GIB) -> dict:
