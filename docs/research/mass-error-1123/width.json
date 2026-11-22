@@ -1,0 +1,54 @@
+{
+ "issue": 203,
+ "rule": "分子の（装置, 付加イオン）の組の train |ppm| 99% 点の最大値",
+ "sets": {
+  "v3_c1": {
+   "n": 200,
+   "n_nan": 0,
+   "median": 4.129,
+   "min": 2.759,
+   "max": 5.532,
+   "n_lt10": 200,
+   "n_gt10": 0,
+   "n_gt1000": 0,
+   "n_out_window_now": 0,
+   "n_out_window_enter": 0
+  },
+  "v3_c2": {
+   "n": 200,
+   "n_nan": 0,
+   "median": 4.129,
+   "min": 2.759,
+   "max": 5.176,
+   "n_lt10": 200,
+   "n_gt10": 0,
+   "n_gt1000": 0,
+   "n_out_window_now": 0,
+   "n_out_window_enter": 0
+  },
+  "enveda_v1": {
+   "n": 200,
+   "n_nan": 0,
+   "median": 4.129,
+   "min": 2.759,
+   "max": 5.532,
+   "n_lt10": 200,
+   "n_gt10": 0,
+   "n_gt1000": 0,
+   "n_out_window_now": 0,
+   "n_out_window_enter": 0
+  },
+  "v3_c2n": {
+   "n": 195,
+   "n_nan": 0,
+   "median": 58834.198,
+   "min": 0.198,
+   "max": 1066386.25,
+   "n_lt10": 45,
+   "n_gt10": 150,
+   "n_gt1000": 107,
+   "n_out_window_now": 18,
+   "n_out_window_enter": 17
+  }
+ }
+}
