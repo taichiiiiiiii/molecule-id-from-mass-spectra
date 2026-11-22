@@ -12,7 +12,13 @@
    "n_gt10": 0,
    "n_gt1000": 0,
    "n_out_window_now": 0,
-   "n_out_window_enter": 0
+   "n_out_window_enter": 0,
+   "n_narrow": 200,
+   "n_widen": 0,
+   "n_truth_drops_out": 2,
+   "bound_enter": 0.0,
+   "bound_narrow_all_to_rank1": 0.1465,
+   "note": "広がる分子は候補が増えるだけで上がらない（点は窓に依らない）。bound_* は全部 1 位に来る粗い上限"
   },
   "v3_c2": {
    "n": 200,
@@ -24,7 +30,13 @@
    "n_gt10": 0,
    "n_gt1000": 0,
    "n_out_window_now": 0,
-   "n_out_window_enter": 0
+   "n_out_window_enter": 0,
+   "n_narrow": 200,
+   "n_widen": 0,
+   "n_truth_drops_out": 0,
+   "bound_enter": 0.0,
+   "bound_narrow_all_to_rank1": 1.0,
+   "note": "広がる分子は候補が増えるだけで上がらない（点は窓に依らない）。bound_* は全部 1 位に来る粗い上限"
   },
   "enveda_v1": {
    "n": 200,
@@ -36,7 +48,13 @@
    "n_gt10": 0,
    "n_gt1000": 0,
    "n_out_window_now": 0,
-   "n_out_window_enter": 0
+   "n_out_window_enter": 0,
+   "n_narrow": 200,
+   "n_widen": 0,
+   "n_truth_drops_out": 1,
+   "bound_enter": 0.0,
+   "bound_narrow_all_to_rank1": 0.1624,
+   "note": "広がる分子は候補が増えるだけで上がらない（点は窓に依らない）。bound_* は全部 1 位に来る粗い上限"
   },
   "v3_c2n": {
    "n": 195,
@@ -48,7 +66,13 @@
    "n_gt10": 150,
    "n_gt1000": 107,
    "n_out_window_now": 18,
-   "n_out_window_enter": 17
+   "n_out_window_enter": 17,
+   "n_narrow": 45,
+   "n_widen": 150,
+   "n_truth_drops_out": 1,
+   "bound_enter": 0.0872,
+   "bound_narrow_all_to_rank1": 0.0706,
+   "note": "広がる分子は候補が増えるだけで上がらない（点は窓に依らない）。bound_* は全部 1 位に来る粗い上限"
   }
  }
 }
