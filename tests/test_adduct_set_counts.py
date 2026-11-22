@@ -28,6 +28,7 @@ def test_summarize_counts():
     assert s["polarity"] == {"+": 1, "+-": 2}
     assert s["has_multimer_frac"] == round(1 / 3, 4)
     assert s["all_timstof_frac"] == round(2 / 3, 4)
+    assert s["spectra_timstof_frac"] == round(7 / 8, 4)
 
 
 def test_obs_pattern_order_and_polarity():
@@ -48,7 +49,9 @@ def test_main_end_to_end(tmp_path):
     hd = tmp_path / "holdouts"
     for h in asc.HOLDOUTS:
         (hd / h).mkdir(parents=True)
-        _df().to_parquet(hd / h / "test.parquet")
+        d = pd.concat([_df(), pd.DataFrame({"molecule_id": ["z"], "adduct": ["[2M+Na]+"],
+                                            "instrument_type": ["timsTOF"]})], ignore_index=True)
+        d.to_parquet(hd / h / "test.parquet")
     vis = _df().iloc[:4]
     vis.to_parquet(tmp_path / "test.parquet")
     out = tmp_path / "o.json"
@@ -57,6 +60,7 @@ def test_main_end_to_end(tmp_path):
     assert set(d["sets"]) == set(asc.HOLDOUTS) | {"visible_test"}
     assert d["visible_vocab"] == ["[M+H]+", "[M-H]-"]
     v = d["sets_visible_vocab"]["v3_c1"]
-    # c は [M+H]+ だけが残り、a は 2 種、b は 1 種
+    # c は [M+H]+ だけが残り、a は 2 種、b は 1 種。z は語彙の外の [2M+Na]+ しか無いので消えて数えられる
+    assert d["sets"]["v3_c1"]["n_molecules"] == 4
     assert v["n_molecules"] == 3 and v["n_adduct_types"] == {"1": 2, "2": 1, "3+": 0}
-    assert v["molecules_dropped_no_vocab_spectra"] == 0
+    assert v["molecules_dropped_no_vocab_spectra"] == 1

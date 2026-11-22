@@ -177,7 +177,8 @@
     "+-": 85,
     "-": 10
    },
-   "all_timstof_frac": 1.0
+   "all_timstof_frac": 1.0,
+   "spectra_timstof_frac": 1.0
   },
   "v3_c2": {
    "n_molecules": 200,
@@ -334,7 +335,8 @@
     "+-": 65,
     "-": 11
    },
-   "all_timstof_frac": 1.0
+   "all_timstof_frac": 1.0,
+   "spectra_timstof_frac": 1.0
   },
   "enveda_v1": {
    "n_molecules": 200,
@@ -483,7 +485,8 @@
     "+-": 55,
     "-": 21
    },
-   "all_timstof_frac": 1.0
+   "all_timstof_frac": 1.0,
+   "spectra_timstof_frac": 1.0
   },
   "v3_c2n": {
    "n_molecules": 195,
@@ -648,7 +651,8 @@
     "+-": 74,
     "-": 15
    },
-   "all_timstof_frac": 0.0154
+   "all_timstof_frac": 0.0154,
+   "spectra_timstof_frac": 0.0137
   },
   "visible_test": {
    "n_molecules": 400,
@@ -793,7 +797,8 @@
     "+-": 97,
     "-": 27
    },
-   "all_timstof_frac": 1.0
+   "all_timstof_frac": 1.0,
+   "spectra_timstof_frac": 1.0
   },
   "train_enveda180": {
    "n_molecules": 182941,
@@ -991,6 +996,7 @@
     "-": 7527
    },
    "all_timstof_frac": 1.0,
+   "spectra_timstof_frac": 1.0,
    "same_formula": {
     "formula_groups_ge2": 13803,
     "formula_groups_with_ge2_patterns": 11017,
@@ -1150,6 +1156,7 @@
     "-": 15
    },
    "all_timstof_frac": 1.0,
+   "spectra_timstof_frac": 1.0,
    "molecules_dropped_no_vocab_spectra": 3
   },
   "v3_c2": {
@@ -1292,6 +1299,7 @@
     "-": 13
    },
    "all_timstof_frac": 1.0,
+   "spectra_timstof_frac": 1.0,
    "molecules_dropped_no_vocab_spectra": 3
   },
   "enveda_v1": {
@@ -1422,6 +1430,7 @@
     "-": 23
    },
    "all_timstof_frac": 1.0,
+   "spectra_timstof_frac": 1.0,
    "molecules_dropped_no_vocab_spectra": 14
   },
   "v3_c2n": {
@@ -1580,6 +1589,7 @@
     "-": 15
    },
    "all_timstof_frac": 0.0154,
+   "spectra_timstof_frac": 0.009,
    "molecules_dropped_no_vocab_spectra": 0
   }
  }

@@ -8,12 +8,12 @@
 - 主な組（付加イオンの文字列を並べた組）の度数（上位 --top 件）
 - APRIOR が使う 4 つのラベル（[M+H]+・[M-H]-・[M+CH2O2-H]-・[M+Na]+）の有無の組の度数と、4 つのどれかを持つ分子の割合
 - スペクトルの付加イオンごとの度数と、多量体（[2M…・[3M…）の付加イオンを持つ分子の割合
-- 極性（正のみ / 負のみ / 両方）、全クエリが timsTOF の分子の割合（enveda-180 の測りかたの目安。test.parquet には
+- 極性（正のみ / 負のみ / 両方）、全クエリが timsTOF の分子の割合とスペクトル単位の timsTOF の割合（enveda-180 の測りかたの目安。test.parquet には
   ingest_lib が無いので代わりに instrument_type を使う）
 
 --train を渡すと、train.parquet の enveda-180（構造 = inchikey14）について同じ数え上げと、「同じ分子式の構造どうしで
 4 ラベルの組が違う対の割合」（付加イオンの組が同じ分子式の異性体を分けうる度合いの粗い目安。測定の揺れも含む）を出す。
-train.parquet は `pq.ParquetFile(p, buffer_size=1<<20, pre_buffer=False)` で row group ごとに 4 列だけ読む。
+train.parquet は `pq.ParquetFile(p, buffer_size=1<<20, pre_buffer=False)` で row group ごとに 5 列だけ読む。
 
     .venv/bin/python scripts/research/adduct_set_counts.py --train data/train.parquet \
         --out outputs/local_eval/adduct_set_counts.json
@@ -79,6 +79,7 @@ def summarize(df, key="molecule_id", top=10):
     if "instrument_type" in df.columns:
         all_tims = g["instrument_type"].agg(lambda s: bool((s.astype(str) == TIMS).all()))
         out["all_timstof_frac"] = round(float(all_tims.mean()), 4) if n else None
+        out["spectra_timstof_frac"] = round(float((df["instrument_type"].astype(str) == TIMS).mean()), 4) if n else None
     return out
 
 
