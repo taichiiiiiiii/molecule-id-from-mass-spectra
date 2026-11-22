@@ -1,0 +1,3279 @@
+{
+ "issue": 203,
+ "n_rows": 2539608,
+ "n_unknown_adduct": 339,
+ "unknown_adducts_top": {
+  "[M+C2H3NNa]+": 24,
+  "[2M-HO]+": 19,
+  "[M+CH3]+": 18,
+  "[M+H-O3S]+": 17,
+  "[Cat]2+": 15,
+  "[M+C2H2NaO2]-": 15,
+  "[M+Na2]2+": 14,
+  "[2M-H3O2]+": 14,
+  "[M+Ca-H]+": 12,
+  "[M-CH3F2O2]-": 11,
+  "[4M+Ca]2+": 10,
+  "[M+CH3O2]+": 9,
+  "[3M+Ca]2+": 9,
+  "[M-C6H9O5]+": 8,
+  "[M-C6H11O5]-": 8
+ },
+ "n_bad_formula": 50,
+ "overall": {
+  "n": 2539234,
+  "median": 0.159,
+  "abs_p99": 1081.109,
+  "frac_out": 0.049087,
+  "n_out": 124644
+ },
+ "by_instrument_adduct": [
+  {
+   "instrument": "",
+   "adduct": "[M+H]+",
+   "n": 297,
+   "median": 0.522,
+   "abs_p99": 3.945,
+   "frac_out": 0.003367,
+   "n_out": 1
+  },
+  {
+   "instrument": "APCI-ITFT",
+   "adduct": "[M+H]+",
+   "n": 174,
+   "median": -0.102,
+   "abs_p99": 529183.875,
+   "frac_out": 0.022989,
+   "n_out": 4
+  },
+  {
+   "instrument": "ESI-FT",
+   "adduct": "[M+H]+",
+   "n": 122,
+   "median": 0.07,
+   "abs_p99": 141058.359,
+   "frac_out": 0.040984,
+   "n_out": 5
+  },
+  {
+   "instrument": "ESI-ITFT",
+   "adduct": "[M+H]+",
+   "n": 119,
+   "median": -0.033,
+   "abs_p99": 5.038,
+   "frac_out": 0.0,
+   "n_out": 0
+  },
+  {
+   "instrument": "ESI-QFT",
+   "adduct": "[M+H]+",
+   "n": 17970,
+   "median": -0.017,
+   "abs_p99": 159219.75,
+   "frac_out": 0.01842,
+   "n_out": 331
+  },
+  {
+   "instrument": "ESI-QFT",
+   "adduct": "[M-H]-",
+   "n": 17471,
+   "median": -0.019,
+   "abs_p99": 152694.922,
+   "frac_out": 0.017057,
+   "n_out": 298
+  },
+  {
+   "instrument": "ESI-QFT",
+   "adduct": "[M+Na]+",
+   "n": 15235,
+   "median": -0.029,
+   "abs_p99": 223311.766,
+   "frac_out": 0.021989,
+   "n_out": 335
+  },
+  {
+   "instrument": "ESI-QFT",
+   "adduct": "[M+K]+",
+   "n": 14189,
+   "median": -0.02,
+   "abs_p99": 238041.359,
+   "frac_out": 0.023539,
+   "n_out": 334
+  },
+  {
+   "instrument": "ESI-QFT",
+   "adduct": "[M+NH4]+",
+   "n": 12477,
+   "median": -0.027,
+   "abs_p99": 254945.375,
+   "frac_out": 0.026689,
+   "n_out": 333
+  },
+  {
+   "instrument": "ESI-QTOF",
+   "adduct": "[M+H]+",
+   "n": 3185,
+   "median": 0.046,
+   "abs_p99": 4.34,
+   "frac_out": 0.005338,
+   "n_out": 17
+  },
+  {
+   "instrument": "ESI-QTOF",
+   "adduct": "[M-H]-",
+   "n": 2509,
+   "median": -0.005,
+   "abs_p99": 8.258,
+   "frac_out": 0.009167,
+   "n_out": 23
+  },
+  {
+   "instrument": "ESI-TOF",
+   "adduct": "[M+H]+",
+   "n": 1164,
+   "median": 2.097,
+   "abs_p99": 42971.546,
+   "frac_out": 0.017182,
+   "n_out": 20
+  },
+  {
+   "instrument": "FAB-EBEB",
+   "adduct": "[M]+",
+   "n": 315,
+   "median": 4.375,
+   "abs_p99": 14.006,
+   "frac_out": 0.019048,
+   "n_out": 6
+  },
+  {
+   "instrument": "Flow-injection QqQ/MS",
+   "adduct": "[M+H]+",
+   "n": 6730,
+   "median": 0.309,
+   "abs_p99": 12408.547,
+   "frac_out": 0.654829,
+   "n_out": 4407
+  },
+  {
+   "instrument": "Flow-injection QqQ/MS",
+   "adduct": "[M-H]-",
+   "n": 1699,
+   "median": 0.065,
+   "abs_p99": 746.192,
+   "frac_out": 0.314303,
+   "n_out": 534
+  },
+  {
+   "instrument": "Flow-injection QqQ/MS",
+   "adduct": "[M]+",
+   "n": 256,
+   "median": 620.685,
+   "abs_p99": 25747.191,
+   "frac_out": 1.0,
+   "n_out": 256
+  },
+  {
+   "instrument": "Hybrid FT",
+   "adduct": "[M+H]+",
+   "n": 6740,
+   "median": -0.134,
+   "abs_p99": 8.158,
+   "frac_out": 0.009792,
+   "n_out": 66
+  },
+  {
+   "instrument": "Hybrid FT",
+   "adduct": "[M-H]-",
+   "n": 2268,
+   "median": -0.075,
+   "abs_p99": 3.237,
+   "frac_out": 0.000882,
+   "n_out": 2
+  },
+  {
+   "instrument": "Ion Trap",
+   "adduct": "[M+H]+",
+   "n": 1174,
+   "median": -6.477,
+   "abs_p99": 542969.191,
+   "frac_out": 0.569847,
+   "n_out": 669
+  },
+  {
+   "instrument": "Ion Trap",
+   "adduct": "[M-H]-",
+   "n": 334,
+   "median": 0.697,
+   "abs_p99": 105900.217,
+   "frac_out": 0.284431,
+   "n_out": 95
+  },
+  {
+   "instrument": "Ion Trap",
+   "adduct": "[M+Na]+",
+   "n": 206,
+   "median": -2.326,
+   "abs_p99": 24966.487,
+   "frac_out": 0.665049,
+   "n_out": 137
+  },
+  {
+   "instrument": "Ion Trap",
+   "adduct": "[M-H2O+H]+",
+   "n": 161,
+   "median": -1.049,
+   "abs_p99": 220.695,
+   "frac_out": 0.254658,
+   "n_out": 41
+  },
+  {
+   "instrument": "LC-APPI-QQ",
+   "adduct": "[M-H2O+H]+",
+   "n": 605,
+   "median": 121.555,
+   "abs_p99": 61749.738,
+   "frac_out": 0.753719,
+   "n_out": 456
+  },
+  {
+   "instrument": "LC-APPI-QQ",
+   "adduct": "[M+H]+",
+   "n": 243,
+   "median": 234.795,
+   "abs_p99": 1317.868,
+   "frac_out": 0.744856,
+   "n_out": 181
+  },
+  {
+   "instrument": "LC-APPI-QQ",
+   "adduct": "[M-2H2O+H]+",
+   "n": 120,
+   "median": 143.346,
+   "abs_p99": 364.051,
+   "frac_out": 0.75,
+   "n_out": 90
+  },
+  {
+   "instrument": "LC-ESI-FT",
+   "adduct": "[M-H]-",
+   "n": 115,
+   "median": -0.076,
+   "abs_p99": 2.846,
+   "frac_out": 0.0,
+   "n_out": 0
+  },
+  {
+   "instrument": "LC-ESI-IT",
+   "adduct": "[M+H]+",
+   "n": 1429,
+   "median": -742.474,
+   "abs_p99": 656176.312,
+   "frac_out": 0.861442,
+   "n_out": 1231
+  },
+  {
+   "instrument": "LC-ESI-IT",
+   "adduct": "[M-H]-",
+   "n": 225,
+   "median": 211.125,
+   "abs_p99": 1109.326,
+   "frac_out": 0.657778,
+   "n_out": 148
+  },
+  {
+   "instrument": "LC-ESI-ITFT",
+   "adduct": "[M+H]+",
+   "n": 32581,
+   "median": -0.0,
+   "abs_p99": 33.246,
+   "frac_out": 0.013351,
+   "n_out": 435
+  },
+  {
+   "instrument": "LC-ESI-ITFT",
+   "adduct": "[M-H]-",
+   "n": 9035,
+   "median": -0.01,
+   "abs_p99": 210.364,
+   "frac_out": 0.059325,
+   "n_out": 536
+  },
+  {
+   "instrument": "LC-ESI-ITFT",
+   "adduct": "[M+C2H4O2-H]-",
+   "n": 1573,
+   "median": -0.011,
+   "abs_p99": 455.508,
+   "frac_out": 0.093452,
+   "n_out": 147
+  },
+  {
+   "instrument": "LC-ESI-ITFT",
+   "adduct": "[M+Na]+",
+   "n": 773,
+   "median": -0.081,
+   "abs_p99": 1.951,
+   "frac_out": 0.003881,
+   "n_out": 3
+  },
+  {
+   "instrument": "LC-ESI-ITFT",
+   "adduct": "[M-CH3]-",
+   "n": 566,
+   "median": -484.594,
+   "abs_p99": 634.59,
+   "frac_out": 1.0,
+   "n_out": 566
+  },
+  {
+   "instrument": "LC-ESI-ITFT",
+   "adduct": "[M]+",
+   "n": 233,
+   "median": -0.057,
+   "abs_p99": 278.706,
+   "frac_out": 0.291845,
+   "n_out": 68
+  },
+  {
+   "instrument": "LC-ESI-Orbitrap",
+   "adduct": "[M-H]-",
+   "n": 298,
+   "median": -0.096,
+   "abs_p99": 0.694,
+   "frac_out": 0.003356,
+   "n_out": 1
+  },
+  {
+   "instrument": "LC-ESI-Orbitrap",
+   "adduct": "[M+H]+",
+   "n": 233,
+   "median": 0.094,
+   "abs_p99": 0.506,
+   "frac_out": 0.004292,
+   "n_out": 1
+  },
+  {
+   "instrument": "LC-ESI-Q-Orbitrap",
+   "adduct": "[M+H]+",
+   "n": 111,
+   "median": 0.119,
+   "abs_p99": 434679.719,
+   "frac_out": 0.027027,
+   "n_out": 3
+  },
+  {
+   "instrument": "LC-ESI-QFT",
+   "adduct": "[M+H]+",
+   "n": 35146,
+   "median": -0.002,
+   "abs_p99": 3.223,
+   "frac_out": 0.002959,
+   "n_out": 104
+  },
+  {
+   "instrument": "LC-ESI-QFT",
+   "adduct": "[M-H]-",
+   "n": 18872,
+   "median": -0.021,
+   "abs_p99": 11427.646,
+   "frac_out": 0.024958,
+   "n_out": 471
+  },
+  {
+   "instrument": "LC-ESI-QFT",
+   "adduct": "[M+Na]+",
+   "n": 343,
+   "median": 0.189,
+   "abs_p99": 183145.344,
+   "frac_out": 0.110787,
+   "n_out": 38
+  },
+  {
+   "instrument": "LC-ESI-QFT",
+   "adduct": "[M+NH4]+",
+   "n": 229,
+   "median": 0.709,
+   "abs_p99": 215257.281,
+   "frac_out": 0.152838,
+   "n_out": 35
+  },
+  {
+   "instrument": "LC-ESI-QFT",
+   "adduct": "[M+K]+",
+   "n": 109,
+   "median": 0.782,
+   "abs_p99": 168492.767,
+   "frac_out": 0.018349,
+   "n_out": 2
+  },
+  {
+   "instrument": "LC-ESI-QIT",
+   "adduct": "[M-H]-",
+   "n": 600,
+   "median": -0.049,
+   "abs_p99": 351.983,
+   "frac_out": 0.025,
+   "n_out": 15
+  },
+  {
+   "instrument": "LC-ESI-QQ",
+   "adduct": "[M+H]+",
+   "n": 10679,
+   "median": -211.299,
+   "abs_p99": 172008.078,
+   "frac_out": 0.728626,
+   "n_out": 7781
+  },
+  {
+   "instrument": "LC-ESI-QQ",
+   "adduct": "[M-H]-",
+   "n": 8138,
+   "median": -62.881,
+   "abs_p99": 831.173,
+   "frac_out": 0.689359,
+   "n_out": 5610
+  },
+  {
+   "instrument": "LC-ESI-QQ",
+   "adduct": "[M]+",
+   "n": 144,
+   "median": 0.307,
+   "abs_p99": 4018.315,
+   "frac_out": 0.715278,
+   "n_out": 103
+  },
+  {
+   "instrument": "LC-ESI-QQ",
+   "adduct": "[M+2H]2+",
+   "n": 106,
+   "median": -532.04,
+   "abs_p99": 634.632,
+   "frac_out": 1.0,
+   "n_out": 106
+  },
+  {
+   "instrument": "LC-ESI-QQQ",
+   "adduct": "[M+H]+",
+   "n": 2806,
+   "median": 0.106,
+   "abs_p99": 20704.23,
+   "frac_out": 0.015681,
+   "n_out": 44
+  },
+  {
+   "instrument": "LC-ESI-QQQ",
+   "adduct": "[M+Na]+",
+   "n": 236,
+   "median": 0.689,
+   "abs_p99": 50556.598,
+   "frac_out": 0.135593,
+   "n_out": 32
+  },
+  {
+   "instrument": "LC-ESI-QTOF",
+   "adduct": "[M+H]+",
+   "n": 58364,
+   "median": 0.023,
+   "abs_p99": 11.999,
+   "frac_out": 0.011463,
+   "n_out": 669
+  },
+  {
+   "instrument": "LC-ESI-QTOF",
+   "adduct": "[M-H]-",
+   "n": 30239,
+   "median": -0.014,
+   "abs_p99": 14666.808,
+   "frac_out": 0.044744,
+   "n_out": 1353
+  },
+  {
+   "instrument": "LC-ESI-QTOF",
+   "adduct": "[M+Na]+",
+   "n": 6002,
+   "median": -0.102,
+   "abs_p99": 7.922,
+   "frac_out": 0.003832,
+   "n_out": 23
+  },
+  {
+   "instrument": "LC-ESI-QTOF",
+   "adduct": "[M+NH4]+",
+   "n": 2952,
+   "median": -0.215,
+   "abs_p99": 101.588,
+   "frac_out": 0.037263,
+   "n_out": 110
+  },
+  {
+   "instrument": "LC-ESI-QTOF",
+   "adduct": "[M]+",
+   "n": 2651,
+   "median": -0.052,
+   "abs_p99": 4.7,
+   "frac_out": 0.004527,
+   "n_out": 12
+  },
+  {
+   "instrument": "LC-ESI-QTOF",
+   "adduct": "[M+CH2O2-H]-",
+   "n": 1892,
+   "median": 0.001,
+   "abs_p99": 5.67,
+   "frac_out": 0.004757,
+   "n_out": 9
+  },
+  {
+   "instrument": "LC-ESI-QTOF",
+   "adduct": "[M+C2H4O2-H]-",
+   "n": 1057,
+   "median": -0.713,
+   "abs_p99": 10993.021,
+   "frac_out": 0.029328,
+   "n_out": 31
+  },
+  {
+   "instrument": "LC-ESI-QTOF",
+   "adduct": "[M-2H]-",
+   "n": 405,
+   "median": -1.074,
+   "abs_p99": 1.956,
+   "frac_out": 0.0,
+   "n_out": 0
+  },
+  {
+   "instrument": "LC-ESI-QTOF",
+   "adduct": "[M+Cl]-",
+   "n": 315,
+   "median": -1.221,
+   "abs_p99": 7.237,
+   "frac_out": 0.0,
+   "n_out": 0
+  },
+  {
+   "instrument": "LC-ESI-QTOF",
+   "adduct": "[M-H2O+H]+",
+   "n": 245,
+   "median": 0.063,
+   "abs_p99": 28.053,
+   "frac_out": 0.016327,
+   "n_out": 4
+  },
+  {
+   "instrument": "LC-ESI-TOF",
+   "adduct": "[M-H]-",
+   "n": 1267,
+   "median": 0.008,
+   "abs_p99": 7042.991,
+   "frac_out": 0.191792,
+   "n_out": 243
+  },
+  {
+   "instrument": "LC-Orbitrap MS",
+   "adduct": "[M+H]+",
+   "n": 347,
+   "median": 0.641,
+   "abs_p99": 3.069,
+   "frac_out": 0.0,
+   "n_out": 0
+  },
+  {
+   "instrument": "LC-Q-TOF/MS",
+   "adduct": "[M+H]+",
+   "n": 882,
+   "median": 0.277,
+   "abs_p99": 97563.734,
+   "frac_out": 0.488662,
+   "n_out": 431
+  },
+  {
+   "instrument": "LC-Q-TOF/MS",
+   "adduct": "[M-H]-",
+   "n": 107,
+   "median": -1.336,
+   "abs_p99": 4681100.795,
+   "frac_out": 0.028037,
+   "n_out": 3
+  },
+  {
+   "instrument": "LC-QTOF",
+   "adduct": "[M-H]-",
+   "n": 219,
+   "median": 0.009,
+   "abs_p99": 0.106,
+   "frac_out": 0.0,
+   "n_out": 0
+  },
+  {
+   "instrument": "LC-QTOF",
+   "adduct": "[M+C2H4O2-H]-",
+   "n": 169,
+   "median": -0.01,
+   "abs_p99": 0.091,
+   "frac_out": 0.0,
+   "n_out": 0
+  },
+  {
+   "instrument": "Linear Ion Trap",
+   "adduct": "[M-H]-",
+   "n": 7951,
+   "median": 82.407,
+   "abs_p99": 998837.531,
+   "frac_out": 0.669224,
+   "n_out": 5321
+  },
+  {
+   "instrument": "Linear Ion Trap",
+   "adduct": "[M+H]+",
+   "n": 1335,
+   "median": 13.512,
+   "abs_p99": 226993.723,
+   "frac_out": 0.707865,
+   "n_out": 945
+  },
+  {
+   "instrument": "Linear Ion Trap",
+   "adduct": "[M+Na]+",
+   "n": 561,
+   "median": 0.118,
+   "abs_p99": 94996.947,
+   "frac_out": 0.686275,
+   "n_out": 385
+  },
+  {
+   "instrument": "Linear Ion Trap",
+   "adduct": "[M+NH4]+",
+   "n": 192,
+   "median": 10232.965,
+   "abs_p99": 552902.051,
+   "frac_out": 0.833333,
+   "n_out": 160
+  },
+  {
+   "instrument": "Linear Ion Trap",
+   "adduct": "[M+K]+",
+   "n": 176,
+   "median": -1.781,
+   "abs_p99": 495782.359,
+   "frac_out": 0.829545,
+   "n_out": 146
+  },
+  {
+   "instrument": "Maxis HD qTOF",
+   "adduct": "[M+H]+",
+   "n": 149,
+   "median": -1.028,
+   "abs_p99": 740221.595,
+   "frac_out": 0.053691,
+   "n_out": 8
+  },
+  {
+   "instrument": "Maxis II HD Q-TOF Bruker",
+   "adduct": "[M+H]+",
+   "n": 2683,
+   "median": -0.376,
+   "abs_p99": 3.363,
+   "frac_out": 0.0,
+   "n_out": 0
+  },
+  {
+   "instrument": "Maxis II HD Q-TOF Bruker",
+   "adduct": "[M+Na]+",
+   "n": 1116,
+   "median": -0.131,
+   "abs_p99": 3.77,
+   "frac_out": 0.000896,
+   "n_out": 1
+  },
+  {
+   "instrument": "Maxis II HD Q-TOF Bruker",
+   "adduct": "[M+NH4]+",
+   "n": 1089,
+   "median": 0.116,
+   "abs_p99": 3.529,
+   "frac_out": 0.0,
+   "n_out": 0
+  },
+  {
+   "instrument": "Maxis II HD Q-TOF Bruker",
+   "adduct": "[M-H]-",
+   "n": 937,
+   "median": 0.262,
+   "abs_p99": 3.035,
+   "frac_out": 0.0,
+   "n_out": 0
+  },
+  {
+   "instrument": "Maxis II HD Q-TOF Bruker",
+   "adduct": "[M+CH2O2-H]-",
+   "n": 800,
+   "median": -0.181,
+   "abs_p99": 3.499,
+   "frac_out": 0.0,
+   "n_out": 0
+  },
+  {
+   "instrument": "Maxis II HD Q-TOF Bruker",
+   "adduct": "[M-H2O+H]+",
+   "n": 764,
+   "median": -1.544,
+   "abs_p99": 4.56,
+   "frac_out": 0.002618,
+   "n_out": 2
+  },
+  {
+   "instrument": "N/A",
+   "adduct": "[M+H]+",
+   "n": 223,
+   "median": 1.443,
+   "abs_p99": 13.42,
+   "frac_out": 0.152466,
+   "n_out": 34
+  },
+  {
+   "instrument": "N/A",
+   "adduct": "[M+2H]2+",
+   "n": 126,
+   "median": 0.176,
+   "abs_p99": 11.215,
+   "frac_out": 0.031746,
+   "n_out": 4
+  },
+  {
+   "instrument": "None",
+   "adduct": "[M+H]+",
+   "n": 14639,
+   "median": -0.004,
+   "abs_p99": 37910.922,
+   "frac_out": 0.060592,
+   "n_out": 887
+  },
+  {
+   "instrument": "None",
+   "adduct": "[M-H]-",
+   "n": 4597,
+   "median": -0.032,
+   "abs_p99": 239.058,
+   "frac_out": 0.056341,
+   "n_out": 259
+  },
+  {
+   "instrument": "None",
+   "adduct": "[M+Na]+",
+   "n": 3614,
+   "median": -0.002,
+   "abs_p99": 68749.826,
+   "frac_out": 0.061704,
+   "n_out": 223
+  },
+  {
+   "instrument": "None",
+   "adduct": "[M+NH4]+",
+   "n": 2392,
+   "median": 0.019,
+   "abs_p99": 12454.493,
+   "frac_out": 0.015468,
+   "n_out": 37
+  },
+  {
+   "instrument": "None",
+   "adduct": "[M-H2O+H]+",
+   "n": 2042,
+   "median": -0.138,
+   "abs_p99": 37.363,
+   "frac_out": 0.011753,
+   "n_out": 24
+  },
+  {
+   "instrument": "None",
+   "adduct": "[M+2H]2+",
+   "n": 833,
+   "median": 0.006,
+   "abs_p99": 1003503.647,
+   "frac_out": 0.028812,
+   "n_out": 24
+  },
+  {
+   "instrument": "None",
+   "adduct": "[M+CH2O2-H]-",
+   "n": 735,
+   "median": -0.045,
+   "abs_p99": 7.672,
+   "frac_out": 0.009524,
+   "n_out": 7
+  },
+  {
+   "instrument": "None",
+   "adduct": "[2M+Na]+",
+   "n": 674,
+   "median": 0.0,
+   "abs_p99": 8.418,
+   "frac_out": 0.007418,
+   "n_out": 5
+  },
+  {
+   "instrument": "None",
+   "adduct": "[2M+H]+",
+   "n": 647,
+   "median": -0.014,
+   "abs_p99": 6.602,
+   "frac_out": 0.003091,
+   "n_out": 2
+  },
+  {
+   "instrument": "None",
+   "adduct": "[2M-H]-",
+   "n": 603,
+   "median": -0.042,
+   "abs_p99": 5274.857,
+   "frac_out": 0.016584,
+   "n_out": 10
+  },
+  {
+   "instrument": "None",
+   "adduct": "[2M+Na-2H]-",
+   "n": 470,
+   "median": 0.028,
+   "abs_p99": 2.769,
+   "frac_out": 0.0,
+   "n_out": 0
+  },
+  {
+   "instrument": "None",
+   "adduct": "[M+K]+",
+   "n": 329,
+   "median": -0.016,
+   "abs_p99": 62053.106,
+   "frac_out": 0.054711,
+   "n_out": 18
+  },
+  {
+   "instrument": "None",
+   "adduct": "[M-2H2O+H]+",
+   "n": 303,
+   "median": 0.185,
+   "abs_p99": 3.11,
+   "frac_out": 0.0,
+   "n_out": 0
+  },
+  {
+   "instrument": "None",
+   "adduct": "[2M+NH4]+",
+   "n": 236,
+   "median": 0.041,
+   "abs_p99": 8.487,
+   "frac_out": 0.004237,
+   "n_out": 1
+  },
+  {
+   "instrument": "None",
+   "adduct": "[M+C2H4O2-H]-",
+   "n": 212,
+   "median": 0.004,
+   "abs_p99": 2.895,
+   "frac_out": 0.0,
+   "n_out": 0
+  },
+  {
+   "instrument": "None",
+   "adduct": "[M]+",
+   "n": 168,
+   "median": 0.027,
+   "abs_p99": 14304.714,
+   "frac_out": 0.083333,
+   "n_out": 14
+  },
+  {
+   "instrument": "None",
+   "adduct": "[M+3H]3+",
+   "n": 111,
+   "median": -0.003,
+   "abs_p99": 0.082,
+   "frac_out": 0.0,
+   "n_out": 0
+  },
+  {
+   "instrument": "None",
+   "adduct": "[M-H2O-H]-",
+   "n": 101,
+   "median": -0.021,
+   "abs_p99": 2.583,
+   "frac_out": 0.0,
+   "n_out": 0
+  },
+  {
+   "instrument": "None",
+   "adduct": "[M+Cl]-",
+   "n": 101,
+   "median": -2.189,
+   "abs_p99": 1104717.125,
+   "frac_out": 0.079208,
+   "n_out": 8
+  },
+  {
+   "instrument": "Orbitrap",
+   "adduct": "[M+H]+",
+   "n": 411477,
+   "median": 0.005,
+   "abs_p99": 37.725,
+   "frac_out": 0.046355,
+   "n_out": 19074
+  },
+  {
+   "instrument": "Orbitrap",
+   "adduct": "[M-H]-",
+   "n": 153793,
+   "median": 0.01,
+   "abs_p99": 2.528,
+   "frac_out": 0.000813,
+   "n_out": 125
+  },
+  {
+   "instrument": "Orbitrap",
+   "adduct": "[M+Na]+",
+   "n": 64177,
+   "median": -0.029,
+   "abs_p99": 94378.688,
+   "frac_out": 0.265251,
+   "n_out": 17023
+  },
+  {
+   "instrument": "Orbitrap",
+   "adduct": "[M+CH2O2-H]-",
+   "n": 53865,
+   "median": 0.011,
+   "abs_p99": 1.283,
+   "frac_out": 3.7e-05,
+   "n_out": 2
+  },
+  {
+   "instrument": "Orbitrap",
+   "adduct": "[M+Cl]-",
+   "n": 24440,
+   "median": 0.007,
+   "abs_p99": 1.257,
+   "frac_out": 0.000368,
+   "n_out": 9
+  },
+  {
+   "instrument": "Orbitrap",
+   "adduct": "[M-H2O+H]+",
+   "n": 14167,
+   "median": -0.005,
+   "abs_p99": 4.998,
+   "frac_out": 0.001835,
+   "n_out": 26
+  },
+  {
+   "instrument": "Orbitrap",
+   "adduct": "[M+NH4]+",
+   "n": 10765,
+   "median": 0.001,
+   "abs_p99": 4.228,
+   "frac_out": 0.002694,
+   "n_out": 29
+  },
+  {
+   "instrument": "Orbitrap",
+   "adduct": "[M]+",
+   "n": 4249,
+   "median": 0.042,
+   "abs_p99": 2159.784,
+   "frac_out": 0.011532,
+   "n_out": 49
+  },
+  {
+   "instrument": "Orbitrap",
+   "adduct": "[2M-H]-",
+   "n": 2235,
+   "median": -0.024,
+   "abs_p99": 4.253,
+   "frac_out": 0.006264,
+   "n_out": 14
+  },
+  {
+   "instrument": "Orbitrap",
+   "adduct": "[M-2H2O+H]+",
+   "n": 1892,
+   "median": 0.026,
+   "abs_p99": 2.288,
+   "frac_out": 0.000529,
+   "n_out": 1
+  },
+  {
+   "instrument": "Orbitrap",
+   "adduct": "[2M+H]+",
+   "n": 992,
+   "median": 0.014,
+   "abs_p99": 5272.64,
+   "frac_out": 0.015121,
+   "n_out": 15
+  },
+  {
+   "instrument": "Orbitrap",
+   "adduct": "[2M+Na-2H]-",
+   "n": 820,
+   "median": -0.056,
+   "abs_p99": 4.01,
+   "frac_out": 0.0,
+   "n_out": 0
+  },
+  {
+   "instrument": "Orbitrap",
+   "adduct": "[2M+Na]+",
+   "n": 638,
+   "median": -0.002,
+   "abs_p99": 6.497,
+   "frac_out": 0.009404,
+   "n_out": 6
+  },
+  {
+   "instrument": "Orbitrap",
+   "adduct": "[M-H2O]+",
+   "n": 624,
+   "median": 0.015,
+   "abs_p99": 4.192,
+   "frac_out": 0.0,
+   "n_out": 0
+  },
+  {
+   "instrument": "Orbitrap",
+   "adduct": "[M+K]+",
+   "n": 394,
+   "median": -0.027,
+   "abs_p99": 19.985,
+   "frac_out": 0.030457,
+   "n_out": 12
+  },
+  {
+   "instrument": "Orbitrap",
+   "adduct": "[M]-",
+   "n": 269,
+   "median": -0.939,
+   "abs_p99": 737.16,
+   "frac_out": 0.011152,
+   "n_out": 3
+  },
+  {
+   "instrument": "Orbitrap",
+   "adduct": "[M+2H]2+",
+   "n": 231,
+   "median": 0.143,
+   "abs_p99": 12.081,
+   "frac_out": 0.017316,
+   "n_out": 4
+  },
+  {
+   "instrument": "Orbitrap",
+   "adduct": "[M+2Na-H]+",
+   "n": 101,
+   "median": -0.321,
+   "abs_p99": 4.788,
+   "frac_out": 0.0,
+   "n_out": 0
+  },
+  {
+   "instrument": "Q-Exactive Plus",
+   "adduct": "[M+H]+",
+   "n": 201,
+   "median": 6.821,
+   "abs_p99": 92814.281,
+   "frac_out": 0.676617,
+   "n_out": 136
+  },
+  {
+   "instrument": "Q-Exactive Plus",
+   "adduct": "[M-H]-",
+   "n": 200,
+   "median": -2.41,
+   "abs_p99": 276090.952,
+   "frac_out": 0.045,
+   "n_out": 9
+  },
+  {
+   "instrument": "Q-Exactive Plus Orbitrap Res 14k",
+   "adduct": "[M+H]+",
+   "n": 151,
+   "median": -1.003,
+   "abs_p99": 274678.812,
+   "frac_out": 0.046358,
+   "n_out": 7
+  },
+  {
+   "instrument": "Q-Exactive Plus Orbitrap Res 70k",
+   "adduct": "[M+H]+",
+   "n": 150,
+   "median": -1.017,
+   "abs_p99": 276092.257,
+   "frac_out": 0.046667,
+   "n_out": 7
+  },
+  {
+   "instrument": "QIT",
+   "adduct": "[M-H]-",
+   "n": 603,
+   "median": -0.114,
+   "abs_p99": 683.175,
+   "frac_out": 0.485904,
+   "n_out": 293
+  },
+  {
+   "instrument": "QIT",
+   "adduct": "[M+H]+",
+   "n": 547,
+   "median": -0.085,
+   "abs_p99": 22413.296,
+   "frac_out": 0.491773,
+   "n_out": 269
+  },
+  {
+   "instrument": "QQQ",
+   "adduct": "[M+H]+",
+   "n": 861,
+   "median": -0.075,
+   "abs_p99": 2510.126,
+   "frac_out": 0.217189,
+   "n_out": 187
+  },
+  {
+   "instrument": "QTOF",
+   "adduct": "[M+H]+",
+   "n": 64466,
+   "median": -2.397,
+   "abs_p99": 123521.859,
+   "frac_out": 0.308488,
+   "n_out": 19887
+  },
+  {
+   "instrument": "QTOF",
+   "adduct": "[M+Na]+",
+   "n": 61470,
+   "median": -2.678,
+   "abs_p99": 143394.328,
+   "frac_out": 0.305531,
+   "n_out": 18781
+  },
+  {
+   "instrument": "QqQ",
+   "adduct": "[M+H]+",
+   "n": 362,
+   "median": -0.195,
+   "abs_p99": 1552.116,
+   "frac_out": 0.475138,
+   "n_out": 172
+  },
+  {
+   "instrument": "QqQ",
+   "adduct": "[M-H]-",
+   "n": 346,
+   "median": -0.153,
+   "abs_p99": 1176.195,
+   "frac_out": 0.439306,
+   "n_out": 152
+  },
+  {
+   "instrument": "Quattro_QQQ:10eV",
+   "adduct": "[M+H]+",
+   "n": 624,
+   "median": 2.55,
+   "abs_p99": 16.94,
+   "frac_out": 0.017628,
+   "n_out": 11
+  },
+  {
+   "instrument": "Quattro_QQQ:10eV",
+   "adduct": "[M-H]-",
+   "n": 104,
+   "median": -2.785,
+   "abs_p99": 17063.669,
+   "frac_out": 0.028846,
+   "n_out": 3
+  },
+  {
+   "instrument": "Quattro_QQQ:25eV",
+   "adduct": "[M+H]+",
+   "n": 617,
+   "median": 2.574,
+   "abs_p99": 16.944,
+   "frac_out": 0.017828,
+   "n_out": 11
+  },
+  {
+   "instrument": "Quattro_QQQ:25eV",
+   "adduct": "[M-H]-",
+   "n": 105,
+   "median": -2.785,
+   "abs_p99": 17052.774,
+   "frac_out": 0.028571,
+   "n_out": 3
+  },
+  {
+   "instrument": "Quattro_QQQ:40eV",
+   "adduct": "[M+H]+",
+   "n": 611,
+   "median": 2.574,
+   "abs_p99": 16.792,
+   "frac_out": 0.016367,
+   "n_out": 10
+  },
+  {
+   "instrument": "Quattro_QQQ:40eV",
+   "adduct": "[M-H]-",
+   "n": 104,
+   "median": -2.785,
+   "abs_p99": 17063.669,
+   "frac_out": 0.028846,
+   "n_out": 3
+  },
+  {
+   "instrument": "ToF",
+   "adduct": "[M+H]+",
+   "n": 18834,
+   "median": 1.767,
+   "abs_p99": 15.611,
+   "frac_out": 0.036264,
+   "n_out": 683
+  },
+  {
+   "instrument": "ToF",
+   "adduct": "[M+Na]+",
+   "n": 3685,
+   "median": 1.465,
+   "abs_p99": 11.061,
+   "frac_out": 0.011398,
+   "n_out": 42
+  },
+  {
+   "instrument": "ToF",
+   "adduct": "[M-H2O+H]+",
+   "n": 1374,
+   "median": -1958.765,
+   "abs_p99": 7723.652,
+   "frac_out": 0.754003,
+   "n_out": 1036
+  },
+  {
+   "instrument": "ToF",
+   "adduct": "[M+NH4]+",
+   "n": 1145,
+   "median": -1986.352,
+   "abs_p99": 3804.798,
+   "frac_out": 0.946725,
+   "n_out": 1084
+  },
+  {
+   "instrument": "ToF",
+   "adduct": "[M+K]+",
+   "n": 735,
+   "median": -1842.766,
+   "abs_p99": 3926.897,
+   "frac_out": 0.670748,
+   "n_out": 493
+  },
+  {
+   "instrument": "ToF",
+   "adduct": "[M-2H2O+H]+",
+   "n": 547,
+   "median": -1965.468,
+   "abs_p99": 3783.301,
+   "frac_out": 0.978062,
+   "n_out": 535
+  },
+  {
+   "instrument": "ToF",
+   "adduct": "[M-H5O3]+",
+   "n": 215,
+   "median": -2715.416,
+   "abs_p99": 3711.661,
+   "frac_out": 1.0,
+   "n_out": 215
+  },
+  {
+   "instrument": "impact HD",
+   "adduct": "[M-H]-",
+   "n": 284,
+   "median": 2.624,
+   "abs_p99": 995180.838,
+   "frac_out": 0.521127,
+   "n_out": 148
+  },
+  {
+   "instrument": "iontrap",
+   "adduct": "[M+NH4]+",
+   "n": 3501,
+   "median": 0.604,
+   "abs_p99": 1.489,
+   "frac_out": 0.0,
+   "n_out": 0
+  },
+  {
+   "instrument": "iontrap",
+   "adduct": "[M+H]+",
+   "n": 2729,
+   "median": 0.75,
+   "abs_p99": 1.792,
+   "frac_out": 0.0,
+   "n_out": 0
+  },
+  {
+   "instrument": "iontrap",
+   "adduct": "[M-H]-",
+   "n": 2360,
+   "median": -0.665,
+   "abs_p99": 1.814,
+   "frac_out": 0.0,
+   "n_out": 0
+  },
+  {
+   "instrument": "nan",
+   "adduct": "[M+H]+",
+   "n": 593,
+   "median": 0.068,
+   "abs_p99": 6.794,
+   "frac_out": 0.0,
+   "n_out": 0
+  },
+  {
+   "instrument": "nan",
+   "adduct": "[M-H]-",
+   "n": 351,
+   "median": -0.054,
+   "abs_p99": 7.296,
+   "frac_out": 0.0,
+   "n_out": 0
+  },
+  {
+   "instrument": "orbitrap",
+   "adduct": "[M+H]+",
+   "n": 5802,
+   "median": 0.342,
+   "abs_p99": 2.941,
+   "frac_out": 0.0,
+   "n_out": 0
+  },
+  {
+   "instrument": "orbitrap",
+   "adduct": "[M-H]-",
+   "n": 3844,
+   "median": -0.524,
+   "abs_p99": 3.13,
+   "frac_out": 0.0,
+   "n_out": 0
+  },
+  {
+   "instrument": "orbitrap",
+   "adduct": "[M+NH4]+",
+   "n": 3579,
+   "median": 0.569,
+   "abs_p99": 2.273,
+   "frac_out": 0.0,
+   "n_out": 0
+  },
+  {
+   "instrument": "orbitrap",
+   "adduct": "[M+Na]+",
+   "n": 1108,
+   "median": -0.051,
+   "abs_p99": 5.264,
+   "frac_out": 0.0,
+   "n_out": 0
+  },
+  {
+   "instrument": "orbitrap",
+   "adduct": "[M+K]+",
+   "n": 603,
+   "median": -0.009,
+   "abs_p99": 1.78,
+   "frac_out": 0.0,
+   "n_out": 0
+  },
+  {
+   "instrument": "orbitrap",
+   "adduct": "[M+CH2O2-H]-",
+   "n": 232,
+   "median": 0.026,
+   "abs_p99": 2.108,
+   "frac_out": 0.0,
+   "n_out": 0
+  },
+  {
+   "instrument": "orbitrap",
+   "adduct": "[M+Cl]-",
+   "n": 125,
+   "median": -0.115,
+   "abs_p99": 1.487,
+   "frac_out": 0.0,
+   "n_out": 0
+  },
+  {
+   "instrument": "qTOF",
+   "adduct": "[M+H]+",
+   "n": 145,
+   "median": 1.298,
+   "abs_p99": 14906.019,
+   "frac_out": 0.055172,
+   "n_out": 8
+  },
+  {
+   "instrument": "qToF",
+   "adduct": "[M+H]+",
+   "n": 836,
+   "median": -0.16,
+   "abs_p99": 207968.048,
+   "frac_out": 0.300239,
+   "n_out": 251
+  },
+  {
+   "instrument": "qToF",
+   "adduct": "[M+Na]+",
+   "n": 354,
+   "median": 0.012,
+   "abs_p99": 3.47,
+   "frac_out": 0.0,
+   "n_out": 0
+  },
+  {
+   "instrument": "qToF",
+   "adduct": "[M-H]-",
+   "n": 320,
+   "median": 0.045,
+   "abs_p99": 1.085,
+   "frac_out": 0.0,
+   "n_out": 0
+  },
+  {
+   "instrument": "qToF",
+   "adduct": "[2M+H]+",
+   "n": 313,
+   "median": 0.19,
+   "abs_p99": 4.393,
+   "frac_out": 0.0,
+   "n_out": 0
+  },
+  {
+   "instrument": "qToF",
+   "adduct": "[M-H2O+H]+",
+   "n": 277,
+   "median": -1.076,
+   "abs_p99": 2.128,
+   "frac_out": 0.0,
+   "n_out": 0
+  },
+  {
+   "instrument": "qToF",
+   "adduct": "[2M-H]-",
+   "n": 228,
+   "median": -0.104,
+   "abs_p99": 4.636,
+   "frac_out": 0.0,
+   "n_out": 0
+  },
+  {
+   "instrument": "qToF",
+   "adduct": "[M-2H2O+H]+",
+   "n": 209,
+   "median": 0.017,
+   "abs_p99": 0.984,
+   "frac_out": 0.0,
+   "n_out": 0
+  },
+  {
+   "instrument": "qToF",
+   "adduct": "[2M+Na]+",
+   "n": 177,
+   "median": -0.215,
+   "abs_p99": 4.29,
+   "frac_out": 0.0,
+   "n_out": 0
+  },
+  {
+   "instrument": "qToF",
+   "adduct": "[2M+Na-2H]-",
+   "n": 120,
+   "median": 2.068,
+   "abs_p99": 4.738,
+   "frac_out": 0.0,
+   "n_out": 0
+  },
+  {
+   "instrument": "qTof",
+   "adduct": "[M+H]+",
+   "n": 21335,
+   "median": 0.509,
+   "abs_p99": 1066386.25,
+   "frac_out": 0.180173,
+   "n_out": 3844
+  },
+  {
+   "instrument": "qTof",
+   "adduct": "[M-H]-",
+   "n": 4684,
+   "median": -0.193,
+   "abs_p99": 58834.198,
+   "frac_out": 0.13877,
+   "n_out": 650
+  },
+  {
+   "instrument": "qTof",
+   "adduct": "[M+Na]+",
+   "n": 2295,
+   "median": 1.022,
+   "abs_p99": 29949.061,
+   "frac_out": 0.096732,
+   "n_out": 222
+  },
+  {
+   "instrument": "qTof",
+   "adduct": "[M-H2O+H]+",
+   "n": 1761,
+   "median": 0.837,
+   "abs_p99": 70005.436,
+   "frac_out": 0.059057,
+   "n_out": 104
+  },
+  {
+   "instrument": "qTof",
+   "adduct": "[M+K]+",
+   "n": 1058,
+   "median": 1.582,
+   "abs_p99": 98.526,
+   "frac_out": 0.065217,
+   "n_out": 69
+  },
+  {
+   "instrument": "qTof",
+   "adduct": "[2M+H]+",
+   "n": 433,
+   "median": -0.166,
+   "abs_p99": 14.57,
+   "frac_out": 0.018476,
+   "n_out": 8
+  },
+  {
+   "instrument": "qTof",
+   "adduct": "[M+NH4]+",
+   "n": 363,
+   "median": 0.167,
+   "abs_p99": 120.41,
+   "frac_out": 0.126722,
+   "n_out": 46
+  },
+  {
+   "instrument": "qTof",
+   "adduct": "[2M+Na]+",
+   "n": 321,
+   "median": -0.147,
+   "abs_p99": 8.02,
+   "frac_out": 0.0,
+   "n_out": 0
+  },
+  {
+   "instrument": "qTof",
+   "adduct": "[M+2H]2+",
+   "n": 291,
+   "median": 1.787,
+   "abs_p99": 1001944.45,
+   "frac_out": 0.264605,
+   "n_out": 77
+  },
+  {
+   "instrument": "qTof",
+   "adduct": "[M+CH2O2-H]-",
+   "n": 277,
+   "median": -0.513,
+   "abs_p99": 85.114,
+   "frac_out": 0.039711,
+   "n_out": 11
+  },
+  {
+   "instrument": "qTof",
+   "adduct": "[M-2H2O+H]+",
+   "n": 247,
+   "median": 0.492,
+   "abs_p99": 94.782,
+   "frac_out": 0.016194,
+   "n_out": 4
+  },
+  {
+   "instrument": "qTof",
+   "adduct": "[M+C2H4O2-H]-",
+   "n": 196,
+   "median": 0.051,
+   "abs_p99": 4.684,
+   "frac_out": 0.0,
+   "n_out": 0
+  },
+  {
+   "instrument": "qTof",
+   "adduct": "[M]+",
+   "n": 153,
+   "median": 0.045,
+   "abs_p99": 38158.279,
+   "frac_out": 0.091503,
+   "n_out": 14
+  },
+  {
+   "instrument": "qtof",
+   "adduct": "[M+NH4]+",
+   "n": 9728,
+   "median": -0.002,
+   "abs_p99": 0.198,
+   "frac_out": 0.000103,
+   "n_out": 1
+  },
+  {
+   "instrument": "qtof",
+   "adduct": "[M-H]-",
+   "n": 6164,
+   "median": -0.009,
+   "abs_p99": 2.987,
+   "frac_out": 0.0,
+   "n_out": 0
+  },
+  {
+   "instrument": "qtof",
+   "adduct": "[M+H]+",
+   "n": 5021,
+   "median": 0.029,
+   "abs_p99": 7.785,
+   "frac_out": 0.000199,
+   "n_out": 1
+  },
+  {
+   "instrument": "qtof",
+   "adduct": "[M+C2H4O2-H]-",
+   "n": 3731,
+   "median": 0.008,
+   "abs_p99": 0.099,
+   "frac_out": 0.0,
+   "n_out": 0
+  },
+  {
+   "instrument": "qtof",
+   "adduct": "[M+CH2O2-H]-",
+   "n": 585,
+   "median": -0.002,
+   "abs_p99": 3.379,
+   "frac_out": 0.0,
+   "n_out": 0
+  },
+  {
+   "instrument": "qtof",
+   "adduct": "[M+Na]+",
+   "n": 471,
+   "median": 0.581,
+   "abs_p99": 8.39,
+   "frac_out": 0.002123,
+   "n_out": 1
+  },
+  {
+   "instrument": "qtof",
+   "adduct": "[M]+",
+   "n": 280,
+   "median": 0.034,
+   "abs_p99": 2.677,
+   "frac_out": 0.003571,
+   "n_out": 1
+  },
+  {
+   "instrument": "qtof",
+   "adduct": "[M+K]+",
+   "n": 127,
+   "median": 1.386,
+   "abs_p99": 8.108,
+   "frac_out": 0.007874,
+   "n_out": 1
+  },
+  {
+   "instrument": "timsTOF",
+   "adduct": "[M+H]+",
+   "n": 589076,
+   "median": 2.221,
+   "abs_p99": 4.129,
+   "frac_out": 0.0,
+   "n_out": 0
+  },
+  {
+   "instrument": "timsTOF",
+   "adduct": "[2M+Na]+",
+   "n": 188158,
+   "median": 0.798,
+   "abs_p99": 4.721,
+   "frac_out": 0.0,
+   "n_out": 0
+  },
+  {
+   "instrument": "timsTOF",
+   "adduct": "[M-H]-",
+   "n": 185023,
+   "median": 0.801,
+   "abs_p99": 2.759,
+   "frac_out": 5e-06,
+   "n_out": 1
+  },
+  {
+   "instrument": "timsTOF",
+   "adduct": "[2M+H]+",
+   "n": 89487,
+   "median": 0.687,
+   "abs_p99": 4.765,
+   "frac_out": 0.0,
+   "n_out": 0
+  },
+  {
+   "instrument": "timsTOF",
+   "adduct": "[2M-H]-",
+   "n": 52933,
+   "median": 0.006,
+   "abs_p99": 4.46,
+   "frac_out": 0.0,
+   "n_out": 0
+  },
+  {
+   "instrument": "timsTOF",
+   "adduct": "[M+CH2O2-H]-",
+   "n": 24661,
+   "median": 0.351,
+   "abs_p99": 4.34,
+   "frac_out": 0.0,
+   "n_out": 0
+  },
+  {
+   "instrument": "timsTOF",
+   "adduct": "[M+Na]+",
+   "n": 16037,
+   "median": 1.032,
+   "abs_p99": 4.85,
+   "frac_out": 0.0,
+   "n_out": 0
+  },
+  {
+   "instrument": "timsTOF",
+   "adduct": "[M+NH4]+",
+   "n": 4800,
+   "median": 1.492,
+   "abs_p99": 5.176,
+   "frac_out": 0.0,
+   "n_out": 0
+  },
+  {
+   "instrument": "timsTOF",
+   "adduct": "[M+Cl]-",
+   "n": 2414,
+   "median": -0.155,
+   "abs_p99": 4.848,
+   "frac_out": 0.0,
+   "n_out": 0
+  },
+  {
+   "instrument": "timsTOF",
+   "adduct": "[M+K]+",
+   "n": 1100,
+   "median": 0.255,
+   "abs_p99": 5.532,
+   "frac_out": 0.000909,
+   "n_out": 1
+  },
+  {
+   "instrument": "timsTOF",
+   "adduct": "[2M+CH2O2-H]-",
+   "n": 659,
+   "median": -0.292,
+   "abs_p99": 5.238,
+   "frac_out": 0.0,
+   "n_out": 0
+  },
+  {
+   "instrument": "timsTOF",
+   "adduct": "[M+C2H4O2-H]-",
+   "n": 376,
+   "median": 0.388,
+   "abs_p99": 5.991,
+   "frac_out": 0.0,
+   "n_out": 0
+  },
+  {
+   "instrument": "timsTOF",
+   "adduct": "[2M+C2H4O2-H]-",
+   "n": 187,
+   "median": 0.201,
+   "abs_p99": 5.006,
+   "frac_out": 0.0,
+   "n_out": 0
+  },
+  {
+   "instrument": "APCI-ITFT",
+   "adduct": "その他",
+   "n": 102,
+   "median": -0.099,
+   "abs_p99": 4.707,
+   "frac_out": 0.0,
+   "n_out": 0
+  },
+  {
+   "instrument": "APCI-ITTOF",
+   "adduct": "その他",
+   "n": 3,
+   "median": 3.211,
+   "abs_p99": 3.211,
+   "frac_out": 0.0,
+   "n_out": 0
+  },
+  {
+   "instrument": "DIRECT INFUSION NANOESI-ION TRAP",
+   "adduct": "その他",
+   "n": 1,
+   "median": -22.187,
+   "abs_p99": 22.187,
+   "frac_out": 1.0,
+   "n_out": 1
+  },
+  {
+   "instrument": "ESI-ITFT",
+   "adduct": "その他",
+   "n": 21,
+   "median": 0.053,
+   "abs_p99": 111.558,
+   "frac_out": 0.095238,
+   "n_out": 2
+  },
+  {
+   "instrument": "ESI-ITTOF",
+   "adduct": "その他",
+   "n": 9,
+   "median": -0.174,
+   "abs_p99": 3.877,
+   "frac_out": 0.0,
+   "n_out": 0
+  },
+  {
+   "instrument": "ESI-QQ",
+   "adduct": "その他",
+   "n": 6,
+   "median": -0.033,
+   "abs_p99": 0.033,
+   "frac_out": 0.0,
+   "n_out": 0
+  },
+  {
+   "instrument": "ESI-QTOF",
+   "adduct": "その他",
+   "n": 12,
+   "median": -0.022,
+   "abs_p99": 1003016.562,
+   "frac_out": 0.416667,
+   "n_out": 5
+  },
+  {
+   "instrument": "ESI-TOF",
+   "adduct": "その他",
+   "n": 55,
+   "median": -0.013,
+   "abs_p99": 18.65,
+   "frac_out": 0.272727,
+   "n_out": 15
+  },
+  {
+   "instrument": "FAB-BE",
+   "adduct": "その他",
+   "n": 1,
+   "median": -0.137,
+   "abs_p99": 0.137,
+   "frac_out": 0.0,
+   "n_out": 0
+  },
+  {
+   "instrument": "FAB-EBEB",
+   "adduct": "その他",
+   "n": 17,
+   "median": 0.165,
+   "abs_p99": 11.602,
+   "frac_out": 0.235294,
+   "n_out": 4
+  },
+  {
+   "instrument": "Flow-injection QqQ/MS",
+   "adduct": "その他",
+   "n": 31,
+   "median": -515.969,
+   "abs_p99": 800.033,
+   "frac_out": 1.0,
+   "n_out": 31
+  },
+  {
+   "instrument": "GC-APCI-QTOF",
+   "adduct": "その他",
+   "n": 78,
+   "median": 0.047,
+   "abs_p99": 0.377,
+   "frac_out": 0.0,
+   "n_out": 0
+  },
+  {
+   "instrument": "GC-EI-Q",
+   "adduct": "その他",
+   "n": 35,
+   "median": 1.675,
+   "abs_p99": 187.298,
+   "frac_out": 0.514286,
+   "n_out": 18
+  },
+  {
+   "instrument": "Hybrid FT",
+   "adduct": "その他",
+   "n": 129,
+   "median": -0.895,
+   "abs_p99": 78488.062,
+   "frac_out": 0.131783,
+   "n_out": 17
+  },
+  {
+   "instrument": "Hybrid Ft",
+   "adduct": "その他",
+   "n": 5,
+   "median": 0.191,
+   "abs_p99": 18705.02,
+   "frac_out": 0.2,
+   "n_out": 1
+  },
+  {
+   "instrument": "Ion Trap",
+   "adduct": "その他",
+   "n": 83,
+   "median": -2.96,
+   "abs_p99": 1006161.055,
+   "frac_out": 0.373494,
+   "n_out": 31
+  },
+  {
+   "instrument": "LC-APCI-ITFT",
+   "adduct": "その他",
+   "n": 153,
+   "median": -1.543,
+   "abs_p99": 6.254,
+   "frac_out": 0.0,
+   "n_out": 0
+  },
+  {
+   "instrument": "LC-APCI-QFT",
+   "adduct": "その他",
+   "n": 130,
+   "median": 0.473,
+   "abs_p99": 2.409,
+   "frac_out": 0.0,
+   "n_out": 0
+  },
+  {
+   "instrument": "LC-ESI-FT",
+   "adduct": "その他",
+   "n": 37,
+   "median": -0.01,
+   "abs_p99": 26889.25,
+   "frac_out": 0.027027,
+   "n_out": 1
+  },
+  {
+   "instrument": "LC-ESI-HRMS",
+   "adduct": "その他",
+   "n": 1,
+   "median": -4.9,
+   "abs_p99": 4.9,
+   "frac_out": 0.0,
+   "n_out": 0
+  },
+  {
+   "instrument": "LC-ESI-HRMS-FT",
+   "adduct": "その他",
+   "n": 3,
+   "median": 0.132,
+   "abs_p99": 0.358,
+   "frac_out": 0.0,
+   "n_out": 0
+  },
+  {
+   "instrument": "LC-ESI-IT",
+   "adduct": "その他",
+   "n": 56,
+   "median": 55.211,
+   "abs_p99": 1066.075,
+   "frac_out": 0.714286,
+   "n_out": 40
+  },
+  {
+   "instrument": "LC-ESI-ITFT",
+   "adduct": "その他",
+   "n": 346,
+   "median": -0.146,
+   "abs_p99": 2107.036,
+   "frac_out": 0.33237,
+   "n_out": 115
+  },
+  {
+   "instrument": "LC-ESI-ITTOF",
+   "adduct": "その他",
+   "n": 144,
+   "median": -0.583,
+   "abs_p99": 254506.838,
+   "frac_out": 0.173611,
+   "n_out": 25
+  },
+  {
+   "instrument": "LC-ESI-Q",
+   "adduct": "その他",
+   "n": 57,
+   "median": 0.007,
+   "abs_p99": 0.2,
+   "frac_out": 0.0,
+   "n_out": 0
+  },
+  {
+   "instrument": "LC-ESI-QEHF",
+   "adduct": "その他",
+   "n": 223,
+   "median": 9366.942,
+   "abs_p99": 51584.649,
+   "frac_out": 0.986547,
+   "n_out": 220
+  },
+  {
+   "instrument": "LC-ESI-QFT",
+   "adduct": "その他",
+   "n": 315,
+   "median": 0.102,
+   "abs_p99": 120049.531,
+   "frac_out": 0.139683,
+   "n_out": 44
+  },
+  {
+   "instrument": "LC-ESI-QIT",
+   "adduct": "その他",
+   "n": 20,
+   "median": -322.174,
+   "abs_p99": 568.304,
+   "frac_out": 1.0,
+   "n_out": 20
+  },
+  {
+   "instrument": "LC-ESI-QQ",
+   "adduct": "その他",
+   "n": 183,
+   "median": -0.274,
+   "abs_p99": 688.949,
+   "frac_out": 0.590164,
+   "n_out": 108
+  },
+  {
+   "instrument": "LC-ESI-QQQ",
+   "adduct": "その他",
+   "n": 55,
+   "median": 0.03,
+   "abs_p99": 1377.325,
+   "frac_out": 0.309091,
+   "n_out": 17
+  },
+  {
+   "instrument": "LC-ESI-QTOF",
+   "adduct": "その他",
+   "n": 244,
+   "median": 0.066,
+   "abs_p99": 65206.367,
+   "frac_out": 0.053279,
+   "n_out": 13
+  },
+  {
+   "instrument": "LC-ESI-TOF",
+   "adduct": "その他",
+   "n": 54,
+   "median": -5.313,
+   "abs_p99": 900.627,
+   "frac_out": 0.537037,
+   "n_out": 29
+  },
+  {
+   "instrument": "LC-Orbitrap MSLC-Orbitrap MS",
+   "adduct": "その他",
+   "n": 8,
+   "median": -0.405,
+   "abs_p99": 1.205,
+   "frac_out": 0.0,
+   "n_out": 0
+  },
+  {
+   "instrument": "LC-Q-TOF/MS",
+   "adduct": "その他",
+   "n": 17,
+   "median": 1.229,
+   "abs_p99": 12252050.16,
+   "frac_out": 0.117647,
+   "n_out": 2
+  },
+  {
+   "instrument": "LIT",
+   "adduct": "その他",
+   "n": 11,
+   "median": -16.117,
+   "abs_p99": 299.33,
+   "frac_out": 0.545455,
+   "n_out": 6
+  },
+  {
+   "instrument": "Linear Ion Trap",
+   "adduct": "その他",
+   "n": 24,
+   "median": -19.291,
+   "abs_p99": 954210.188,
+   "frac_out": 0.916667,
+   "n_out": 22
+  },
+  {
+   "instrument": "MALDI-QIT",
+   "adduct": "その他",
+   "n": 2,
+   "median": 1.465,
+   "abs_p99": 3.043,
+   "frac_out": 0.0,
+   "n_out": 0
+  },
+  {
+   "instrument": "MALDI-QITTOF",
+   "adduct": "その他",
+   "n": 21,
+   "median": -0.031,
+   "abs_p99": 0.065,
+   "frac_out": 0.0,
+   "n_out": 0
+  },
+  {
+   "instrument": "MALDI-TOFTOF",
+   "adduct": "その他",
+   "n": 46,
+   "median": 0.002,
+   "abs_p99": 0.251,
+   "frac_out": 0.0,
+   "n_out": 0
+  },
+  {
+   "instrument": "Maxis HD qTOF",
+   "adduct": "その他",
+   "n": 103,
+   "median": -0.247,
+   "abs_p99": 1104717.738,
+   "frac_out": 0.067961,
+   "n_out": 7
+  },
+  {
+   "instrument": "Maxis II HD Q-TOF Bruker",
+   "adduct": "その他",
+   "n": 200,
+   "median": -0.289,
+   "abs_p99": 2.049,
+   "frac_out": 0.0,
+   "n_out": 0
+  },
+  {
+   "instrument": "N/A",
+   "adduct": "その他",
+   "n": 27,
+   "median": -1.489,
+   "abs_p99": 7.042,
+   "frac_out": 0.0,
+   "n_out": 0
+  },
+  {
+   "instrument": "None",
+   "adduct": "その他",
+   "n": 193,
+   "median": 0.039,
+   "abs_p99": 1576.892,
+   "frac_out": 0.025907,
+   "n_out": 5
+  },
+  {
+   "instrument": "Orbitrap",
+   "adduct": "その他",
+   "n": 369,
+   "median": 0.344,
+   "abs_p99": 996138.57,
+   "frac_out": 0.084011,
+   "n_out": 31
+  },
+  {
+   "instrument": "Q Exactive Focus Hybrid Quadrupole Orbitrap Mass Spectrometer (Thermo Fisher Scientific)",
+   "adduct": "その他",
+   "n": 2,
+   "median": -0.088,
+   "abs_p99": 1.081,
+   "frac_out": 0.0,
+   "n_out": 0
+  },
+  {
+   "instrument": "Q Exactive HF",
+   "adduct": "その他",
+   "n": 7,
+   "median": -1.169,
+   "abs_p99": 35.537,
+   "frac_out": 0.428571,
+   "n_out": 3
+  },
+  {
+   "instrument": "Q-Exactive",
+   "adduct": "その他",
+   "n": 1,
+   "median": -3258.931,
+   "abs_p99": 3258.931,
+   "frac_out": 1.0,
+   "n_out": 1
+  },
+  {
+   "instrument": "Q-Exactive Plus Orbitrap Res 14k",
+   "adduct": "その他",
+   "n": 49,
+   "median": -0.385,
+   "abs_p99": 666637.545,
+   "frac_out": 0.102041,
+   "n_out": 5
+  },
+  {
+   "instrument": "Q-Exactive Plus Orbitrap Res 70k",
+   "adduct": "その他",
+   "n": 127,
+   "median": -0.037,
+   "abs_p99": 1104718.86,
+   "frac_out": 0.086614,
+   "n_out": 11
+  },
+  {
+   "instrument": "Q-TOF",
+   "adduct": "その他",
+   "n": 203,
+   "median": -0.014,
+   "abs_p99": 121920.684,
+   "frac_out": 0.261084,
+   "n_out": 53
+  },
+  {
+   "instrument": "QIT",
+   "adduct": "その他",
+   "n": 111,
+   "median": -271.695,
+   "abs_p99": 917.807,
+   "frac_out": 0.747748,
+   "n_out": 83
+  },
+  {
+   "instrument": "QIT-FT",
+   "adduct": "その他",
+   "n": 1,
+   "median": -0.935,
+   "abs_p99": 0.935,
+   "frac_out": 0.0,
+   "n_out": 0
+  },
+  {
+   "instrument": "QQQ",
+   "adduct": "その他",
+   "n": 420,
+   "median": -0.66,
+   "abs_p99": 237.09,
+   "frac_out": 0.192857,
+   "n_out": 81
+  },
+  {
+   "instrument": "QqQ",
+   "adduct": "その他",
+   "n": 25,
+   "median": -225.641,
+   "abs_p99": 917.938,
+   "frac_out": 0.84,
+   "n_out": 21
+  },
+  {
+   "instrument": "Qtof",
+   "adduct": "その他",
+   "n": 10,
+   "median": 0.181,
+   "abs_p99": 1.135,
+   "frac_out": 0.0,
+   "n_out": 0
+  },
+  {
+   "instrument": "SI-BE",
+   "adduct": "その他",
+   "n": 1,
+   "median": -0.015,
+   "abs_p99": 0.015,
+   "frac_out": 0.0,
+   "n_out": 0
+  },
+  {
+   "instrument": "SYNAPT QTOF, Waters",
+   "adduct": "その他",
+   "n": 8,
+   "median": 2.415,
+   "abs_p99": 3.218,
+   "frac_out": 0.0,
+   "n_out": 0
+  },
+  {
+   "instrument": "Thermo LTQ",
+   "adduct": "その他",
+   "n": 1,
+   "median": -330.202,
+   "abs_p99": 330.202,
+   "frac_out": 1.0,
+   "n_out": 1
+  },
+  {
+   "instrument": "Waters SYNAPT",
+   "adduct": "その他",
+   "n": 1,
+   "median": 1.422,
+   "abs_p99": 1.422,
+   "frac_out": 0.0,
+   "n_out": 0
+  },
+  {
+   "instrument": "in source CID",
+   "adduct": "その他",
+   "n": 42,
+   "median": -412.732,
+   "abs_p99": 1385.981,
+   "frac_out": 0.785714,
+   "n_out": 33
+  },
+  {
+   "instrument": "iontrap",
+   "adduct": "その他",
+   "n": 5,
+   "median": 0.049,
+   "abs_p99": 3.388,
+   "frac_out": 0.0,
+   "n_out": 0
+  },
+  {
+   "instrument": "nan",
+   "adduct": "その他",
+   "n": 28,
+   "median": 0.02,
+   "abs_p99": 8.402,
+   "frac_out": 0.0,
+   "n_out": 0
+  },
+  {
+   "instrument": "orbitrap",
+   "adduct": "その他",
+   "n": 68,
+   "median": 0.028,
+   "abs_p99": 2144.828,
+   "frac_out": 0.058824,
+   "n_out": 4
+  },
+  {
+   "instrument": "qTOF",
+   "adduct": "その他",
+   "n": 16,
+   "median": -0.503,
+   "abs_p99": 30682.681,
+   "frac_out": 0.375,
+   "n_out": 6
+  },
+  {
+   "instrument": "qToF",
+   "adduct": "その他",
+   "n": 19,
+   "median": 0.651,
+   "abs_p99": 4.278,
+   "frac_out": 0.0,
+   "n_out": 0
+  },
+  {
+   "instrument": "qTof",
+   "adduct": "その他",
+   "n": 324,
+   "median": 1.086,
+   "abs_p99": 3000015.25,
+   "frac_out": 0.290123,
+   "n_out": 94
+  },
+  {
+   "instrument": "qtof",
+   "adduct": "その他",
+   "n": 4,
+   "median": 0.086,
+   "abs_p99": 0.827,
+   "frac_out": 0.0,
+   "n_out": 0
+  },
+  {
+   "instrument": "timsTOF",
+   "adduct": "その他",
+   "n": 58,
+   "median": 1.507,
+   "abs_p99": 5.532,
+   "frac_out": 0.0,
+   "n_out": 0
+  }
+ ],
+ "organiser_column": {
+  "n_both": 2534956,
+  "abs_diff_median": 1.6154,
+  "abs_diff_p99": 2852.5502,
+  "frac_abs_diff_gt_1ppm": 0.797601,
+  "organiser_stats": {
+   "n": 2535322,
+   "median": 1.512,
+   "abs_p99": 2884.419,
+   "frac_out": 0.069052,
+   "n_out": 175068
+  }
+ },
+ "n_sample": 525,
+ "seconds": 36.8,
+ "a12_train_reference": {
+  "note": "事前登録外の参考: train の |ppm| > 10 のスペクトルで既知の差に当たる数（装置 × 付加イオンの上位 25 組）",
+  "total_out": 124644,
+  "total_any_hit": 6412,
+  "groups": [
+   {
+    "instrument": "QTOF",
+    "adduct": "[M+H]+",
+    "n_out": 19887,
+    "hits": {
+     "(none)": 19699,
+     "-H2": 75,
+     "+Na-H": 67,
+     "2M": 23,
+     "+H2O": 13,
+     "+13C": 10
+    }
+   },
+   {
+    "instrument": "Orbitrap",
+    "adduct": "[M+H]+",
+    "n_out": 19074,
+    "hits": {
+     "(none)": 17490,
+     "-H2O": 504,
+     "+Na-H": 292,
+     "+NH3": 246,
+     "-H2": 229,
+     "-13C": 138
+    }
+   },
+   {
+    "instrument": "QTOF",
+    "adduct": "[M+Na]+",
+    "n_out": 18781,
+    "hits": {
+     "(none)": 18630,
+     "-H2": 44,
+     "+H2O": 31,
+     "+Na-H": 30,
+     "+K-H": 19,
+     "2M": 15
+    }
+   },
+   {
+    "instrument": "Orbitrap",
+    "adduct": "[M+Na]+",
+    "n_out": 17023,
+    "hits": {
+     "(none)": 16965,
+     "+Na-H": 22,
+     "+H2O": 18,
+     "-H2": 9,
+     "+K-H": 8,
+     "2M": 1
+    }
+   },
+   {
+    "instrument": "LC-ESI-QQ",
+    "adduct": "[M+H]+",
+    "n_out": 7781,
+    "hits": {
+     "(none)": 7781
+    }
+   },
+   {
+    "instrument": "LC-ESI-QQ",
+    "adduct": "[M-H]-",
+    "n_out": 5610,
+    "hits": {
+     "(none)": 5610
+    }
+   },
+   {
+    "instrument": "Linear Ion Trap",
+    "adduct": "[M-H]-",
+    "n_out": 5321,
+    "hits": {
+     "(none)": 5296,
+     "+H2": 23,
+     "2M": 2
+    }
+   },
+   {
+    "instrument": "Flow-injection QqQ/MS",
+    "adduct": "[M+H]+",
+    "n_out": 4407,
+    "hits": {
+     "(none)": 4407
+    }
+   },
+   {
+    "instrument": "qTof",
+    "adduct": "[M+H]+",
+    "n_out": 3844,
+    "hits": {
+     "(none)": 2845,
+     "+Na-H": 345,
+     "2M": 186,
+     "+13C": 128,
+     "M/2": 123,
+     "+K-H": 90
+    }
+   },
+   {
+    "instrument": "LC-ESI-QTOF",
+    "adduct": "[M-H]-",
+    "n_out": 1353,
+    "hits": {
+     "(none)": 1290,
+     "-H2": 25,
+     "+HCOOH": 17,
+     "-hexose": 9,
+     "+13C": 5,
+     "+H2": 4
+    }
+   },
+   {
+    "instrument": "LC-ESI-IT",
+    "adduct": "[M+H]+",
+    "n_out": 1231,
+    "hits": {
+     "(none)": 1231
+    }
+   },
+   {
+    "instrument": "ToF",
+    "adduct": "[M+NH4]+",
+    "n_out": 1084,
+    "hits": {
+     "-13C": 701,
+     "(none)": 383
+    }
+   },
+   {
+    "instrument": "ToF",
+    "adduct": "[M-H2O+H]+",
+    "n_out": 1036,
+    "hits": {
+     "-13C": 829,
+     "(none)": 207
+    }
+   },
+   {
+    "instrument": "Linear Ion Trap",
+    "adduct": "[M+H]+",
+    "n_out": 945,
+    "hits": {
+     "(none)": 918,
+     "+K-H": 17,
+     "+Na-H": 8,
+     "-H2": 2
+    }
+   },
+   {
+    "instrument": "None",
+    "adduct": "[M+H]+",
+    "n_out": 887,
+    "hits": {
+     "(none)": 822,
+     "2M": 11,
+     "M/2": 11,
+     "+Na-H": 8,
+     "-13C": 8,
+     "+13C": 7
+    }
+   },
+   {
+    "instrument": "ToF",
+    "adduct": "[M+H]+",
+    "n_out": 683,
+    "hits": {
+     "(none)": 683
+    }
+   },
+   {
+    "instrument": "Ion Trap",
+    "adduct": "[M+H]+",
+    "n_out": 669,
+    "hits": {
+     "(none)": 646,
+     "-H2": 16,
+     "+Na-H": 6,
+     "-13C": 1
+    }
+   },
+   {
+    "instrument": "LC-ESI-QTOF",
+    "adduct": "[M+H]+",
+    "n_out": 669,
+    "hits": {
+     "(none)": 652,
+     "+Na-H": 6,
+     "+H2O": 3,
+     "-H2O": 3,
+     "-13C": 2,
+     "2M": 1
+    }
+   },
+   {
+    "instrument": "qTof",
+    "adduct": "[M-H]-",
+    "n_out": 650,
+    "hits": {
+     "(none)": 611,
+     "+H2": 32,
+     "+HCOOH": 6,
+     "-H2O": 1
+    }
+   },
+   {
+    "instrument": "LC-ESI-ITFT",
+    "adduct": "[M-CH3]-",
+    "n_out": 566,
+    "hits": {
+     "(none)": 566
+    }
+   },
+   {
+    "instrument": "LC-ESI-ITFT",
+    "adduct": "[M-H]-",
+    "n_out": 536,
+    "hits": {
+     "(none)": 536
+    }
+   },
+   {
+    "instrument": "ToF",
+    "adduct": "[M-2H2O+H]+",
+    "n_out": 535,
+    "hits": {
+     "-13C": 494,
+     "(none)": 41
+    }
+   },
+   {
+    "instrument": "Flow-injection QqQ/MS",
+    "adduct": "[M-H]-",
+    "n_out": 534,
+    "hits": {
+     "(none)": 534
+    }
+   },
+   {
+    "instrument": "ToF",
+    "adduct": "[M+K]+",
+    "n_out": 493,
+    "hits": {
+     "(none)": 471,
+     "-13C": 22
+    }
+   },
+   {
+    "instrument": "LC-ESI-QFT",
+    "adduct": "[M-H]-",
+    "n_out": 471,
+    "hits": {
+     "(none)": 467,
+     "-H2O": 2,
+     "+H2": 2
+    }
+   }
+  ]
+ },
+ "by_instrument": {
+  "": {
+   "n": 297,
+   "median": 0.522,
+   "abs_p99": 3.945,
+   "frac_out": 0.003367,
+   "n_out": 1
+  },
+  "APCI-ITFT": {
+   "n": 276,
+   "median": -0.102,
+   "abs_p99": 132304.36,
+   "frac_out": 0.014493,
+   "n_out": 4
+  },
+  "APCI-ITTOF": {
+   "n": 3,
+   "median": 3.211,
+   "abs_p99": 3.211,
+   "frac_out": 0.0,
+   "n_out": 0
+  },
+  "DIRECT INFUSION NANOESI-ION TRAP": {
+   "n": 1,
+   "median": -22.187,
+   "abs_p99": 22.187,
+   "frac_out": 1.0,
+   "n_out": 1
+  },
+  "ESI-FT": {
+   "n": 122,
+   "median": 0.07,
+   "abs_p99": 141058.359,
+   "frac_out": 0.040984,
+   "n_out": 5
+  },
+  "ESI-ITFT": {
+   "n": 140,
+   "median": -0.033,
+   "abs_p99": 70.015,
+   "frac_out": 0.014286,
+   "n_out": 2
+  },
+  "ESI-ITTOF": {
+   "n": 9,
+   "median": -0.174,
+   "abs_p99": 3.877,
+   "frac_out": 0.0,
+   "n_out": 0
+  },
+  "ESI-QFT": {
+   "n": 77342,
+   "median": -0.022,
+   "abs_p99": 206116.672,
+   "frac_out": 0.021088,
+   "n_out": 1631
+  },
+  "ESI-QQ": {
+   "n": 6,
+   "median": -0.033,
+   "abs_p99": 0.033,
+   "frac_out": 0.0,
+   "n_out": 0
+  },
+  "ESI-QTOF": {
+   "n": 5706,
+   "median": 0.027,
+   "abs_p99": 7.361,
+   "frac_out": 0.007886,
+   "n_out": 45
+  },
+  "ESI-TOF": {
+   "n": 1219,
+   "median": 2.081,
+   "abs_p99": 42908.871,
+   "frac_out": 0.028712,
+   "n_out": 35
+  },
+  "FAB-BE": {
+   "n": 1,
+   "median": -0.137,
+   "abs_p99": 0.137,
+   "frac_out": 0.0,
+   "n_out": 0
+  },
+  "FAB-EBEB": {
+   "n": 332,
+   "median": 3.306,
+   "abs_p99": 13.757,
+   "frac_out": 0.03012,
+   "n_out": 10
+  },
+  "Flow-injection QqQ/MS": {
+   "n": 8716,
+   "median": 0.193,
+   "abs_p99": 11793.062,
+   "frac_out": 0.599816,
+   "n_out": 5228
+  },
+  "GC-APCI-QTOF": {
+   "n": 78,
+   "median": 0.047,
+   "abs_p99": 0.377,
+   "frac_out": 0.0,
+   "n_out": 0
+  },
+  "GC-EI-Q": {
+   "n": 35,
+   "median": 1.675,
+   "abs_p99": 187.298,
+   "frac_out": 0.514286,
+   "n_out": 18
+  },
+  "Hybrid FT": {
+   "n": 9137,
+   "median": -0.131,
+   "abs_p99": 6.767,
+   "frac_out": 0.009303,
+   "n_out": 85
+  },
+  "Hybrid Ft": {
+   "n": 5,
+   "median": 0.191,
+   "abs_p99": 18705.02,
+   "frac_out": 0.2,
+   "n_out": 1
+  },
+  "Ion Trap": {
+   "n": 1958,
+   "median": -2.716,
+   "abs_p99": 499909.22,
+   "frac_out": 0.496936,
+   "n_out": 973
+  },
+  "LC-APCI-ITFT": {
+   "n": 153,
+   "median": -1.543,
+   "abs_p99": 6.254,
+   "frac_out": 0.0,
+   "n_out": 0
+  },
+  "LC-APCI-QFT": {
+   "n": 130,
+   "median": 0.473,
+   "abs_p99": 2.409,
+   "frac_out": 0.0,
+   "n_out": 0
+  },
+  "LC-APPI-QQ": {
+   "n": 968,
+   "median": 152.902,
+   "abs_p99": 61749.738,
+   "frac_out": 0.751033,
+   "n_out": 727
+  },
+  "LC-ESI-FT": {
+   "n": 152,
+   "median": -0.026,
+   "abs_p99": 3.144,
+   "frac_out": 0.006579,
+   "n_out": 1
+  },
+  "LC-ESI-HRMS": {
+   "n": 1,
+   "median": -4.9,
+   "abs_p99": 4.9,
+   "frac_out": 0.0,
+   "n_out": 0
+  },
+  "LC-ESI-HRMS-FT": {
+   "n": 3,
+   "median": 0.132,
+   "abs_p99": 0.358,
+   "frac_out": 0.0,
+   "n_out": 0
+  },
+  "LC-ESI-IT": {
+   "n": 1710,
+   "median": -513.876,
+   "abs_p99": 647903.616,
+   "frac_out": 0.829825,
+   "n_out": 1419
+  },
+  "LC-ESI-ITFT": {
+   "n": 45107,
+   "median": -0.01,
+   "abs_p99": 574.668,
+   "frac_out": 0.041457,
+   "n_out": 1870
+  },
+  "LC-ESI-ITTOF": {
+   "n": 144,
+   "median": -0.583,
+   "abs_p99": 254506.838,
+   "frac_out": 0.173611,
+   "n_out": 25
+  },
+  "LC-ESI-Orbitrap": {
+   "n": 531,
+   "median": -0.011,
+   "abs_p99": 0.65,
+   "frac_out": 0.003766,
+   "n_out": 2
+  },
+  "LC-ESI-Q": {
+   "n": 57,
+   "median": 0.007,
+   "abs_p99": 0.2,
+   "frac_out": 0.0,
+   "n_out": 0
+  },
+  "LC-ESI-Q-Orbitrap": {
+   "n": 111,
+   "median": 0.119,
+   "abs_p99": 434679.719,
+   "frac_out": 0.027027,
+   "n_out": 3
+  },
+  "LC-ESI-QEHF": {
+   "n": 223,
+   "median": 9366.942,
+   "abs_p99": 51584.649,
+   "frac_out": 0.986547,
+   "n_out": 220
+  },
+  "LC-ESI-QFT": {
+   "n": 55014,
+   "median": -0.009,
+   "abs_p99": 12.673,
+   "frac_out": 0.012615,
+   "n_out": 694
+  },
+  "LC-ESI-QIT": {
+   "n": 620,
+   "median": -0.058,
+   "abs_p99": 493.348,
+   "frac_out": 0.056452,
+   "n_out": 35
+  },
+  "LC-ESI-QQ": {
+   "n": 19250,
+   "median": -107.543,
+   "abs_p99": 144798.516,
+   "frac_out": 0.712104,
+   "n_out": 13708
+  },
+  "LC-ESI-QQQ": {
+   "n": 3097,
+   "median": 0.106,
+   "abs_p99": 41950.875,
+   "frac_out": 0.030029,
+   "n_out": 93
+  },
+  "LC-ESI-QTOF": {
+   "n": 104366,
+   "median": -0.0,
+   "abs_p99": 50.002,
+   "frac_out": 0.02131,
+   "n_out": 2224
+  },
+  "LC-ESI-TOF": {
+   "n": 1321,
+   "median": 0.005,
+   "abs_p99": 5818.601,
+   "frac_out": 0.205905,
+   "n_out": 272
+  },
+  "LC-Orbitrap MS": {
+   "n": 347,
+   "median": 0.641,
+   "abs_p99": 3.069,
+   "frac_out": 0.0,
+   "n_out": 0
+  },
+  "LC-Orbitrap MSLC-Orbitrap MS": {
+   "n": 8,
+   "median": -0.405,
+   "abs_p99": 1.205,
+   "frac_out": 0.0,
+   "n_out": 0
+  },
+  "LC-Q-TOF/MS": {
+   "n": 1006,
+   "median": -0.791,
+   "abs_p99": 318732.6,
+   "frac_out": 0.4334,
+   "n_out": 436
+  },
+  "LC-QTOF": {
+   "n": 388,
+   "median": -0.01,
+   "abs_p99": 0.106,
+   "frac_out": 0.0,
+   "n_out": 0
+  },
+  "LIT": {
+   "n": 11,
+   "median": -16.117,
+   "abs_p99": 299.33,
+   "frac_out": 0.545455,
+   "n_out": 6
+  },
+  "Linear Ion Trap": {
+   "n": 10239,
+   "median": 71.127,
+   "abs_p99": 595949.838,
+   "frac_out": 0.68161,
+   "n_out": 6979
+  },
+  "MALDI-QIT": {
+   "n": 2,
+   "median": 1.465,
+   "abs_p99": 3.043,
+   "frac_out": 0.0,
+   "n_out": 0
+  },
+  "MALDI-QITTOF": {
+   "n": 21,
+   "median": -0.031,
+   "abs_p99": 0.065,
+   "frac_out": 0.0,
+   "n_out": 0
+  },
+  "MALDI-TOFTOF": {
+   "n": 46,
+   "median": 0.002,
+   "abs_p99": 0.251,
+   "frac_out": 0.0,
+   "n_out": 0
+  },
+  "Maxis HD qTOF": {
+   "n": 252,
+   "median": -0.769,
+   "abs_p99": 1104717.623,
+   "frac_out": 0.059524,
+   "n_out": 15
+  },
+  "Maxis II HD Q-TOF Bruker": {
+   "n": 7589,
+   "median": -0.219,
+   "abs_p99": 3.717,
+   "frac_out": 0.000395,
+   "n_out": 3
+  },
+  "N/A": {
+   "n": 376,
+   "median": 0.699,
+   "abs_p99": 13.367,
+   "frac_out": 0.101064,
+   "n_out": 38
+  },
+  "None": {
+   "n": 33000,
+   "median": -0.013,
+   "abs_p99": 19736.815,
+   "frac_out": 0.046182,
+   "n_out": 1524
+  },
+  "Orbitrap": {
+   "n": 745498,
+   "median": 0.007,
+   "abs_p99": 32.776,
+   "frac_out": 0.048857,
+   "n_out": 36423
+  },
+  "Q Exactive Focus Hybrid Quadrupole Orbitrap Mass Spectrometer (Thermo Fisher Scientific)": {
+   "n": 2,
+   "median": -0.088,
+   "abs_p99": 1.081,
+   "frac_out": 0.0,
+   "n_out": 0
+  },
+  "Q Exactive HF": {
+   "n": 7,
+   "median": -1.169,
+   "abs_p99": 35.537,
+   "frac_out": 0.428571,
+   "n_out": 3
+  },
+  "Q-Exactive": {
+   "n": 1,
+   "median": -3258.931,
+   "abs_p99": 3258.931,
+   "frac_out": 1.0,
+   "n_out": 1
+  },
+  "Q-Exactive Plus": {
+   "n": 401,
+   "median": -1.738,
+   "abs_p99": 172269.141,
+   "frac_out": 0.361596,
+   "n_out": 145
+  },
+  "Q-Exactive Plus Orbitrap Res 14k": {
+   "n": 200,
+   "median": -0.871,
+   "abs_p99": 352944.698,
+   "frac_out": 0.06,
+   "n_out": 12
+  },
+  "Q-Exactive Plus Orbitrap Res 70k": {
+   "n": 277,
+   "median": -0.469,
+   "abs_p99": 1104718.11,
+   "frac_out": 0.064982,
+   "n_out": 18
+  },
+  "Q-TOF": {
+   "n": 203,
+   "median": -0.014,
+   "abs_p99": 121920.684,
+   "frac_out": 0.261084,
+   "n_out": 53
+  },
+  "QIT": {
+   "n": 1261,
+   "median": -0.111,
+   "abs_p99": 5425.433,
+   "frac_out": 0.511499,
+   "n_out": 645
+  },
+  "QIT-FT": {
+   "n": 1,
+   "median": -0.935,
+   "abs_p99": 0.935,
+   "frac_out": 0.0,
+   "n_out": 0
+  },
+  "QQQ": {
+   "n": 1281,
+   "median": -0.405,
+   "abs_p99": 877.26,
+   "frac_out": 0.209212,
+   "n_out": 268
+  },
+  "QTOF": {
+   "n": 125936,
+   "median": -2.557,
+   "abs_p99": 133666.078,
+   "frac_out": 0.307045,
+   "n_out": 38668
+  },
+  "QqQ": {
+   "n": 733,
+   "median": -0.17,
+   "abs_p99": 1510.579,
+   "frac_out": 0.470668,
+   "n_out": 345
+  },
+  "Qtof": {
+   "n": 10,
+   "median": 0.181,
+   "abs_p99": 1.135,
+   "frac_out": 0.0,
+   "n_out": 0
+  },
+  "Quattro_QQQ:10eV": {
+   "n": 728,
+   "median": 2.07,
+   "abs_p99": 15002.695,
+   "frac_out": 0.019231,
+   "n_out": 14
+  },
+  "Quattro_QQQ:25eV": {
+   "n": 722,
+   "median": 2.078,
+   "abs_p99": 15225.857,
+   "frac_out": 0.019391,
+   "n_out": 14
+  },
+  "Quattro_QQQ:40eV": {
+   "n": 715,
+   "median": 2.07,
+   "abs_p99": 10569.673,
+   "frac_out": 0.018182,
+   "n_out": 13
+  },
+  "SI-BE": {
+   "n": 1,
+   "median": -0.015,
+   "abs_p99": 0.015,
+   "frac_out": 0.0,
+   "n_out": 0
+  },
+  "SYNAPT QTOF, Waters": {
+   "n": 8,
+   "median": 2.415,
+   "abs_p99": 3.218,
+   "frac_out": 0.0,
+   "n_out": 0
+  },
+  "Thermo LTQ": {
+   "n": 1,
+   "median": -330.202,
+   "abs_p99": 330.202,
+   "frac_out": 1.0,
+   "n_out": 1
+  },
+  "ToF": {
+   "n": 26535,
+   "median": 1.448,
+   "abs_p99": 3512.371,
+   "frac_out": 0.154061,
+   "n_out": 4088
+  },
+  "Waters SYNAPT": {
+   "n": 1,
+   "median": 1.422,
+   "abs_p99": 1.422,
+   "frac_out": 0.0,
+   "n_out": 0
+  },
+  "impact HD": {
+   "n": 284,
+   "median": 2.624,
+   "abs_p99": 995180.838,
+   "frac_out": 0.521127,
+   "n_out": 148
+  },
+  "in source CID": {
+   "n": 42,
+   "median": -412.732,
+   "abs_p99": 1385.981,
+   "frac_out": 0.785714,
+   "n_out": 33
+  },
+  "iontrap": {
+   "n": 8595,
+   "median": 0.501,
+   "abs_p99": 1.792,
+   "frac_out": 0.0,
+   "n_out": 0
+  },
+  "nan": {
+   "n": 972,
+   "median": -0.003,
+   "abs_p99": 7.085,
+   "frac_out": 0.0,
+   "n_out": 0
+  },
+  "orbitrap": {
+   "n": 15361,
+   "median": 0.162,
+   "abs_p99": 2.766,
+   "frac_out": 0.00026,
+   "n_out": 4
+  },
+  "qTOF": {
+   "n": 161,
+   "median": 1.276,
+   "abs_p99": 30679.179,
+   "frac_out": 0.086957,
+   "n_out": 14
+  },
+  "qToF": {
+   "n": 2853,
+   "median": -0.132,
+   "abs_p99": 102093.812,
+   "frac_out": 0.087978,
+   "n_out": 251
+  },
+  "qTof": {
+   "n": 33738,
+   "median": 0.494,
+   "abs_p99": 1054202.181,
+   "frac_out": 0.152439,
+   "n_out": 5143
+  },
+  "qtof": {
+   "n": 26111,
+   "median": 0.002,
+   "abs_p99": 5.657,
+   "frac_out": 0.000191,
+   "n_out": 5
+  },
+  "timsTOF": {
+   "n": 1154969,
+   "median": 1.581,
+   "abs_p99": 4.318,
+   "frac_out": 2e-06,
+   "n_out": 2
+  }
+ }
+}
