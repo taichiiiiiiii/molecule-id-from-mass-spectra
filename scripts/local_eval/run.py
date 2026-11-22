@@ -297,18 +297,30 @@ def merge_slots(base, base_keys, pc, pc_keys, slots, n=K):
 
 
 # ---------------------------------------------------------------- 実行
-def run(holdout: str, stages: list[str], logits_run: str | None = None) -> dict:
+def logits_path(run_name: str, logits_dir: str | Path | None = None) -> Path:
+    """pc_logits.npz の場所。既定は outputs/holdout_eval/<run>/（元のフォルダへのリンク）、#199 の --logits-dir で別の実のディレクトリ。"""
+    return (Path(logits_dir) if logits_dir else ROOT / f"outputs/holdout_eval/{run_name}") / "pc_logits.npz"
+
+
+def truth_path(holdout: str, truth_dir: str | Path | None = None) -> Path:
+    """truth.csv の場所。既定は outputs/holdouts/<holdout>/、#199 の --truth-dir で別の実のディレクトリ。"""
+    return (Path(truth_dir) if truth_dir else ROOT / f"outputs/holdouts/{holdout}") / "truth.csv"
+
+
+def run(holdout: str, stages: list[str], logits_run: str | None = None, logits_dir: str | Path | None = None,
+        truth_dir: str | Path | None = None) -> dict:
+    """logits_dir・truth_dir は #199 で足した引数（既定 None = 今と同じ outputs/holdout_eval/<run>/・outputs/holdouts/<holdout>/）。"""
     from mrr25 import calculate_mrr25, read_truth
     from elem_rule import demote_unusual
     check_stages(stages)
     t0 = time.time()
     run_name = logits_run or f"{holdout}_fold0"
-    zf = np.load(ROOT / f"outputs/holdout_eval/{run_name}/pc_logits.npz", allow_pickle=True)
+    zf = np.load(logits_path(run_name, logits_dir), allow_pickle=True)
     targets = {m: float(t) for m, t in zf["__targets__"]}
     zbar = query_mean(zf) if "pmi" in stages else None   # #97: 集合ごとに 1 回だけ
     pool = load_pool()
     fpc = FPCache(np.load(ROOT / "data/ext/v4g/casmi26-v2-pool/fp_bits.npy"))
-    truth = read_truth(ROOT / f"outputs/holdouts/{holdout}/truth.csv")
+    truth = read_truth(truth_path(holdout, truth_dir))
     if "frag" in stages:
         sys.path.insert(0, str(ROOT / "data/ext/frag"))   # numba のキャッシュは通常の import でないと読めない
         import frag_rescore as frag
@@ -423,7 +435,7 @@ def run(holdout: str, stages: list[str], logits_run: str | None = None) -> dict:
         w = csv.writer(f); w.writerow(["molecule_id", "smiles"])
         for mid, c in preds.items():
             w.writerow([mid, ";".join(c)])
-    res = dict(holdout=holdout, stages=stages, logits=run_name, n=len(truth),
+    res = dict(holdout=holdout, stages=stages, logits=run_name if logits_dir is None else str(logits_dir), n=len(truth),
                mrr25=round(calculate_mrr25(truth, preds), 4), secs=round(time.time() - t0, 1))
     if diag:
         lm = np.array([d["lib_max"] for d in diag.values()])
@@ -443,8 +455,10 @@ def main() -> None:
     ap.add_argument("--holdout", required=True)
     ap.add_argument("--stages", default="score,prior", help="カンマ区切り: score[,pmi|,nbz][,sanpier|,fragnn|,fragnnblind][,prior][,frag][,elem][,lib][,reflast][,pubchem]")
     ap.add_argument("--logits-run", default=None, help="outputs/holdout_eval/<run>/pc_logits.npz（既定 <holdout>_fold0）")
+    ap.add_argument("--logits-dir", default=None, help="#199: pc_logits.npz のあるディレクトリ（既定は outputs/holdout_eval/<run>/）")
+    ap.add_argument("--truth-dir", default=None, help="#199: truth.csv のあるディレクトリ（既定は outputs/holdouts/<holdout>/）")
     args = ap.parse_args()
-    print(json.dumps(run(args.holdout, args.stages.split(","), args.logits_run), indent=2))
+    print(json.dumps(run(args.holdout, args.stages.split(","), args.logits_run, args.logits_dir, args.truth_dir), indent=2))
 
 
 if __name__ == "__main__":
