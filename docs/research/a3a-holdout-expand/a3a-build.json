@@ -135,14 +135,14 @@
    "fold": 0,
    "np": false,
    "n_molecules": 200,
-   "n_spectra": 610,
+   "n_spectra": 576,
    "scenario": {
     "no_reference": 200
    },
    "spectra_per_molecule": {
     "count": 200.0,
-    "mean": 3.05,
-    "std": 1.51,
+    "mean": 2.88,
+    "std": 1.45,
     "min": 1.0,
     "25%": 2.0,
     "50%": 3.0,
@@ -151,6 +151,7 @@
    },
    "train_rows_dropped": 1241,
    "n_drop_keys": 201,
+   "name": "enveda_v1b",
    "eligible_new_groups": 35783,
    "picked": 200,
    "truth_in_hold": "200/200",
@@ -336,15 +337,14 @@
     "[M+CH2O2-H]-",
     "[M+Cl]-"
    ],
-   "n_molecules": 190,
-   "n_spectra": 472,
-   "n_molecules_removed": 10,
-   "n_spectra_removed": 138,
+   "n_molecules": 187,
+   "n_spectra": 465,
+   "n_molecules_removed": 13,
+   "n_spectra_removed": 111,
    "adducts_outside_t10": {
-    "[2M+Na]+": 79,
-    "[2M-H]-": 29,
+    "[2M+Na]+": 73,
     "[2M+H]+": 27,
-    "[M+C2H4O2-H]-": 3
+    "[2M-H]-": 11
    }
   },
   "enveda_v1u_t10": {
@@ -352,8 +352,8 @@
     "enveda_v1_t10",
     "enveda_v1b_t10"
    ],
-   "n_molecules": 376,
-   "n_spectra": 956,
+   "n_molecules": 373,
+   "n_spectra": 949,
    "n_drop_keys": 403
   }
  },

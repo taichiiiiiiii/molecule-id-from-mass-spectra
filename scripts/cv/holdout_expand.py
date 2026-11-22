@@ -20,7 +20,8 @@
   事前登録（#199、確定）: seed 20261123。
     v3_c1b     = select(..., 200, seed, exclude) の c1 だけ（select は c1 を先に同じ rng で引くので c2 を捨てても c1 は変わらない）
     v3_c2nb    = select_c2p(..., 200, seed+10, exclude)（v3_c1b も除外に足す）
-    enveda_v1b = enveda_v1 型の群から sample(n=200, random_state=seed+20)（v3_c1b・v3_c2nb も除外に足す）
+    enveda_v1b = enveda_v1 型の群から sample(n=200, random_state=seed+20)（v3_c1b・v3_c2nb も除外に足す）。
+                 スペクトルの rng と id の seed も seed+20
   作った後に新しい集合にも #116 の rebuild_set（同じ train_structs・同じ to_key）を当てる。`_t10` は 10 種の付加イオンの行だけに
   絞った版（残り 0 本の分子は除く）、`*u_t10` は元＋新の合併。
 
@@ -415,10 +416,12 @@ def build(args) -> None:
     pick = ev.sample(n=min(N_MAX, len(ev)), random_state=SEED + 20)
     train_keys = set(meta.inchikey14.astype(str).unique())
     picked = set().union(*[gkeys[g] & train_keys for g in pick.identity_group])
+    # 事前登録 (b): 抽出・スペクトル・id の seed はどれも SEED+20（072ec66 の rng = default_rng(args.seed) と同じ形）
     info = write_enveda(pick, st, meta, TRAIN, SETS_DIR / "enveda_v1b", OUT_TRUTH / "enveda_v1b", SEED + 20,
-                        np.random.default_rng(SEED + 21), "b")
-    info.update(eligible_new_groups=len(ev), picked=len(pick))
+                        np.random.default_rng(SEED + 20), "b")
+    info.update(name="enveda_v1b", eligible_new_groups=len(ev), picked=len(pick))
     finish("enveda_v1b", info, picked, ctx)
+    (SETS_DIR / "enveda_v1b" / "HOLDOUT.json").write_text(json.dumps(info, ensure_ascii=False, indent=2, default=str))
     # _t10 と合併
     for h in ORIG:
         rep["sets"][f"{h}_t10"] = t10(h, f"{h}_t10", ROOT / f"outputs/holdouts/{h}/truth.csv")

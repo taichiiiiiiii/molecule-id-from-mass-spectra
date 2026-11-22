@@ -37,22 +37,21 @@
   },
   "enveda_v1b": {
    "n_molecules": 200,
-   "n_spectra": 610,
+   "n_spectra": 576,
    "adducts": {
-    "[M+H]+": 362,
-    "[M-H]-": 86,
-    "[2M+Na]+": 79,
-    "[2M-H]-": 29,
+    "[M+H]+": 357,
+    "[M-H]-": 78,
+    "[2M+Na]+": 73,
     "[2M+H]+": 27,
-    "[M+Na]+": 14,
-    "[M+CH2O2-H]-": 7,
-    "[M+C2H4O2-H]-": 3,
+    "[M+Na]+": 15,
+    "[M+CH2O2-H]-": 12,
+    "[2M-H]-": 11,
     "[M+Cl]-": 2,
     "[M+NH4]+": 1
    },
-   "mrr25": 0.8274,
-   "mrr25_from_rr": 0.8274,
-   "submission_sha256": "43cd51e2808afa14b917be9ea6f05c4db04c16af22271918ad5942641848df77"
+   "mrr25": 0.8099,
+   "mrr25_from_rr": 0.8099,
+   "submission_sha256": "f02da77813a080d984da4e65c504425c81b15e967f148a0fa840eec434799b52"
   },
   "v3_c1_t10": {
    "n_molecules": 197,
@@ -131,19 +130,19 @@
    "submission_sha256": "f2403ef12a494cb4d39e025a3ee23177c14c03ed79596ecda41c0d1adaca308e"
   },
   "enveda_v1b_t10": {
-   "n_molecules": 190,
-   "n_spectra": 472,
+   "n_molecules": 187,
+   "n_spectra": 465,
    "adducts": {
-    "[M+H]+": 362,
-    "[M-H]-": 86,
-    "[M+Na]+": 14,
-    "[M+CH2O2-H]-": 7,
+    "[M+H]+": 357,
+    "[M-H]-": 78,
+    "[M+Na]+": 15,
+    "[M+CH2O2-H]-": 12,
     "[M+Cl]-": 2,
     "[M+NH4]+": 1
    },
-   "mrr25": 0.8592,
-   "mrr25_from_rr": 0.8592,
-   "submission_sha256": "24aadcf351824bbd09ed8233c5d7ba906a1ce2625ad8f823e154547d801d2ba0"
+   "mrr25": 0.8268,
+   "mrr25_from_rr": 0.8268,
+   "submission_sha256": "b7f7e5e78146172909aa2d64bd2611091a4392926aa9753c73b468b70e69aaf7"
   },
   "v3_c2nb_t10": {
    "n_molecules": 199,
@@ -178,20 +177,20 @@
    "submission_sha256": "ebc59d2ce80715e370ad5c29d43c186bdfbbf566ca15f28f3fc7c9010729ea10"
   },
   "enveda_v1u_t10": {
-   "n_molecules": 376,
-   "n_spectra": 956,
+   "n_molecules": 373,
+   "n_spectra": 949,
    "adducts": {
-    "[M+H]+": 726,
-    "[M-H]-": 180,
-    "[M+CH2O2-H]-": 22,
-    "[M+Na]+": 18,
+    "[M+H]+": 721,
+    "[M-H]-": 172,
+    "[M+CH2O2-H]-": 27,
+    "[M+Na]+": 19,
     "[M+Cl]-": 7,
     "[M+K]+": 2,
     "[M+NH4]+": 1
    },
-   "mrr25": 0.8674,
-   "mrr25_from_rr": 0.8674,
-   "submission_sha256": "ad0f424acd04540d5ea55f07c2ccb8a86a53fc05c269bc637834b24a715e17f3"
+   "mrr25": 0.8513,
+   "mrr25_from_rr": 0.8513,
+   "submission_sha256": "cc20052905b710c9970cc8ec6ea1252b60211eac908aed28c4c33ceda7b855cd"
   },
   "v3_c2nu_t10": {
    "n_molecules": 394,
@@ -220,8 +219,8 @@
   },
   "enveda_v1u": {
    "per_molecule_rr_equal": true,
-   "weighted_mean_parts": 0.867439,
-   "union_mean": 0.867439,
+   "weighted_mean_parts": 0.851271,
+   "union_mean": 0.851271,
    "abs_diff": 0.0,
    "within_1e4": true
   },
@@ -256,15 +255,15 @@
   },
   "enveda_v1": {
    "set": "enveda_v1u_t10",
-   "n": 376,
+   "n": 373,
    "n_variants": 6,
    "sd_delta_median": 0.1623,
    "sd_delta_min": 0.0883,
    "sd_delta_max": 0.2026,
-   "mde_median": 0.0234,
+   "mde_median": 0.0235,
    "mde_min": 0.0128,
-   "mde_max": 0.0293,
-   "mde_fragnn_v1_sd": 0.0233,
+   "mde_max": 0.0294,
+   "mde_fragnn_v1_sd": 0.0234,
    "direction_only": true,
    "mde_median_orig_n": 0.0321
   },
