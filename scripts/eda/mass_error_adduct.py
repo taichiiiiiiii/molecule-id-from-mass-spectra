@@ -41,7 +41,9 @@ FRAG_BIN = 0.001           # 刻み（Da）
 BG_LO, BG_HI = 0.02, 0.05  # 偶然の一致の背景の密度を取る区間（Da）
 MIN_GROUP = 100            # これより少ない装置 × 付加イオンの組は「その他」
 HOLDOUTS = ("v3_c1", "v3_c2", "enveda_v1", "v3_c2n")
-OUT = ROOT / "outputs/local_eval/mass_error_1123"
+import os  # noqa: E402
+OUT = Path(os.environ.get("MASS_ERR_OUT", ROOT / "outputs/local_eval/mass_error_1123"))
+MAX_RG = int(os.environ.get("MASS_ERR_MAX_RG", "0"))   # 0 = 全部。煙の試しのときだけ小さくする
 
 # 既知の差（Da）。Issue #203 の表（結果の前に固定）
 KNOWN_DELTAS = {
@@ -93,7 +95,8 @@ def group_stats(ppm: np.ndarray, ppm_lim: float = PPM) -> dict:
 
 def grouped_table(instr, adduct, ppm, min_group: int = MIN_GROUP) -> list:
     """装置 × 付加イオンごとの group_stats。件数 < min_group の組は装置ごとに「その他」にまとめる。"""
-    instr = np.asarray(instr, dtype=object); adduct = np.asarray(adduct, dtype=object); ppm = np.asarray(ppm, np.float64)
+    instr = np.asarray([str(x) for x in instr], dtype=object)   # None / nan も文字列の組にする
+    adduct = np.asarray([str(x) for x in adduct], dtype=object); ppm = np.asarray(ppm, np.float64)
     ok = np.isfinite(ppm)
     keys = {}
     for i, a, f in zip(instr, adduct, ok):
@@ -227,8 +230,9 @@ def phase_train() -> dict:
     all_instr, all_add, all_ppm, all_org = [], [], [], []
     n_unk_adduct, n_bad_formula, unk_adducts = 0, 0, {}
     sample = []
+    a12_train = {}
     t0 = time.time()
-    for rg in range(pf.num_row_groups):
+    for rg in range(pf.num_row_groups if not MAX_RG else MAX_RG):
         L = {c: [] for c in light}; npos = []
         for b in pf.iter_batches(batch_size=8192, row_groups=[rg], columns=light + ["ms2_normalized_intensities"]):
             d = b.to_pydict()
@@ -250,6 +254,12 @@ def phase_train() -> dict:
             unk_adducts[str(a)] = unk_adducts.get(str(a), 0) + 1
         n_bad_formula += int((~np.isfinite(M)).sum())
         all_instr.extend(L["instrument_type"]); all_add.extend(L["adduct"]); all_ppm.append(ppm.astype(np.float32))
+        for i in np.flatnonzero(np.isfinite(ppm) & (np.abs(ppm) > PPM)):   # 参考（事前登録外）: 窓の外の既知の差
+            hits = match_known_delta(float(nm[i] - M[i]), float(M[i])) + match_multimer(float(nm[i]), float(M[i]))
+            key = (str(L["instrument_type"][i]), str(L["adduct"][i]))
+            t = a12_train.setdefault(key, {})
+            for h in (hits or ["(none)"]):
+                t[h] = t.get(h, 0) + 1
         all_org.append(np.asarray([np.nan if x is None else x for x in L["precursor_error_ppm"]], np.float32))
         for i, ik in enumerate(L["inchikey14"]):
             if ik in want_vis and ik not in vis_formula:
@@ -280,9 +290,16 @@ def phase_train() -> dict:
                               frac_abs_diff_gt_1ppm=round(float((diff > 1).mean()), 6),
                               organiser_stats=group_stats(org)),
         n_sample=len(sample), seconds=round(time.time() - t0, 1))
+    top = sorted(a12_train.items(), key=lambda kv: -sum(kv[1].values()))[:25]
+    res["a12_train_reference"] = dict(
+        note="事前登録外の参考: train の |ppm| > 10 のスペクトルで既知の差に当たる数（装置 × 付加イオンの上位 25 組）",
+        total_out=int(sum(sum(v.values()) for v in a12_train.values())),
+        total_any_hit=int(sum(sum(c for h, c in v.items() if h != "(none)") for v in a12_train.values())),
+        groups=[dict(instrument=k[0], adduct=k[1], n_out=int(sum(v.values())),
+                     hits=dict(sorted(v.items(), key=lambda kv: -kv[1])[:6])) for k, v in top])
     by_instr = {}
     for i in sorted(set(map(str, all_instr))):
-        m = np.asarray(all_instr, dtype=object) == i
+        m = np.asarray([str(x) for x in all_instr], dtype=object) == i
         by_instr[i] = group_stats(ppm[m])
     res["by_instrument"] = by_instr
     OUT.mkdir(parents=True, exist_ok=True)
@@ -298,27 +315,34 @@ def phase_frag() -> dict:
     import fragnn_bench as fb
     fr.warmup(); c = fr.resolve_cfg(None)
     sample = json.loads((OUT / "frag_sample.json").read_text())
-    errs, instr_of, n_none = [], [], 0
+    errs, instr_of, n_none, nfrag, mzs = [], [], 0, [], []
     t0 = time.time()
     for s in sample:
         lv = fr.fragment_levels(s["smiles"], c["max_breaks"], c["max_bonds_2"], c["max_bonds_3"])
         if lv is None:
             n_none += 1; continue
         fm = np.sort(np.concatenate([np.asarray(x, np.float64) for x in lv]))
+        nfrag.append(len(fm))
         sv, _, _ = fb.shift_table(s["adduct"], s["mode"])
         mz, _ = fb.top_peaks(s["mz"], s["it"])
         e = nearest_errors(mz, fm, sv)
-        errs.append(e); instr_of.extend([s["instrument"]] * len(e))
-    e = np.concatenate(errs); a = np.abs(e)
+        mzs.append(np.asarray(mz, np.float64))
+        errs.append(e); instr_of.extend([str(s["instrument"])] * len(e))
+    e = np.concatenate(errs); a = np.abs(e); pm = a / np.concatenate(mzs) * 1e6
+    w = a <= TOL
     instr_of = np.asarray(instr_of, dtype=object)
     res = dict(issue=ISSUE, n_spectra=len(sample), n_unparsed=n_none, n_peaks=int(len(e)), tol=TOL,
                all=background_corrected(a), seconds=round(time.time() - t0, 1),
-               signed_err_median_within_tol=round(float(np.median(e[a <= TOL])), 5))
-    res["by_instrument"] = {str(i): dict(n_spectra=sum(1 for s in sample if s["instrument"] == i),
+               signed_err_median_within_tol=round(float(np.median(e[a <= TOL])), 5),
+               frag_masses_per_struct_median=float(np.median(nfrag)), frag_masses_per_struct_min=int(np.min(nfrag)),
+               abs_ppm_within_tol=dict(median=round(float(np.median(pm[w])), 2), p90=round(float(np.quantile(pm[w], 0.9)), 2),
+                                       p99=round(float(np.quantile(pm[w], 0.99)), 2)))
+    res["by_instrument"] = {str(i): dict(n_spectra=sum(1 for s in sample if str(s["instrument"]) == i),
                                          **background_corrected(a[instr_of == i]))
                             for i in sorted(set(map(str, instr_of)))}
     for k in list(res["by_instrument"]):
-        res["by_instrument"][k].pop("hist", None)
+        if k != "timsTOF":          # 隠れテストの装置だけ刻みの分布を残す
+            res["by_instrument"][k].pop("hist", None)
     (OUT / "frag.json").write_text(json.dumps(res, ensure_ascii=False, indent=1))
     return res
 
@@ -353,15 +377,17 @@ def _analyse_set(name, te, truth_M, pool=None, truth_key=None, hidden=None) -> d
             idx = pool.window(tgt, PPM)
             row["truth_in_pool"] = bool(k in pool.keyset)
             row["truth_in_window"] = bool(k in set(pool.key[idx]))
-            row["truth_hidden"] = bool(hidden is not None and k in hidden)
+            row["truth_hidden"] = bool(hidden is not None and k in hidden)   # hidden は pool: remove の集合だけ渡す
         mols.append(row)
         if row["out"]:
             a12_mol.append(dict(molecule_id=str(mid), ppm=round(p, 2), delta_da=round(tgt - M, 5),
-                                adducts=sorted(set(sub.adduct.astype(str))),
+                                adducts=sorted({str(x) for x in sub.adduct}),
+                                instruments=sorted({str(x) for x in sub.instrument_type}),
                                 hits=match_known_delta(tgt - M, M) + match_multimer(tgt, M)))
         for r in sub.itertuples():
             if np.isfinite(r.ppm) and abs(r.ppm) > PPM:
-                a12_spec.append(dict(molecule_id=str(mid), adduct=str(r.adduct), ppm=round(float(r.ppm), 2),
+                a12_spec.append(dict(molecule_id=str(mid), adduct=str(r.adduct), instrument=str(r.instrument_type),
+                                     ppm=round(float(r.ppm), 2),
                                      delta_da=round(float(r.nm - M), 5),
                                      hits=match_known_delta(float(r.nm - M), M) + match_multimer(float(r.nm), M)))
     mp = np.array([m["ppm"] for m in mols])
@@ -383,6 +409,8 @@ def _analyse_set(name, te, truth_M, pool=None, truth_key=None, hidden=None) -> d
                                 rows=a12_mol[:50])
     res["a12_spectra"] = dict(n=len(a12_spec), hit_counts=tally(a12_spec), n_any_hit=sum(bool(x["hits"]) for x in a12_spec),
                               by_adduct={a: sum(1 for x in a12_spec if x["adduct"] == a) for a in sorted({x["adduct"] for x in a12_spec})},
+                              by_instrument={i: sum(1 for x in a12_spec if x["instrument"] == i)
+                                             for i in sorted({x["instrument"] for x in a12_spec})},
                               rows=a12_spec[:50])
     res["multi_adduct"] = multi_adduct_consistency(te.molecule_id.values, te.adduct.values, te.nm.values)
     return res
@@ -392,6 +420,7 @@ def phase_holdouts() -> dict:
     import pandas as pd
     sys.path.insert(0, str(ROOT / "scripts/local_eval"))
     import run as R
+    import library as L
     chem = _chem()
     sys.path.insert(0, str(ROOT / "data/ext/v4g/casmi26-v3-models/code"))
     from casmi import chem as cchem
@@ -403,8 +432,7 @@ def phase_holdouts() -> dict:
         tr = pd.read_csv(ROOT / f"outputs/holdouts/{h}/truth.csv")
         tM = {r.molecule_id: _truth_mass(r.smiles, masses) for r in tr.itertuples()}
         tkey = {r.molecule_id: cchem.score_key(r.smiles) for r in tr.itertuples()}
-        dk = ROOT / f"data/holdouts/{h}/drop_keys.txt"
-        hid = set(x.strip() for x in dk.read_text().split() if x.strip()) if dk.exists() else set()
+        hid = L.drop_keys(h) if L.hide_rule(h).get("pool") == "remove" else set()   # run.py と同じ規則
         out["sets"][h] = _analyse_set(h, te, tM, pool, tkey, hid)
         print(h, out["sets"][h]["molecules"], flush=True)
     vt = json.loads((OUT / "visible_truth.json").read_text())
