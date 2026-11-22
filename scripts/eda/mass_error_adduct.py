@@ -457,6 +457,31 @@ def molecule_half_width(instr, adduct, table: dict) -> float:
     return max(vals) if vals else float("nan")
 
 
+def _molecule_ppm(name: str) -> dict:
+    import pandas as pd
+    chem = _chem(); masses = _elem_masses()
+    te = pd.read_parquet(ROOT / f"data/holdouts/{name}/test.parquet", columns=["molecule_id", "precursor_mz", "adduct"])
+    tr = pd.read_csv(ROOT / f"outputs/holdouts/{name}/truth.csv")
+    tM = {r.molecule_id: _truth_mass(r.smiles, masses) for r in tr.itertuples()}
+    te["nm"] = chem.neutral_mass(te.precursor_mz.values.astype(np.float64), te.adduct.values)
+    out = {}
+    for m, sub in te.groupby("molecule_id"):
+        v = sub.nm.values[np.isfinite(sub.nm.values)]
+        if len(v) and np.isfinite(tM.get(m, np.nan)):
+            out[m] = (float(np.median(v)) - tM[m]) / tM[m] * 1e6
+    return out
+
+
+def _control_rr(name: str) -> dict:
+    """対照（score+prior+frag、#178 と同じファイル）の分子ごとの rr（mrr25）。"""
+    import pandas as pd
+    sys.path.insert(0, str(ROOT / "scripts/validate"))
+    import mrr25
+    sub = mrr25.read_submission(ROOT / f"outputs/local_eval/{name}/submission_score+prior+frag.csv")
+    tr = pd.read_csv(ROOT / f"outputs/holdouts/{name}/truth.csv")
+    return {r.molecule_id: mrr25.reciprocal_rank(mrr25.truth_keys(r.smiles), sub.get(r.molecule_id, [])) for r in tr.itertuples()}
+
+
 def phase_width() -> dict:
     """§5-3 の案の窓の半幅を、v3 の 4 集合の分子ごとに出す（採点はしない）。"""
     import pandas as pd
@@ -469,11 +494,22 @@ def phase_width() -> dict:
         hw = {m: molecule_half_width(sub.instrument_type, sub.adduct, table) for m, sub in te.groupby("molecule_id")}
         v = np.array(list(hw.values()), np.float64)
         outm = {r["molecule_id"]: r["ppm"] for r in h["sets"][name]["a12_molecules"]["rows"]}
+        # 分子の窓の中心と正解の M の ppm（holdouts 段と同じ定義）を test.parquet と truth.csv から作り直す
+        mol_ppm = _molecule_ppm(name)
+        rr = _control_rr(name)
+        narrow = [m for m in hw if hw[m] < PPM]
+        widen = [m for m in hw if hw[m] > PPM]
+        enter = [m for m, p in outm.items() if abs(p) <= hw.get(m, 0)]
+        drop = [m for m in hw if m in mol_ppm and abs(mol_ppm[m]) > hw[m] and abs(mol_ppm[m]) <= PPM]
         res["sets"][name] = dict(n=int(len(v)), n_nan=int(np.isnan(v).sum()), median=round(float(np.nanmedian(v)), 3),
                                  min=round(float(np.nanmin(v)), 3), max=round(float(np.nanmax(v)), 3),
                                  n_lt10=int((v < PPM).sum()), n_gt10=int((v > PPM).sum()), n_gt1000=int((v > 1000).sum()),
                                  n_out_window_now=len(outm),
-                                 n_out_window_enter=int(sum(abs(p) <= hw.get(m, 0) for m, p in outm.items())))
+                                 n_out_window_enter=len(enter), n_narrow=len(narrow), n_widen=len(widen),
+                                 n_truth_drops_out=len(drop),
+                                 bound_enter=round(len(enter) / len(hw), 4),
+                                 bound_narrow_all_to_rank1=round(sum(1.0 - rr.get(m, 0.0) for m in narrow) / len(hw), 4),
+                                 note="広がる分子は候補が増えるだけで上がらない（点は窓に依らない）。bound_* は全部 1 位に来る粗い上限")
     (OUT / "width.json").write_text(json.dumps(res, ensure_ascii=False, indent=1))
     return res
 
