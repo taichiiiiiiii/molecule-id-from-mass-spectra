@@ -41,13 +41,22 @@ def hidden_mask(libs: pd.Series, keys: pd.Series, drop: set, rule: str) -> np.nd
     raise ValueError(rule)
 
 
-def select(meta: pd.DataFrame, hold: set, n: int, seed: int):
+def eligible(meta: pd.DataFrame, hold: set, exclude: set = frozenset()) -> tuple[list, list]:
+    """select の候補の全部（sorted）: hold ∩ 質量 MASS_LO〜MASS_HI で、C1 = enveda 系と公開ライブラリの両方、
+    C2 = enveda-180 だけ（公開ライブラリ無し）。exclude のキーは除く（#199、既定は除かない）。"""
     g = meta.groupby("inchikey14", observed=True).ingest_lib.agg(lambda x: set(x.astype(str)))
     mass = meta.groupby("inchikey14", observed=True).neutral_mass.median()
     ok_mass = mass[(mass >= MASS_LO) & (mass <= MASS_HI)].index
     cand = g[g.index.isin(hold) & g.index.isin(ok_mass)]
-    c2 = sorted(k for k, v in cand.items() if "enveda-180" in v and not (v & PUBLIC))
-    c1 = sorted(k for k, v in cand.items() if (v & ENVEDA) and (v & PUBLIC))
+    ex = set(exclude)
+    c2 = sorted(k for k, v in cand.items() if "enveda-180" in v and not (v & PUBLIC) and k not in ex)
+    c1 = sorted(k for k, v in cand.items() if (v & ENVEDA) and (v & PUBLIC) and k not in ex)
+    return c1, c2
+
+
+def select(meta: pd.DataFrame, hold: set, n: int, seed: int, exclude: set = frozenset()):
+    """eligible の C1・C2 からそれぞれ seed で最大 n を引く（sorted で返す）。exclude は #199 で足した引数で、既定は今と同じ動き。"""
+    c1, c2 = eligible(meta, hold, exclude)
     rng = np.random.default_rng(seed)
     pick = lambda ks: sorted(rng.choice(ks, size=min(n, len(ks)), replace=False).tolist())
     return pick(c1), pick(c2), len(c1), len(c2)
@@ -76,18 +85,37 @@ def pick_queries(t: pd.DataFrame, query: str, test_adducts: set) -> pd.DataFrame
     return t[env | pub].copy()
 
 
+def read_rows(train: Path, keys, batch_size: int = 8192) -> pd.DataFrame:
+    """train.parquet の inchikey14 ∈ keys の行（全列、ファイルの順）。#199: pq.read_table(filters=isin) と同じ行・同じ順を、
+    バッファ 1 MiB・pre_buffer なしで 8192 行ずつ読んで絞る（library._read_rows と同じ読み方。read_table(filters) は
+    #116 で最大常駐 12.5 GB だった）。"""
+    import pyarrow as pa
+    pf = pq.ParquetFile(train, buffer_size=1 << 20, pre_buffer=False)
+    schema = pf.schema_arrow
+    vs = pa.array(sorted(set(keys)), type=schema.field("inchikey14").type)
+    parts = [b.filter(pc.is_in(b.column("inchikey14"), value_set=vs)) for b in pf.iter_batches(batch_size=batch_size)]
+    return pa.Table.from_batches(parts, schema=schema).to_pandas()
+
+
 def write_holdout(name: str, keys: list, rule: str, meta: pd.DataFrame, rng, seed: int, train: Path, out_root: Path = ROOT,
-                  pool: str | None = None, query: str = "enveda", test_adducts: set = frozenset()) -> dict:
+                  pool: str | None = None, query: str = "enveda", test_adducts: set = frozenset(),
+                  id_prefix: str = "", truth_root: Path | None = None, stream: bool = False) -> dict:
     """keys の構造から擬似ホールドアウトを書き出す（問い合わせは pick_queries、最大 MAX_SPECTRA 本）。HOLDOUT.json の中身を返す。
-    pool の既定は rule == all なら remove、それ以外は keep（v3 と同じ）。C2p 型は rule=all, pool=keep。"""
+    pool の既定は rule == all なら remove、それ以外は keep（v3 と同じ）。C2p 型は rule=all, pool=keep。
+    #199 で足した引数（既定は今と同じ動き）: id_prefix = molecule_id・spectrum_id の接頭の後ろに足す文字（"b" なら mb_00000・
+    sb_000000。元の集合と合わせても id がぶつからない）、truth_root = truth.csv の根（既定 out_root/outputs/holdouts。
+    クローンではシンボリックリンクなので新しい集合は outputs/local_eval を渡す）、stream = read_rows で読む（中身は同じ、メモリ小）。"""
     keyset = set(keys)
     pool = pool or ("remove" if rule == "all" else "keep")
-    t = pq.read_table(train, filters=pc.field("inchikey14").isin(keys)).to_pandas()
+    if stream:
+        t = read_rows(train, keys)
+    else:
+        t = pq.read_table(train, filters=pc.field("inchikey14").isin(keys)).to_pandas()
     q = pick_queries(t, query, test_adducts)
     q = q.iloc[rng.permutation(len(q))].groupby("inchikey14", sort=False).head(MAX_SPECTRA).sort_values(["inchikey14"], kind="stable")
-    ids = {k: f"m_{i:05d}" for i, k in enumerate(sorted(q.inchikey14.unique()))}
+    ids = {k: f"m{id_prefix}_{i:05d}" for i, k in enumerate(sorted(q.inchikey14.unique()))}
     q["molecule_id"] = q.inchikey14.map(ids)
-    q["spectrum_id"] = [f"s_{i:06d}" for i in range(len(q))]
+    q["spectrum_id"] = [f"s{id_prefix}_{i:06d}" for i in range(len(q))]
     out = out_root / "data/holdouts" / name
     out.mkdir(parents=True, exist_ok=True)
     q[["molecule_id", "spectrum_id"] + TEST_COLS].to_parquet(out / "test.parquet", index=False)
@@ -98,7 +126,7 @@ def write_holdout(name: str, keys: list, rule: str, meta: pd.DataFrame, rng, see
     truth = t.drop_duplicates("inchikey14")[["inchikey14", "normalized_smiles"]].rename(columns={"normalized_smiles": "smiles"})
     truth["molecule_id"] = truth.inchikey14.map(ids)
     truth = truth.dropna(subset=["molecule_id"]).sort_values("molecule_id")
-    tdir = out_root / "outputs/holdouts" / name
+    tdir = Path(truth_root or out_root / "outputs/holdouts") / name
     tdir.mkdir(parents=True, exist_ok=True)
     truth[["molecule_id", "inchikey14", "smiles"]].to_csv(tdir / "truth.csv", index=False)
     hid = hidden_mask(meta.ingest_lib, meta.inchikey14, keyset, rule)
