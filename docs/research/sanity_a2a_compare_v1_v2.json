@@ -1,0 +1,298 @@
+{
+ "dir_a": "v1",
+ "dir_b": "v2",
+ "files": [
+  {
+   "file": "apex_extlib_audit.json",
+   "sha256_a": "da3f06e1beb51403214f262410c5607cf6af1f1b90a5498c5442dd17907eed40",
+   "sha256_b": "90ca665d3fe972d499a8b5eb11eacf753bc35525b9a9072cf7651f67ee94f01b",
+   "equal": false
+  },
+  {
+   "file": "bootstrap.log",
+   "sha256_a": "1f4d393226a96d4d8ae402ff1ae0045f8756bbf226f62d42f963767c9ed84c28",
+   "sha256_b": "1f4d393226a96d4d8ae402ff1ae0045f8756bbf226f62d42f963767c9ed84c28",
+   "equal": true
+  },
+  {
+   "file": "casmi26-lb495-floor.log",
+   "sha256_a": "98e720a1b5109e2cb7868575b116ea01e63210a878045ee3c2bd4b2eb6c81d8c",
+   "sha256_b": "0e90ac8d0123035dbaf7bd19369212c5cdb104b0bc49f8b68bb5f8689878f9dd",
+   "equal": false
+  },
+  {
+   "file": "fr3to25_audit.json",
+   "sha256_a": "28c9e99b7b18084ec4fdbed8fe976471386fd79698f722d3d2f706d6d672440e",
+   "sha256_b": "3cf34dde510e2647cbce69ac033bf058b5874a5b3862e36278edad19e03f452e",
+   "equal": false
+  },
+  {
+   "file": "merge_report.json",
+   "sha256_a": "19e0179aa61dfe02925e3ede162ae27bd9650090ee21fb34a75db8b887792233",
+   "sha256_b": "19e0179aa61dfe02925e3ede162ae27bd9650090ee21fb34a75db8b887792233",
+   "equal": true
+  },
+  {
+   "file": "n035net_audit.json",
+   "sha256_a": "5eae96406e35469a9934b37776d4aa80ce6345fde0c40bada57a9df6eb9afdea",
+   "sha256_b": "baa9ff87d5134e43be045bb674bc88b9ffa31d218bdc60d6f1e85df45011e3df",
+   "equal": false
+  },
+  {
+   "file": "ours_bundle/config.json",
+   "sha256_a": "563fb2a2a81ca48ea094f9ab78c157a48a6e9a5503e85e6ce8f0fb3615c1cc03",
+   "sha256_b": "563fb2a2a81ca48ea094f9ab78c157a48a6e9a5503e85e6ce8f0fb3615c1cc03",
+   "equal": true
+  },
+  {
+   "file": "ours_bundle/config_used.json",
+   "sha256_a": "b7781dc1087d6ac441dfc6ee9f0f169a0b238e4776bef01bb581d3789941af2d",
+   "sha256_b": "b7781dc1087d6ac441dfc6ee9f0f169a0b238e4776bef01bb581d3789941af2d",
+   "equal": true
+  },
+  {
+   "file": "p5tail_audit.json",
+   "sha256_a": "3f26943be7af81cd5d29ec677550f1c7177deb96d72f4cd45a06a72b65e3b9a9",
+   "sha256_b": "aa61ce10a240aa8d6cfcb79df6bd0b707dd779213f20533c2b9822c6a7116d39",
+   "equal": false
+  },
+  {
+   "file": "p5tail_e1.json",
+   "sha256_a": "2534690c220ea8ad29e5106edf7b93716e370076275b205211610a5985c869bc",
+   "sha256_b": "f5d8f234e5a7221892fbad939809d1564a8837b40263c38e9646757abdc6dc79",
+   "equal": false
+  },
+  {
+   "file": "p5tail_runner.log",
+   "sha256_a": "894e33da7dcdd2ff39d630bc94d8a1956ffffffadaee0220cecf5b6a1049c479",
+   "sha256_b": "9768d4aef7e185112be06275f21364f5a5a84a80cc485b27570d976193bb2d83",
+   "equal": false
+  },
+  {
+   "file": "submission.csv",
+   "sha256_a": "e00a3a7c7f98b7f7de75cad47d454b26571f50ebe2dc9e03f34ad88c8d34d8f0",
+   "sha256_b": "e00a3a7c7f98b7f7de75cad47d454b26571f50ebe2dc9e03f34ad88c8d34d8f0",
+   "equal": true
+  },
+  {
+   "file": "submission_before_rr8.csv",
+   "sha256_a": "e00a3a7c7f98b7f7de75cad47d454b26571f50ebe2dc9e03f34ad88c8d34d8f0",
+   "sha256_b": "e00a3a7c7f98b7f7de75cad47d454b26571f50ebe2dc9e03f34ad88c8d34d8f0",
+   "equal": true
+  },
+  {
+   "file": "submission_control_V2.csv",
+   "sha256_a": "e00a3a7c7f98b7f7de75cad47d454b26571f50ebe2dc9e03f34ad88c8d34d8f0",
+   "sha256_b": "e00a3a7c7f98b7f7de75cad47d454b26571f50ebe2dc9e03f34ad88c8d34d8f0",
+   "equal": true
+  },
+  {
+   "file": "submission_pre_apex_extlib.csv",
+   "sha256_a": "e00a3a7c7f98b7f7de75cad47d454b26571f50ebe2dc9e03f34ad88c8d34d8f0",
+   "sha256_b": "e00a3a7c7f98b7f7de75cad47d454b26571f50ebe2dc9e03f34ad88c8d34d8f0",
+   "equal": true
+  },
+  {
+   "file": "v8_report.json",
+   "sha256_a": "80e8763e20bb6b9c30daee99aa807ec0077b78d2eb9c36ec2f21ade542ba109d",
+   "sha256_b": "80e8763e20bb6b9c30daee99aa807ec0077b78d2eb9c36ec2f21ade542ba109d",
+   "equal": true
+  },
+  {
+   "file": "variants/submission_CUSTOM.csv",
+   "sha256_a": "e00a3a7c7f98b7f7de75cad47d454b26571f50ebe2dc9e03f34ad88c8d34d8f0",
+   "sha256_b": "e00a3a7c7f98b7f7de75cad47d454b26571f50ebe2dc9e03f34ad88c8d34d8f0",
+   "equal": true
+  },
+  {
+   "file": "variants/submission_V2.csv",
+   "sha256_a": "e00a3a7c7f98b7f7de75cad47d454b26571f50ebe2dc9e03f34ad88c8d34d8f0",
+   "sha256_b": "e00a3a7c7f98b7f7de75cad47d454b26571f50ebe2dc9e03f34ad88c8d34d8f0",
+   "equal": true
+  }
+ ],
+ "submissions": {
+  "submission.csv": {
+   "n_a": 400,
+   "n_b": 400,
+   "ids_equal": true,
+   "only_a": [],
+   "only_b": [],
+   "n_common": 400,
+   "n_identical": 400,
+   "n_differ": 0,
+   "differ_ids": [],
+   "n_placeholder_a": 400,
+   "n_placeholder_b": 400,
+   "placeholder_sets_equal": true,
+   "n_real": 0,
+   "n_real_identical": 0,
+   "differ_top1_same": 0,
+   "differ_top1_same_rate": null,
+   "differ_set_same": 0,
+   "differ_common_rank_absdiff_mean": null,
+   "differ_common_rank_absdiff_max": null,
+   "file_a": "v1/submission.csv",
+   "file_b": "v2/submission.csv",
+   "sha256_a": "e00a3a7c7f98b7f7de75cad47d454b26571f50ebe2dc9e03f34ad88c8d34d8f0",
+   "sha256_b": "e00a3a7c7f98b7f7de75cad47d454b26571f50ebe2dc9e03f34ad88c8d34d8f0",
+   "row_order_equal": true,
+   "sha256_equal": true
+  },
+  "submission_before_rr8.csv": {
+   "n_a": 400,
+   "n_b": 400,
+   "ids_equal": true,
+   "only_a": [],
+   "only_b": [],
+   "n_common": 400,
+   "n_identical": 400,
+   "n_differ": 0,
+   "differ_ids": [],
+   "n_placeholder_a": 400,
+   "n_placeholder_b": 400,
+   "placeholder_sets_equal": true,
+   "n_real": 0,
+   "n_real_identical": 0,
+   "differ_top1_same": 0,
+   "differ_top1_same_rate": null,
+   "differ_set_same": 0,
+   "differ_common_rank_absdiff_mean": null,
+   "differ_common_rank_absdiff_max": null,
+   "file_a": "v1/submission_before_rr8.csv",
+   "file_b": "v2/submission_before_rr8.csv",
+   "sha256_a": "e00a3a7c7f98b7f7de75cad47d454b26571f50ebe2dc9e03f34ad88c8d34d8f0",
+   "sha256_b": "e00a3a7c7f98b7f7de75cad47d454b26571f50ebe2dc9e03f34ad88c8d34d8f0",
+   "row_order_equal": true,
+   "sha256_equal": true
+  },
+  "submission_control_V2.csv": {
+   "n_a": 400,
+   "n_b": 400,
+   "ids_equal": true,
+   "only_a": [],
+   "only_b": [],
+   "n_common": 400,
+   "n_identical": 400,
+   "n_differ": 0,
+   "differ_ids": [],
+   "n_placeholder_a": 400,
+   "n_placeholder_b": 400,
+   "placeholder_sets_equal": true,
+   "n_real": 0,
+   "n_real_identical": 0,
+   "differ_top1_same": 0,
+   "differ_top1_same_rate": null,
+   "differ_set_same": 0,
+   "differ_common_rank_absdiff_mean": null,
+   "differ_common_rank_absdiff_max": null,
+   "file_a": "v1/submission_control_V2.csv",
+   "file_b": "v2/submission_control_V2.csv",
+   "sha256_a": "e00a3a7c7f98b7f7de75cad47d454b26571f50ebe2dc9e03f34ad88c8d34d8f0",
+   "sha256_b": "e00a3a7c7f98b7f7de75cad47d454b26571f50ebe2dc9e03f34ad88c8d34d8f0",
+   "row_order_equal": true,
+   "sha256_equal": true
+  },
+  "submission_pre_apex_extlib.csv": {
+   "n_a": 400,
+   "n_b": 400,
+   "ids_equal": true,
+   "only_a": [],
+   "only_b": [],
+   "n_common": 400,
+   "n_identical": 400,
+   "n_differ": 0,
+   "differ_ids": [],
+   "n_placeholder_a": 400,
+   "n_placeholder_b": 400,
+   "placeholder_sets_equal": true,
+   "n_real": 0,
+   "n_real_identical": 0,
+   "differ_top1_same": 0,
+   "differ_top1_same_rate": null,
+   "differ_set_same": 0,
+   "differ_common_rank_absdiff_mean": null,
+   "differ_common_rank_absdiff_max": null,
+   "file_a": "v1/submission_pre_apex_extlib.csv",
+   "file_b": "v2/submission_pre_apex_extlib.csv",
+   "sha256_a": "e00a3a7c7f98b7f7de75cad47d454b26571f50ebe2dc9e03f34ad88c8d34d8f0",
+   "sha256_b": "e00a3a7c7f98b7f7de75cad47d454b26571f50ebe2dc9e03f34ad88c8d34d8f0",
+   "row_order_equal": true,
+   "sha256_equal": true
+  },
+  "variants/submission_CUSTOM.csv": {
+   "n_a": 400,
+   "n_b": 400,
+   "ids_equal": true,
+   "only_a": [],
+   "only_b": [],
+   "n_common": 400,
+   "n_identical": 400,
+   "n_differ": 0,
+   "differ_ids": [],
+   "n_placeholder_a": 400,
+   "n_placeholder_b": 400,
+   "placeholder_sets_equal": true,
+   "n_real": 0,
+   "n_real_identical": 0,
+   "differ_top1_same": 0,
+   "differ_top1_same_rate": null,
+   "differ_set_same": 0,
+   "differ_common_rank_absdiff_mean": null,
+   "differ_common_rank_absdiff_max": null,
+   "file_a": "v1/variants/submission_CUSTOM.csv",
+   "file_b": "v2/variants/submission_CUSTOM.csv",
+   "sha256_a": "e00a3a7c7f98b7f7de75cad47d454b26571f50ebe2dc9e03f34ad88c8d34d8f0",
+   "sha256_b": "e00a3a7c7f98b7f7de75cad47d454b26571f50ebe2dc9e03f34ad88c8d34d8f0",
+   "row_order_equal": true,
+   "sha256_equal": true
+  },
+  "variants/submission_V2.csv": {
+   "n_a": 400,
+   "n_b": 400,
+   "ids_equal": true,
+   "only_a": [],
+   "only_b": [],
+   "n_common": 400,
+   "n_identical": 400,
+   "n_differ": 0,
+   "differ_ids": [],
+   "n_placeholder_a": 400,
+   "n_placeholder_b": 400,
+   "placeholder_sets_equal": true,
+   "n_real": 0,
+   "n_real_identical": 0,
+   "differ_top1_same": 0,
+   "differ_top1_same_rate": null,
+   "differ_set_same": 0,
+   "differ_common_rank_absdiff_mean": null,
+   "differ_common_rank_absdiff_max": null,
+   "file_a": "v1/variants/submission_V2.csv",
+   "file_b": "v2/variants/submission_V2.csv",
+   "sha256_a": "e00a3a7c7f98b7f7de75cad47d454b26571f50ebe2dc9e03f34ad88c8d34d8f0",
+   "sha256_b": "e00a3a7c7f98b7f7de75cad47d454b26571f50ebe2dc9e03f34ad88c8d34d8f0",
+   "row_order_equal": true,
+   "sha256_equal": true
+  }
+ },
+ "json": {
+  "p5tail_audit.json": {
+   "equal_without_time": true,
+   "diff_paths": []
+  },
+  "fr3to25_audit.json": {
+   "equal_without_time": false,
+   "diff_paths": [
+    "load_s",
+    "model.code_dir"
+   ]
+  }
+ },
+ "p5tail_e1": {
+  "ids_equal": true,
+  "n_a": 12,
+  "n_b": 12,
+  "n_identical": 12,
+  "differ": {}
+ }
+}
