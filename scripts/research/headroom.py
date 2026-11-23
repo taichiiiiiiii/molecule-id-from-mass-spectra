@@ -304,10 +304,46 @@ def run_a5(pool: PoolT, chem) -> tuple[dict, list[dict]]:
     return out, rows
 
 
+RANK_BINS = ((2, 2), (3, 5), (6, 10), (11, 25))
+
+
+def rank_bins(ranks: list) -> dict:
+    """補助: 2〜25 位の分子の順位の内訳（分子数と、その分子を 1 位にしたときの上限 Σ(1 − 1/r) の n で割る前の和）。"""
+    out = {}
+    for lo, hi in RANK_BINS:
+        sel = [r for r in ranks if r is not None and lo <= r <= hi]
+        out[f"{lo}-{hi}"] = dict(n=len(sel), gain_sum=round(sum(1.0 - 1.0 / r for r in sel), 4))
+    return out
+
+
+def pubchem_channel_aux(h: str, M) -> dict | None:
+    """補助（区分の定義の外。計算の後に足した記述で、順位付けの見込みの根拠にだけ使う）: 既存の PubChem チャネルの
+    キャッシュ outputs/local_eval/<h>/pubchem_fold0.json（run.py の pubchem・joint 段、fold-0 のロジット、上位 60）
+    で、正解が提案の何位にあるか。チャネルだけで並べたときの MRR@25 と、上位 60 に入る分子の数。"""
+    cp = ROOT / f"outputs/local_eval/{h}/pubchem_fold0.json"
+    if not cp.is_file():
+        return None
+    cache = json.loads(cp.read_text())
+    p = set_paths(h)
+    truth = M.read_truth(p["truth"])
+    ranks = []
+    for mid, t in truth.items():
+        tk = M.truth_keys(t)
+        props = [x[0] for x in cache.get(mid) or []]
+        r = next((i + 1 for i, s in enumerate(props) if M.to_key(s) in tk), None)
+        ranks.append(r)
+    n = len(truth)
+    return dict(n=n, n_cached=sum(1 for m in truth if m in cache), cache_sha256=sha256_file(cp),
+                n_in_top60=sum(r is not None for r in ranks), n_top1=sum(r == 1 for r in ranks),
+                n_in_top25=sum(r is not None and r <= K for r in ranks),
+                mrr25_channel_alone=round(sum(1.0 / r for r in ranks if r is not None and r <= K) / n, 4))
+
+
 def main() -> None:
     ap = argparse.ArgumentParser()
     ap.add_argument("--out", default=str(ROOT / "outputs/local_eval/headroom_1123/headroom.json"))
     ap.add_argument("--sets", default=",".join(ORIG + UNION))
+    ap.add_argument("--aux-only", action="store_true", help="既存の --out の json に PubChem チャネルの補助の数だけ足す")
     a = ap.parse_args()
     t0 = time.time()
     sys.path.insert(0, str(ROOT / "data/ext/v4g/casmi26-v3-models/code"))
@@ -320,6 +356,16 @@ def main() -> None:
     import rdkit
     from rdkit import RDLogger
     RDLogger.DisableLog("rdApp.*")
+    if a.aux_only:
+        out = Path(a.out)
+        res = json.loads(out.read_text())
+        res["aux_pubchem_channel"] = {h: pubchem_channel_aux(h, M) for h in res["sets"]}
+        import pandas as pd
+        pm = pd.read_csv(out.with_name("headroom_per_molecule.csv"))
+        res["aux_rank_bins"] = {h: rank_bins([int(r) for r in g["rank"].dropna()]) for h, g in pm.groupby("set", sort=False)}
+        out.write_text(json.dumps(res, ensure_ascii=False, indent=1) + "\n")
+        print(json.dumps(res["aux_pubchem_channel"], ensure_ascii=False, indent=1))
+        return
     pool = PoolT()
     tier = PC.Tier()
     res: dict = dict(issue=210, control=CONTROL, ppm=PPM, rdkit=rdkit.__version__, sets={})

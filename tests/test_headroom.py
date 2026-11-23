@@ -142,3 +142,11 @@ def test_graph_sig_separates_positional_isomers_and_metal_fallback():
     m = H.graph_sig("CC(=O)O[Na]")
     assert m[1] is None and dict(m[0])["Na"] == 1
     assert H.graph_sig("((not smiles") is None
+
+
+def test_rank_bins():
+    b = H.rank_bins([None, 1, 2, 2, 4, 7, 25])
+    assert b["2-2"]["n"] == 2 and math.isclose(b["2-2"]["gain_sum"], 1.0)
+    assert b["3-5"]["n"] == 1 and math.isclose(b["3-5"]["gain_sum"], 0.75)
+    assert b["6-10"]["n"] == 1 and b["11-25"]["n"] == 1
+    assert math.isclose(b["11-25"]["gain_sum"], 0.96)
