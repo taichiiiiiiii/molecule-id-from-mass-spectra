@@ -1,0 +1,25 @@
+{
+ "which": "v2",
+ "device": "mps",
+ "steps": 50,
+ "warm": 5,
+ "n_spectra": 7781,
+ "top_peaks": 64,
+ "f_spec": 4,
+ "sec_per_step": 0.44142187118530274,
+ "sec_per_step_sd": 0.1198508718496508,
+ "sec_merge": 0.010128078460693359,
+ "sec_feat": 0.015223760604858399,
+ "sec_gpu": 0.40207513809204104,
+ "pairs_per_step": 5893.52,
+ "merged_per_step": 36.32,
+ "sec_fwd_batch": 0.2593410134315491,
+ "loss_first": 3.230543613433838,
+ "loss_last": 1.2599174976348877,
+ "mps_driver_allocated_gb": 2.167,
+ "footprint": {
+  "footprint_b": 3162556048,
+  "graphics_b": 540377088,
+  "head": "======================================================================\npython [4509]: 64-bit    Footprint: 3162556048 B (16384 bytes per page)\n======================================================================\n\n      Dirty         Clean   Reclaimable    Regions    Category\n        ---           ---           ---        ---    ---\n2157543424 B           0 B      933888 B         73    IOAccelerator (graphics)\n540377088 B           0 B           0 B         21    Malloc Large\n214695936 B           0 B           0 B         61    Malloc Small\n147210240 B           0 B           0 B        233    Untagged\n 85983232 B           0 B           0 B         21    Owned physical footprint (unmapped) (graphics)\n  6471680 B           0 B           0 B        379    __DATA_CONST\n  5365203 B       32768 B           0 B        396    __DATA\n  1753088 B           0 B           0 B         11    Malloc Metadata\n  1164944 B           0 B           0 B          1    page table\n   542751 B           0 B           0 B        298    __DATA_DIRTY\n   442368 B           0 B           0 B         34    Stack\n   275494 B           0 B           0 B       1022    unused dyld shared cache area\n   229376 B           0 B           0 B          1    Malloc Tiny\n   109232 B           0 B           0 B        179    __AUTH\n    98232 B           0 B           0 B          4    __TPRO_CONST\n    65536 B           0 B           0 B          2    IOAccelerator\n    65536 B           0 B           0 B          4"
+ }
+}

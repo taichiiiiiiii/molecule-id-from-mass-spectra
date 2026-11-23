@@ -1,0 +1,13 @@
+{
+ "n_spectra_v1": 9066,
+ "n_spectra_v2": 7781,
+ "n_dropped_p1": 1285,
+ "scan_s": 3.6,
+ "pack_v1_s": 0.145,
+ "pack_v2_s": 0.173,
+ "sec_pack_per_spectrum_v1": 1.6001973382532005e-05,
+ "sec_pack_per_spectrum_v2": 2.2224925842402817e-05,
+ "peaks_median_v1": 32.0,
+ "peaks_median_v2": 52.0,
+ "n_rows_scanned": 2539608
+}
