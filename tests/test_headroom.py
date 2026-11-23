@@ -91,13 +91,54 @@ def test_in_candidates_only_keys_same_composition():
 
     thc = (("C", 6), ("O", 6))
     other = (("C", 5), ("O", 6))
+    tsig = (thc, None)
     # 組成の違う候補は to_key を呼ばない（同じキーは同じ組成なので漏れない）
-    assert H.in_candidates(["A", "B", "C"], [other, other, thc], {"KT"}, thc, fake_key) is True
+    assert H.in_candidates(["A", "B", "C"], [other, other, thc], {"KT"}, tsig, fake_key) is True
     assert calls == ["C"]
     calls.clear()
-    assert H.in_candidates(["A", "B"], [thc, None], {"KT"}, thc, fake_key) is False
+    assert H.in_candidates(["A", "B"], [thc, None], {"KT"}, tsig, fake_key) is False
     assert calls == ["A", "B"]   # 組成の分からない候補も調べる
     calls.clear()
-    # 正解の組成が分からなければ全部調べる
+    # 正解の印が分からなければ全部調べる
     assert H.in_candidates(["A", "C"], [other, other], {"KT"}, None, fake_key) is True
     assert calls == ["A", "C"]
+    calls.clear()
+    # WL の印で絞る: 印の違う候補は呼ばない
+    sigs = {"A": (thc, (1, 2)), "B": (thc, (9, 9)), "C": (thc, (1, 2))}
+    assert H.in_candidates(["A", "B", "C"], [thc, thc, thc], {"KT"}, (thc, (1, 2)), fake_key, sigs.get) is True
+    assert calls == ["A", "C"]
+
+
+def test_sig_compatible():
+    c = (("C", 2), ("O", 1))
+    assert H.sig_compatible(None, (c, (1,))) and H.sig_compatible((c, (1,)), None)
+    assert not H.sig_compatible(((("C", 3),), (1,)), (c, (1,)))
+    assert H.sig_compatible((c, None), (c, (1,)))
+    assert H.sig_compatible((c, (1, 2)), (c, (1, 2))) and not H.sig_compatible((c, (1, 2)), (c, (1, 3)))
+
+
+@pytest.mark.parametrize("a,b", [
+    ("CC(=O)C", "C=C(O)C"),                                   # ケト・エノール
+    ("O=C1C=CC=CN1", "Oc1ccccn1"),                            # 2-ピリドン / 2-ヒドロキシピリジン
+    ("C[C@H](N)C(=O)O", "CC(N)C(=O)O"),                       # 立体の有無
+    ("C/C=C/C(=O)O", "C/C=C\\C(=O)O"),                       # E/Z
+    ("CC(=O)[O-]", "CC(=O)O"),                                 # 脱プロトン
+    ("C[N+](=O)[O-]", "CN(=O)=O"),                             # 電荷分離の書き方
+    ("OC[C@H]1OC(O)[C@H](O)[C@@H](O)[C@@H]1O", "OCC1OC(O)C(O)C(O)C1O"),
+])
+def test_graph_sig_invariant_where_to_key_equal(a, b):
+    pytest.importorskip("rdkit")
+    sys.path.insert(0, str(ROOT / "scripts/validate"))
+    import mrr25
+    if mrr25.to_key(a) == mrr25.to_key(b):   # to_key が同じ組では印も同じでなければならない
+        assert H.graph_sig(a) == H.graph_sig(b), (a, b)
+    assert H.graph_sig(a)[0] == H.graph_sig(b)[0]
+
+
+def test_graph_sig_separates_positional_isomers_and_metal_fallback():
+    pytest.importorskip("rdkit")
+    a, b = H.graph_sig("CCCO"), H.graph_sig("CC(C)O")
+    assert a[0] == b[0] and a[1] != b[1]
+    m = H.graph_sig("CC(=O)O[Na]")
+    assert m[1] is None and dict(m[0])["Na"] == 1
+    assert H.graph_sig("((not smiles") is None

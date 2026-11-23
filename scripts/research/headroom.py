@@ -72,12 +72,50 @@ def heavy_comp_from_formula(formula: str | None) -> tuple | None:
 
 def heavy_comp_from_smiles(smi: str) -> tuple | None:
     """SMILES の重原子の組成（sanitize なしで数える。明示の [H] 原子は数えない）。読めなければ None。"""
+    sig = graph_sig(smi)
+    return None if sig is None else sig[0]
+
+
+ORGANIC = {"C", "N", "O", "S", "P", "F", "Cl", "Br", "I", "B", "Si", "Se"}
+_WL_IDS: dict = {}
+
+
+def _wl_id(x) -> int:
+    """WL の印を、このプロセスの中で一意な整数にする（分子をまたいで同じ印は同じ整数）。"""
+    if x not in _WL_IDS:
+        _WL_IDS[x] = len(_WL_IDS)
+    return _WL_IDS[x]
+
+
+def graph_sig(smi: str, iters: int = 3) -> tuple | None:
+    """(重原子の組成, 重原子のグラフの WL の印)。結合次数・電荷・H・立体を見ないので、立体違い・互変異性体・
+    保護の違いでは変わらない（to_key が同じなら印も同じ。to_key を計算する候補を絞るための必要条件）。
+    金属などを含む分子は InChI が結合を切るので、WL の印を None にして組成だけで絞る。読めなければ None。"""
     from rdkit import Chem
     m = Chem.MolFromSmiles(smi, sanitize=False)
     if m is None:
         return None
-    c: Counter = Counter(a.GetSymbol() for a in m.GetAtoms() if a.GetAtomicNum() > 1)
-    return tuple(sorted(c.items()))
+    heavy = [a for a in m.GetAtoms() if a.GetAtomicNum() > 1]
+    comp = tuple(sorted(Counter(a.GetSymbol() for a in heavy).items()))
+    if any(el not in ORGANIC for el, _ in comp):
+        return (comp, None)
+    idx = {a.GetIdx(): i for i, a in enumerate(heavy)}
+    nb = [[idx[n.GetIdx()] for n in a.GetNeighbors() if n.GetIdx() in idx] for a in heavy]
+    lab = [_wl_id(("e", a.GetSymbol())) for a in heavy]
+    for _ in range(iters):
+        lab = [_wl_id((lab[i], tuple(sorted(lab[j] for j in nb[i])))) for i in range(len(heavy))]
+    return (comp, tuple(sorted(lab)))
+
+
+def sig_compatible(a: tuple | None, b: tuple | None) -> bool:
+    """候補の印 a と正解の印 b が「同じ to_key でありうる」か。どちらかが読めなければ True（調べる側）。"""
+    if a is None or b is None:
+        return True
+    if a[0] != b[0]:
+        return False
+    if a[1] is None or b[1] is None:
+        return True
+    return a[1] == b[1]
 
 
 def rank_of(rr: float) -> int | None:
@@ -173,10 +211,14 @@ class PoolT:
         return self._hc[f]
 
 
-def in_candidates(smis, hcs, tkeys: set, thc, to_key) -> bool:
-    """候補の SMILES（と重原子の組成）に正解のキーがあるか。組成が同じか不明な候補だけ to_key を計算する。"""
-    for s, h in zip(smis, hcs):
-        if h is not None and thc is not None and h != thc:
+def in_candidates(smis, comps, tkeys: set, tsig, to_key, sig_of=None) -> bool:
+    """候補の SMILES に正解のキーがあるか。まず重原子の組成（comps、None は不明）で、次に sig_of（SMILES → 印）が
+    あれば WL の印で絞り、両立する候補だけ to_key を計算する（to_key が同じなら組成も印も同じなので漏れない）。"""
+    tcomp = None if tsig is None else tsig[0]
+    for s, h in zip(smis, comps):
+        if h is not None and tcomp is not None and h != tcomp:
+            continue
+        if sig_of is not None and not sig_compatible(sig_of(s), tsig):
             continue
         if to_key(s) in tkeys:
             return True
@@ -198,7 +240,7 @@ def run_set(h: str, pool: PoolT, tier, L, M, chem) -> tuple[dict, list[dict]]:
         rr = M.reciprocal_rank(tk, preds.get(mid, []), K)
         r = rank_of(rr)
         t_smis = [s.strip() for s in t.split(",") if s.strip()]
-        thc = heavy_comp_from_smiles(t_smis[0]) if t_smis and not M._INCHIKEY.match(t_smis[0]) else None
+        tsig = graph_sig(t_smis[0]) if len(t_smis) == 1 and not M._INCHIKEY.match(t_smis[0]) else None
         rec = dict(set=h, molecule_id=mid, rr=rr, rank=r, n_window=None, in_window=None, in_pool=None, in_pubchem=None)
         if mid not in targets:
             raise SystemExit(f"{h} {mid}: 窓の中心（__targets__）が無い")
@@ -206,7 +248,7 @@ def run_set(h: str, pool: PoolT, tier, L, M, chem) -> tuple[dict, list[dict]]:
         if hidden:
             idx = idx[~np.isin(pool.key[idx], list(hidden))]
         rec["n_window"] = int(len(idx))
-        in_win = in_candidates(pool.smiles[idx], [pool.hc(i) for i in idx], tk, thc, M.to_key)
+        in_win = in_candidates(pool.smiles[idx], [pool.hc(i) for i in idx], tk, tsig, M.to_key, graph_sig)
         rec["in_window"] = bool(in_win)
         if r is not None and not in_win:
             raise SystemExit(f"{h} {mid}: 上位 25 にあるのに窓に無い（定義の食い違い）")
@@ -216,7 +258,9 @@ def run_set(h: str, pool: PoolT, tier, L, M, chem) -> tuple[dict, list[dict]]:
             if not rec["in_pool"]:
                 smis = tier.window(targets[mid])
                 rec["n_pubchem_window"] = len(smis)
-                rec["in_pubchem"] = bool(in_candidates(smis, [heavy_comp_from_smiles(s) for s in smis], tk, thc, M.to_key))
+                sigs = {x: graph_sig(x) for x in smis}
+                rec["in_pubchem"] = bool(in_candidates(smis, [None if sigs[x] is None else sigs[x][0] for x in smis], tk,
+                                                       tsig, M.to_key, sigs.get))
         rec["cat"] = classify(r, bool(in_win), bool(rec["in_pool"]), bool(rec["in_pubchem"]))
         recs.append(rec)
     s = summarize(recs)
