@@ -3,7 +3,8 @@
 # 使い方: bash fragnn_loop.sh <logbase> <train_report.json> -- <cmd...>
 #   各回: MIN_FREE_PCT=${GUARD_PCT:-15} memguard_run.sh <logbase>.<n> <cmd...>   （MEMGUARD で memguard のパスを替えられる、テスト用）
 #   判定（終了コード＋report の status と train.stop_reason＋その回のログ）:
-#     99                                        → WAIT_S 待って再開（memguard の停止）
+#     99                                        → WAIT_S 待って再開（memguard の停止）。STOP_ON_MEMGUARD=1 なら終了 2
+#                                                 （#196 v2: memguard の rc 99 で次の round に進まない）
 #     0 かつ status paused                      → WAIT_S 待って再開（学習中に avail < 2 GB）
 #     0 かつ status ok・stop_reason converged   → 終了 0（止め方で終了 = 収束）
 #     0 かつ status ok・stop_reason max_steps   → 終了 0（完了 = 上限 300,000 ステップ）
@@ -52,7 +53,9 @@ except Exception:
 decide() {   # $1 = 終了コード, $2 = その回のログ → "resume|done|stop <理由>"
   local rc="$1" log="$2" st sr
   case "$rc" in
-    99) echo "resume memguard_kill"; return;;
+    99)
+      if [ "${STOP_ON_MEMGUARD:-0}" = "1" ]; then echo "stop memguard_kill"; else echo "resume memguard_kill"; fi
+      return;;
     0)
       read -r st sr <<< "$(status_of)"
       case "$st" in

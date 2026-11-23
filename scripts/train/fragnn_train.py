@@ -99,6 +99,27 @@ CONFIG = {"ISSUE": ISSUE, "SEED": SEED, "LR": LR, "WD": WD, "WARMUP": WARMUP, "C
           "F_PEAK": B.F_PEAK, "F_PAIR": B.F_PAIR, "F_SPEC": B.F_SPEC, "PAD_ROWS": B.PAD_ROWS, "negatives": "design",
           "CAP_FACTOR": CAP_FACTOR, "CAP_MAX_H": CAP_MAX_H, "weights": "best internal-val loss"}
 
+# ---- v2（#196 の確定した事前登録 (a)〜(h) と 2026-11-22T16:20Z の追記 1〜6。`--v2` のときだけ使う。v1 の既定は変えない）
+ISSUE_V2 = 196
+V1_PREP_SHA256 = "b59350da55c607cebc58a41a82f9a622c301ac260d9ce1c1363df958f07d1519"   # outputs/fragnn_train/prep.npz
+V1_PREP_REL = "outputs/fragnn_train/prep.npz"
+V2_SPEED_REPORT_SHA256 = "32c51f5679dd6a08b194b76d4dfaf94853b2df9fee30dfb2f3838c9003b2ef31"   # #196 手順 4 の report.json
+V2_SPEED_REPORT_REL = "outputs/local_eval/shift_1123/bench/report.json"
+EXPECTED_TRAIN_SPECTRA_V2, EXPECTED_VAL_SPECTRA_V2 = 1_658_625, 33_811   # #196 (a) 1・追記 4（10 種の付加イオンだけ）
+JUDGE_SETS = ("v3_c1u_t10", "v3_c2_t10", "enveda_v1u_t10", "v3_c2nu_t10")    # #196 (e)・追記 2
+CONFIG_V2 = dict(CONFIG, ISSUE=ISSUE_V2, variant="v2", TOP_PEAKS=B.TOP_PEAKS_V2, F_SPEC=B.F_SPEC_V2,
+                 P1_adducts=list(B.TEST_ADDUCTS), P5_above_prec_da=B.ABOVE_PREC_DA, P8a_instrument=B.TIMSTOF,
+                 P4_merge_p=B.MERGE_P, P4_merge_kmax=B.MERGE_KMAX, P4_merge_tol=B.MERGE_TOL,
+                 P4_merge_key="(struct, adduct, timsTOF)", P4_merge_rng="default_rng([42, 2, step])",
+                 P4_val_merge=False, spec_feat="mode, log1p(n)/log(65), ce/100, timsTOF",
+                 cap_rule="min(1.5 * v1_real_h * per_pair_ratio, 96)")
+
+
+def wallclock_cap_hours_v2(bench_report: dict, factor: float = CAP_FACTOR, max_h: float = CAP_MAX_H) -> float:
+    """#196 (d): 経過時間の上限 = min(factor × v1 の本番の実績 × 組あたりの秒の比, max_h)（= min(1.5 × 18.33, 96) ≈ 27.5 h）。"""
+    h = float(bench_report["ratio"]["v1_real_h"]) * float(bench_report["per_pair_ratio"])
+    return min(factor * h, max_h)
+
 
 # ---------------------------------------------------------------- 純粋な関数（CI）
 
@@ -300,9 +321,11 @@ def check_leaks(leak: dict) -> None:
         raise AssertionError(f"leak audit failed (must all be 0): {bad}")
 
 
-def assemble(cand: np.ndarray, mask: np.ndarray, spec_idx: np.ndarray, spec_n: np.ndarray, pad_to: int = B.PAD_ROWS):
+def assemble(cand: np.ndarray, mask: np.ndarray, spec_idx: np.ndarray, spec_n: np.ndarray, pad_to: int = B.PAD_ROWS,
+             top: int = B.TOP_PEAKS):
     """(b, K) の候補 → 詰めた組の並び。返り値: n（本物の組の数）, P（詰めた数）, 組の候補の構造, 組のスペクトル,
-    slot（本物は i*K + k、詰め物は b*K = 捨てる slot）, valid（ピークの有効、詰め物は全部 False）。"""
+    slot（本物は i*K + k、詰め物は b*K = 捨てる slot）, valid（ピークの有効、詰め物は全部 False）。
+    top: ピークの列の数（v1 = 32、v2 = 64）。"""
     b, k = mask.shape
     vi, vk = np.nonzero(mask)
     n = len(vi)
@@ -310,7 +333,7 @@ def assemble(cand: np.ndarray, mask: np.ndarray, spec_idx: np.ndarray, spec_n: n
     cs = np.zeros(p, np.int64); cs[:n] = cand[vi, vk]
     sp = np.zeros(p, np.int64); sp[:n] = spec_idx[vi]
     slot = np.full(p, b * k, np.int64); slot[:n] = vi * k + vk
-    valid = np.arange(B.TOP_PEAKS)[None, :] < np.asarray(spec_n)[sp][:, None]
+    valid = np.arange(top)[None, :] < np.asarray(spec_n)[sp][:, None]
     valid[n:] = False
     return n, p, cs, sp, slot, valid
 
@@ -503,7 +526,9 @@ def run_training(D: dict, out: Path, meta: dict, dev: str = "cpu", resume: bool 
     if statep.exists() and not resume:
         raise SystemExit(f"{statep} がある。続けるなら --resume、やり直すなら出力先を変える")
     rep = dict(rep or {})
-    rep.update({"issue": ISSUE, "status": "running", "device": dev, "config": CONFIG, "meta": meta,
+    config = D.get("config", CONFIG)       # v2（#196）は D に config・v2 を入れる。v1 は今までどおり CONFIG
+    v2 = D.get("v2")
+    rep.update({"issue": config["ISSUE"], "status": "running", "device": dev, "config": config, "meta": meta,
                 "wallclock_cap_h": cap_s / 3600})
 
     def save():
@@ -522,7 +547,8 @@ def run_training(D: dict, out: Path, meta: dict, dev: str = "cpu", resume: bool 
     va_cand, va_mask = B.sample_candidates(np.random.default_rng(VAL_CAND_SEED), pos_struct[va_i], cid[va_i],
                                            D["off_va"], D["flat_va"], K_CAND)
     torch.manual_seed(SEED)
-    model = B.build_model().to(dev)
+    top = int(spec["mz"].shape[1])
+    model = B.build_model(int(spec["spec_feat"].shape[1])).to(dev)
     opt = torch.optim.AdamW(model.parameters(), lr=LR, weight_decay=WD)
     stopper = EarlyStop(STOP_REL, STOP_PATIENCE)
 
@@ -574,14 +600,19 @@ def run_training(D: dict, out: Path, meta: dict, dev: str = "cpu", resume: bool 
     def elapsed() -> float:
         return elapsed0 + (time.time() - t_run)
 
-    def forward(cand, mask, spec_idx, train: bool):
+    def forward(cand, mask, spec_idx, train: bool, bspec=None):
+        """bspec: v2 の学習のバッチの詰めた値（merge 済み、行 = バッチの順）。None なら全体の spec を spec_idx で引く（v1・内部検証）。"""
         b = mask.shape[0]
-        n, p, cs, sp, slot, valid = assemble(cand, mask, spec_idx, spec["n"])
-        f0, fs0 = B.batch_features(masses, off, cs[:n], sp[:n], spec)
-        feats = np.zeros((p, B.TOP_PEAKS, B.F_PEAK), np.float32); feats[:n] = f0
+        S = spec if bspec is None else bspec
+        idx = spec_idx if bspec is None else np.arange(b, dtype=np.int64)
+        n, p, cs, sp, slot, valid = assemble(cand, mask, idx, S["n"], top=top)
+        f0, fs0 = B.batch_features(masses, off, cs[:n], sp[:n], S)
+        feats = np.zeros((p, top, B.F_PEAK), np.float32); feats[:n] = f0
         fs = np.zeros((p, 1), np.float32); fs[:n, 0] = fs0
         x, vt = torch.from_numpy(feats).to(dev), torch.from_numpy(valid).to(dev)
-        pair, sf = torch.from_numpy(fs).to(dev), spec_feat[sp].to(dev)
+        sfe = spec_feat[sp] if bspec is None else torch.from_numpy(np.ascontiguousarray(bspec["spec_feat"][sp],
+                                                                                         dtype=np.float32))
+        pair, sf = torch.from_numpy(fs).to(dev), sfe.to(dev)
         logit = model(x, vt, pair, sf)
         flat = torch.full((b * K_CAND + 1,), float("-inf"), device=dev).index_put((torch.from_numpy(slot).to(dev),), logit)
         return flat[:b * K_CAND].view(b, K_CAND)
@@ -621,6 +652,7 @@ def run_training(D: dict, out: Path, meta: dict, dev: str = "cpu", resume: bool 
     rep["skipped_training_on_resume"] = bool(resume and stop_reason is not None)
     save()
     n_tr = len(tr_i)
+    merged_tot = 0
     while stop_reason is None:
         if step < WARMUP:
             for gr in opt.param_groups:
@@ -630,7 +662,11 @@ def run_training(D: dict, out: Path, meta: dict, dev: str = "cpu", resume: bool 
         cand, mask = B.sample_candidates(step_rng(step), pos_struct[bi], cid[bi], D["off_tr"], D["flat_tr"], K_CAND)
         if on_batch is not None:
             on_batch(step, bi, cand, mask)
-        sc = forward(cand, mask, bi, train=True)
+        bspec = None
+        if v2 is not None:   # P4: 学習のバッチだけ merge（内部検証は 1 本ずつ、#196 16:20Z の追記 5）
+            bspec, n_merged = B.merge_batch(step, bi, spec, v2["gkey"], v2["groups"])
+            merged_tot += n_merged
+        sc = forward(cand, mask, bi, train=True, bspec=bspec)
         loss = torch.nn.functional.cross_entropy(sc, torch.zeros(len(bi), dtype=torch.long, device=dev))
         opt.zero_grad(set_to_none=True)
         loss.backward()
@@ -662,6 +698,9 @@ def run_training(D: dict, out: Path, meta: dict, dev: str = "cpu", resume: bool 
             row = {"step": step, "train_loss": acc / max(n_acc, 1), "val_loss": vl, "lr": cur_lr(),
                    **u, "best": stopper.best, "best_step": stopper.best_step, "train_elapsed_s": round(elapsed(), 1),
                    "steps_per_s": n_acc / max(time.time() - ts, 1e-9), "mem": mem_check()}
+            if v2 is not None:
+                row["merged_spectra"] = merged_tot     # 前の評価からの P4 で merge した本の数（記録だけ）
+                merged_tot = 0
             with open(logp, "a") as f:
                 f.write(json.dumps(row) + "\n")
             print("EVAL", json.dumps(row), flush=True)
@@ -691,7 +730,7 @@ def run_training(D: dict, out: Path, meta: dict, dev: str = "cpu", resume: bool 
     rows = log_rows()
     atomic_write_text(out / "learning_curve.csv", curve_csv(rows))
     rep["curve_png"] = curve_png(rows, out / "learning_curve.png") if rows else None
-    cfg = dict(CONFIG, best_step=stopper.best_step, best_val_loss=stopper.best, stop_reason=stop_reason, meta=meta,
+    cfg = dict(config, best_step=stopper.best_step, best_val_loss=stopper.best, stop_reason=stop_reason, meta=meta,
                stop_rule=STOP_RULE, final_lr=cur_lr())
     atomic_write_text(out / "fragnn_config.json", json.dumps(cfg, indent=1, default=str))
     rep["outputs"] = {p.name: {"bytes": p.stat().st_size, "sha256": sha256_file(p)}
@@ -844,8 +883,10 @@ def load_spectra(train_path: Path, spec_row: np.ndarray, spec_ik: np.ndarray) ->
     return out
 
 
-def ensure_speed_report(out: Path, src: str | Path = SPEED_REPORT_SRC) -> dict:
-    """速度測定の report.json を out/speed_report.json に写して（既にあればそれを）sha256 を照合する。"""
+def ensure_speed_report(out: Path, src: str | Path = SPEED_REPORT_SRC, sha: str | None = None) -> dict:
+    """速度測定の report.json を out/speed_report.json に写して（既にあればそれを）sha256 を照合する。
+    sha: 照合の値（None なら v1 の SPEED_REPORT_SHA256 を呼び出しの時点で読む）。"""
+    sha = SPEED_REPORT_SHA256 if sha is None else sha
     dst = out / "speed_report.json"
     if not dst.exists():
         if not Path(src).exists():
@@ -854,9 +895,169 @@ def ensure_speed_report(out: Path, src: str | Path = SPEED_REPORT_SRC) -> dict:
         shutil.copyfile(src, tmp)
         os.replace(tmp, dst)
     h = sha256_file(dst)
-    if h != SPEED_REPORT_SHA256:
-        raise SystemExit(f"speed report sha256 {h} != {SPEED_REPORT_SHA256}")
+    if h != sha:
+        raise SystemExit(f"speed report sha256 {h} != {sha}")
     return json.loads(dst.read_text())
+
+
+# ---------------------------------------------------------------- v2 の前処理（#196 (c)。v1 の prep.npz を使い回し、P1 の絞り込みだけを足す）
+
+def read_adducts(train_path: Path, spec_row: np.ndarray) -> np.ndarray:
+    """train.parquet の adduct の列だけを row group ごとに読み、spec_row の順に返す（object の配列）。"""
+    import pyarrow as pa
+    import pyarrow.parquet as pq
+    spec_row = np.asarray(spec_row, np.int64)
+    order = np.argsort(spec_row, kind="stable"); srow = spec_row[order]
+    out = np.empty(len(spec_row), object)
+    pf = pq.ParquetFile(train_path, buffer_size=1 << 20, pre_buffer=False)
+    base, filled = 0, 0
+    for b in pf.iter_batches(batch_size=8192, columns=["adduct"]):
+        lo, hi = np.searchsorted(srow, base), np.searchsorted(srow, base + b.num_rows)
+        if hi > lo:
+            vals = b.column(0).take(pa.array(srow[lo:hi] - base)).to_pylist()
+            out[order[lo:hi]] = vals
+            filled += hi - lo
+        base += b.num_rows
+    if filled != len(spec_row):
+        raise AssertionError(f"adducts filled {filled} != {len(spec_row)}")
+    return out
+
+
+def load_spectra_v2(train_path: Path, spec_row: np.ndarray, spec_ik: np.ndarray) -> dict:
+    """load_spectra と同じ読み方で、v2 の詰め方（fragnn_bench.pack_spectra_v2: P5' → 上位 64 本、timsTOF の印）。
+    返り値に adduct_code（TEST_ADDUCTS の番号。10 種以外があれば止める）を足す。"""
+    import pyarrow as pa
+    import pyarrow.parquet as pq
+    n = len(spec_row)
+    k = B.TOP_PEAKS_V2
+    out = dict(mz=np.zeros((n, k)), it=np.zeros((n, k)), n=np.zeros(n, np.int64), prec=np.zeros(n),
+               sh_v=np.zeros((n, 12)), sh_c=np.zeros((n, 12), np.int8), sh_d=np.zeros((n, 12), np.int8),
+               sh_n=np.zeros(n, np.int64), spec_feat=np.zeros((n, B.F_SPEC_V2), np.float32), ce=np.zeros(n),
+               tims=np.zeros(n, np.int8), adduct_code=np.full(n, -1, np.int64))
+    order = np.argsort(spec_row, kind="stable")
+    srow = np.asarray(spec_row, np.int64)[order]
+    cols = ["inchikey14", "adduct", "ionization_mode", "precursor_mz", "ms2_mzs", "ms2_normalized_intensities",
+            "collision_energy_ev", "instrument_type"]
+    pf = pq.ParquetFile(train_path, buffer_size=1 << 20, pre_buffer=False)
+    base, filled = 0, 0
+    for b in pf.iter_batches(batch_size=8192, columns=cols):
+        lo, hi = np.searchsorted(srow, base), np.searchsorted(srow, base + b.num_rows)
+        if hi > lo:
+            sub = b.take(pa.array(srow[lo:hi] - base)).to_pydict()
+            rows = []
+            for j in range(hi - lo):
+                ce = sub["collision_energy_ev"][j]
+                if sub["inchikey14"][j].encode() != spec_ik[order[lo + j]]:
+                    raise AssertionError(f"inchikey14 mismatch at train row {srow[lo + j]}")
+                if not B.keep_adduct(sub["adduct"][j]):
+                    raise AssertionError(f"adduct {sub['adduct'][j]!r} outside the 10 test adducts at row {srow[lo + j]}")
+                rows.append(dict(adduct=sub["adduct"][j], prec=sub["precursor_mz"][j],
+                                 mode=1 if sub["ionization_mode"][j] == "positive" else -1,
+                                 mz=sub["ms2_mzs"][j], it=sub["ms2_normalized_intensities"][j],
+                                 ce=float(np.mean(ce)) if ce else 0.0, instrument=sub["instrument_type"][j]))
+            pk = B.pack_spectra_v2(rows)
+            pk["adduct_code"] = np.array([B.TEST_ADDUCTS.index(r["adduct"]) for r in rows], np.int64)
+            dst = order[lo:hi]
+            for key in out:
+                out[key][dst] = pk[key]
+            filled += hi - lo
+        base += b.num_rows
+    if filled != n:
+        raise AssertionError(f"spectra filled {filled} != {n}")
+    bad = {key: int((~np.isfinite(out[key])).sum()) for key in ("mz", "it", "prec", "spec_feat", "ce")}
+    if any(bad.values()):
+        raise AssertionError(f"non-finite values in v2 spectra: {bad}")
+    return out
+
+
+def group_size_stats(groups: dict) -> dict:
+    s = np.array([len(v) for v in groups.values()], np.int64)
+    if len(s) == 0:
+        return dict(n_groups=0)
+    return dict(n_groups=int(len(s)), median=float(np.median(s)), p90=float(np.percentile(s, 90)), max=int(s.max()),
+                share_ge2=float((s >= 2).mean()), spectra_in_ge2=float(s[s >= 2].sum() / s.sum()))
+
+
+def judge_set_overlap(truth_raw, set_keys, raw_to_key: dict, pos_raw: set, pos_key: set, neg_key: set,
+                      neg_raw: set) -> dict:
+    """#196 (c)(v): 判定の集合の正解（生の inchikey14、その正準キー、集合の drop_keys〈正準キー＋別名〉）が学習・内部検証の
+    正解にも負例の候補にも無いことの数（すべて 0 でなければならない）。"""
+    raw = set(map(str, truth_raw))
+    keys = {raw_to_key[r] for r in raw if r in raw_to_key} | set(map(str, set_keys))
+    return dict(raw_in_pos=len(raw & pos_raw), raw_in_neg=len(raw & neg_raw), key_in_pos=len(keys & pos_key),
+                key_in_neg=len(keys & neg_key))
+
+
+def prepare_v2(data_root: Path, keys_path: Path, prep_path: Path) -> tuple[dict, dict]:
+    """v1 の prep.npz（sha256 を照合）を読み、P1（10 種の付加イオンの行だけ）で学習・内部検証の行を絞る。
+    漏れの数を P1 の後の行で数え直し（v1 の leak_counts と同じ定義）、判定の 4 集合の正解が学習に 0 件であることも
+    確かめる（#196 (c) の (i)〜(v)）。返り値 = (D の材料〈spec を除く〉, info)。"""
+    import pandas as pd
+    import sanpier_fold0 as sf
+    assert Path(sf.__file__).resolve().parent == CODE_DIR, sf.__file__
+    t0 = time.time()
+    h = sha256_file(prep_path)
+    if h != V1_PREP_SHA256:                                                        # (i)
+        raise SystemExit(f"v1 prep.npz sha256 {h} != {V1_PREP_SHA256}")
+    P = data_paths(data_root)
+    z = np.load(prep_path)
+    meta_df = pd.read_parquet(P["pool"] / "pool_meta.parquet", columns=["key"])
+    keys_arr = meta_df.key.values
+    ts = pd.read_parquet(P["pool"] / "train_structs.parquet", columns=["inchikey14", "key"])
+    raw_to_key = dict(zip(ts.inchikey14, ts.key))
+    split = pd.read_parquet(P["split"], columns=["inchikey14", "key", "fold"])
+    hk = json.loads(Path(keys_path).read_text())
+    drop_raw = sf.drop_inchikey14(split.inchikey14, hk)
+    assert len(drop_raw) == EXPECTED_DROP, len(drop_raw)
+    drop_key = B.drop_key_space(drop_raw, raw_to_key, hk, split.key)
+    assert len(drop_key) == EXPECTED_DROP_KEY, len(drop_key)
+    h117 = {hh: set((P["holdouts"] / hh / "drop_keys.txt").read_text().split()) for hh in HOLDOUTS}   # (iii)
+    h117_missing = {hh: len(ks - drop_key - drop_raw) for hh, ks in h117.items()}
+    assert all(v == 0 for v in h117_missing.values()), h117_missing
+    is_val_all = z["is_val"]
+    adducts = read_adducts(P["train"], z["spec_row"])
+    keep = np.array([B.keep_adduct(a) for a in adducts], bool)
+    kept = np.flatnonzero(keep)
+    is_val = is_val_all[kept]
+    n_tr, n_va = int((~is_val).sum()), int(is_val.sum())
+    assert (n_tr, n_va) == (EXPECTED_TRAIN_SPECTRA_V2, EXPECTED_VAL_SPECTRA_V2), (n_tr, n_va)       # (iv)
+    srows = z["struct_rows"]
+    pos_struct = z["pos_struct"][kept]
+    pos_keys = keys_arr[srows[pos_struct]]
+    raw = z["spec_ik"][kept].astype(str)
+    val_keys = set(keys_arr[srows[z["pos_struct"][is_val_all]]])    # 内部検証の構造は v1 と同じ（P1 の前の行で決めた 4,383）
+    val_rows = meta_df.key.isin(val_keys).values                    # v1 の prepare と同じ pandas の isin（np.isin は object で遅い）
+    is_trainstruct = meta_df.key.isin(set(ts.key.values)).values
+    flat_tr_pool, flat_va_pool = srows[z["flat_tr"]], srows[z["flat_va"]]
+    all_neg = np.concatenate([flat_tr_pool, flat_va_pool])
+    leak = leak_counts(raw, pos_keys, list(zip(split.inchikey14, split.fold)), list(zip(split.key, split.fold)), hk,
+                       keys_arr[all_neg], drop_key, pos_keys, val_rows[flat_tr_pool], is_trainstruct[all_neg],
+                       val_rows[srows[pos_struct[~is_val]]])                                         # (ii)
+    check_leaks(leak)
+    neg_key = set(keys_arr[np.unique(all_neg)])
+    neg_raw = set(ts.inchikey14.values[ts.key.isin(neg_key).values])
+    pos_raw, pos_key = set(raw), set(pos_keys)
+    judge = {}
+    for hh in JUDGE_SETS:                                                                              # (v)
+        tr = pd.read_csv(data_root / "outputs/local_eval" / hh / "truth.csv")
+        dk = (P["holdouts"] / hh / "drop_keys.txt").read_text().split()
+        judge[hh] = dict(n_truth=int(len(tr)), n_drop_keys=len(dk),
+                         **judge_set_overlap(tr.inchikey14.values, dk, raw_to_key, pos_raw, pos_key, neg_key, neg_raw))
+    jbad = {hh: {k: v for k, v in d.items() if k.endswith(("_pos", "_neg")) and v} for hh, d in judge.items()}
+    if any(jbad.values()):
+        raise AssertionError(f"judge-set truths leak into training (must all be 0): {jbad}")
+    info = dict(variant="v2", v1_prep_sha256=h, n_spectra_v1=int(len(keep)), n_dropped_p1=int((~keep).sum()),
+                n_train_spectra=n_tr, n_val_spectra=n_va,
+                n_train_structs=int(len(np.unique(pos_struct[~is_val]))), n_val_structs=int(len(np.unique(pos_struct[is_val]))),
+                n_train_structs_v1=int(len(np.unique(z["pos_struct"][~is_val_all]))),
+                n_val_structs_v1=int(len(np.unique(z["pos_struct"][is_val_all]))),
+                dropped_adducts={str(k): int(v) for k, v in pd.Series(adducts[~keep]).value_counts().head(30).items()},
+                drop=len(drop_raw), drop_key=len(drop_key), h117_missing=h117_missing, leak=leak, judge_sets=judge,
+                prepare_seconds=round(time.time() - t0, 1))
+    D = {k: z[k] for k in ("masses", "off", "off_tr", "flat_tr", "off_va", "flat_va")}
+    D.update(pos_struct=pos_struct, cid=z["cid"][kept], tr_i=np.flatnonzero(~is_val), va_i=np.flatnonzero(is_val),
+             spec_row=z["spec_row"][kept], spec_ik=z["spec_ik"][kept])
+    return D, info
 
 
 def assert_code_data_separation(data_root: Path) -> None:
@@ -868,22 +1069,44 @@ def assert_code_data_separation(data_root: Path) -> None:
         raise SystemExit(f"fragnn_bench imported from {B.__file__}, not {CODE_DIR}")
 
 
+def _run_guarded(D, out, meta, device, resume, rep, t0, rpath, run_kw) -> dict:
+    """v2 の学習の呼び出し（v1 の train() の末尾と同じ例外の扱い）。"""
+    try:
+        return run_training(D, out, meta, dev=device, resume=resume, rep=rep, t0=t0, **run_kw)
+    except SystemExit:
+        raise
+    except Exception as e:  # noqa: BLE001
+        import traceback
+        prev = json.loads(rpath.read_text()) if rpath.exists() else rep
+        prev.update(status="error", error=f"{type(e).__name__}: {e}", traceback=traceback.format_exc()[-4000:])
+        atomic_write_text(rpath, json.dumps(prev, indent=1, default=str, ensure_ascii=False))
+        return prev
+
+
 def train(data_root: Path, out: Path, device: str = "mps", resume: bool = False,
           speed_src: str | Path = SPEED_REPORT_SRC, extend_cap: bool = False, extend_cap_expect_s: float | None = None,
-          **run_kw) -> dict:
+          v2: bool = False, **run_kw) -> dict:
     """本番の入口。run_kw はテスト用（max_steps・eval_every・mem_check など）で、main からは渡さない。
-    extend_cap: 上限の延長（resolve_cap）。延長の計算と state.pt の書き直しは前処理より前に行う。"""
+    extend_cap: 上限の延長（resolve_cap）。延長の計算と state.pt の書き直しは前処理より前に行う。
+    v2: #196 の v2（P1・P5'・P2・P8(a)・P4）。v1 の prep.npz（data_root/outputs/fragnn_train/prep.npz）を読むだけで書かない。"""
     t0 = time.time()
     data_root, out = Path(data_root).resolve(), Path(out)
     out.mkdir(parents=True, exist_ok=True)
     assert_code_data_separation(data_root)
     keys_path = CODE_ROOT / KEYS_REL
-    sp = ensure_speed_report(out, speed_src)
-    cap_h = wallclock_cap_hours(sp)
+    if v2:
+        src = data_root / V2_SPEED_REPORT_REL if speed_src == SPEED_REPORT_SRC else speed_src
+        sp = ensure_speed_report(out, src, sha=V2_SPEED_REPORT_SHA256)
+        cap_h = wallclock_cap_hours_v2(sp)
+    else:
+        sp = ensure_speed_report(out, speed_src)
+        cap_h = wallclock_cap_hours(sp)
     frag_py = data_paths(data_root)["frag"] / "frag_rescore.py"
     meta = {"keys_json_sha256": sha256_file(keys_path), "frag_rescore_sha256": sha256_file(frag_py),
-            "speed_report_sha256": SPEED_REPORT_SHA256, "wallclock_cap_s": cap_h * 3600, "config": CONFIG,
-            "stop_rule": STOP_RULE}
+            "speed_report_sha256": V2_SPEED_REPORT_SHA256 if v2 else SPEED_REPORT_SHA256,
+            "wallclock_cap_s": cap_h * 3600, "config": CONFIG_V2 if v2 else CONFIG, "stop_rule": STOP_RULE}
+    if v2:
+        meta["v1_prep_sha256"] = V1_PREP_SHA256
     rep = {"code_root": str(CODE_ROOT), "data_root": str(data_root), "keys_json": str(keys_path),
            "mem_start": free_gb(), "numba_threads": os.environ.get("NUMBA_NUM_THREADS")}
     if extend_cap and not resume:
@@ -893,6 +1116,35 @@ def train(data_root: Path, out: Path, device: str = "mps", resume: bool = False,
                                     eval_every=run_kw.get("eval_every", EVAL_EVERY))
         rep["cap_extended_now"] = ext_rec is not None
     rpath = out / "train_report.json"
+    if v2:
+        try:
+            tp = time.time()
+            prep_v1 = data_root / V1_PREP_REL
+            D, info = prepare_v2(data_root, keys_path, prep_v1)
+            info.update({k: meta[k] for k in ("keys_json_sha256", "frag_rescore_sha256")})
+            check_leaks(info["leak"])
+            rep["prep_reused"] = True          # v1 の prep.npz を読むだけ（書かない）
+            rep["data"] = info
+            ts = time.time()
+            D["spec"] = load_spectra_v2(data_paths(data_root)["train"], D.pop("spec_row"), D.pop("spec_ik"))
+            gkey = B.merge_group_keys(D["pos_struct"], D["spec"]["adduct_code"], D["spec"]["tims"])
+            groups = B.group_members(gkey, D["tr_i"])
+            assert not set(np.concatenate(list(groups.values())).tolist()) & set(D["va_i"].tolist())
+            D["v2"] = dict(gkey=gkey, groups=groups)
+            D["config"] = CONFIG_V2
+            info["merge_groups_train"] = group_size_stats(groups)
+            info["peaks_median"] = float(np.median(D["spec"]["n"]))
+            info["tims_share"] = float(D["spec"]["tims"].mean())
+            atomic_write_text(out / "prep_v2.json", json.dumps(info, indent=1, default=str, ensure_ascii=False))
+            rep["stages"] = {"prep_s": round(ts - tp, 1), "spectra_s": round(time.time() - ts, 1)}
+        except SystemExit:
+            raise
+        except Exception as e:  # noqa: BLE001
+            import traceback
+            rep.update(status="error", error=f"{type(e).__name__}: {e}", traceback=traceback.format_exc()[-4000:])
+            atomic_write_text(rpath, json.dumps(rep, indent=1, default=str, ensure_ascii=False))
+            return rep
+        return _run_guarded(D, out, meta, device, resume, rep, t0, rpath, run_kw)
     try:
         prep_path = out / "prep.npz"
         tp = time.time()
@@ -949,6 +1201,9 @@ def main() -> None:
                          "（延長済みなら記録した上限を使い、計算し直さない）")
     ap.add_argument("--extend-cap-expect-s", type=float, default=None,
                     help="延長の秒の期待値（照合だけ。相対 1%% 以上違えば止まる）")
+    ap.add_argument("--v2", action="store_true",
+                    help="#196 の v2（P1 10 種の付加イオン・P5' prec+2 Da より上を除く・P2 上位 64 本・P8(a) timsTOF の印・"
+                         "P4 学習の merge）。既定（無し）は v1 のまま")
     a = ap.parse_args()
     for k, v in (("PYTORCH_MPS_HIGH_WATERMARK_RATIO", "0.6"), ("PYTORCH_MPS_LOW_WATERMARK_RATIO", "0.5")):
         if os.environ.get(k) != v:
@@ -960,7 +1215,7 @@ def main() -> None:
     if own:
         raise SystemExit(f"another heavy job of this repo is running: {own}")
     r = train(Path(a.data_root), Path(a.out), device=a.device, resume=a.resume, speed_src=a.speed_report,
-              extend_cap=a.extend_cap, extend_cap_expect_s=a.extend_cap_expect_s)
+              extend_cap=a.extend_cap, extend_cap_expect_s=a.extend_cap_expect_s, v2=a.v2)
     print(json.dumps({k: r.get(k) for k in ("status", "error", "device", "train", "elapsed_s", "wallclock_cap_h")},
                      indent=1, default=str, ensure_ascii=False))
 
