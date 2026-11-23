@@ -130,8 +130,8 @@ def test_graph_sig_invariant_where_to_key_equal(a, b):
     pytest.importorskip("rdkit")
     sys.path.insert(0, str(ROOT / "scripts/validate"))
     import mrr25
-    if mrr25.to_key(a) == mrr25.to_key(b):   # to_key が同じ組では印も同じでなければならない
-        assert H.graph_sig(a) == H.graph_sig(b), (a, b)
+    assert mrr25.to_key(a) == mrr25.to_key(b), (a, b)   # 前提: どの組も metric の上で同じ答え
+    assert H.graph_sig(a) == H.graph_sig(b), (a, b)      # to_key が同じ組では印も同じでなければならない
     assert H.graph_sig(a)[0] == H.graph_sig(b)[0]
 
 
@@ -150,3 +150,20 @@ def test_rank_bins():
     assert b["3-5"]["n"] == 1 and math.isclose(b["3-5"]["gain_sum"], 0.75)
     assert b["6-10"]["n"] == 1 and b["11-25"]["n"] == 1
     assert math.isclose(b["11-25"]["gain_sum"], 0.96)
+
+
+def test_pool_window_matches_run_visible_window():
+    pd = pytest.importorskip("pandas")
+    sys.path.insert(0, str(ROOT / "scripts/local_eval"))
+    import run as R
+    meta = pd.DataFrame(dict(key=["K3", "K1", "K2", "K4", "K5"], smiles=["C3", "C1", "C2", "C4", "C5"],
+                             formula=["CH4"] * 5, mass=[300.0010, 300.0000, 299.9980, 300.0040, 301.0], pid=range(5)))
+    hp = H.PoolT(meta)
+    rp = R.Pool(meta, None)
+    for t in (300.0, 300.003, 299.997, 301.0):
+        for hidden in (set(), {"K2"}, {"K1", "K3"}):
+            a = hp.visible(t, hidden)
+            b = R.visible_window(rp, t, hidden)
+            assert list(hp.key[a]) == list(rp.key[b]), (t, hidden)
+    # ±10 ppm の端: 300 × 10 ppm = 0.003
+    assert set(hp.key[hp.visible(300.0, set())]) == {"K1", "K2", "K3"}

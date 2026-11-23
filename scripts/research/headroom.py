@@ -186,10 +186,11 @@ def set_paths(h: str) -> dict:
 class PoolT:
     """run.Pool と同じ並び（mass の安定ソート）に formula の重原子の組成を足したもの。"""
 
-    def __init__(self):
+    def __init__(self, meta=None):
         import pandas as pd
-        meta = pd.read_parquet(ROOT / "data/ext/v4g/casmi26-v2-pool/pool_meta.parquet",
-                               columns=["key", "smiles", "formula", "mass"])
+        if meta is None:
+            meta = pd.read_parquet(ROOT / "data/ext/v4g/casmi26-v2-pool/pool_meta.parquet",
+                                   columns=["key", "smiles", "formula", "mass"])
         order = np.argsort(meta["mass"].values, kind="stable")
         self.key = meta["key"].values[order]
         self.smiles = meta["smiles"].values[order]
@@ -203,6 +204,12 @@ class PoolT:
         a = np.searchsorted(self.mass, target - tol, "left")
         b = np.searchsorted(self.mass, target + tol, "right")
         return np.arange(a, b)
+
+    def visible(self, target: float, hidden: set) -> np.ndarray:   # run.visible_window と同じ（隠したキーを除く）
+        idx = self.window(target)
+        if hidden:
+            idx = idx[~np.isin(self.key[idx], list(hidden))]
+        return idx
 
     def hc(self, i: int):
         f = self.formula[i]
@@ -244,9 +251,7 @@ def run_set(h: str, pool: PoolT, tier, L, M, chem) -> tuple[dict, list[dict]]:
         rec = dict(set=h, molecule_id=mid, rr=rr, rank=r, n_window=None, in_window=None, in_pool=None, in_pubchem=None)
         if mid not in targets:
             raise SystemExit(f"{h} {mid}: 窓の中心（__targets__）が無い")
-        idx = pool.window(targets[mid])
-        if hidden:
-            idx = idx[~np.isin(pool.key[idx], list(hidden))]
+        idx = pool.visible(targets[mid], hidden)
         rec["n_window"] = int(len(idx))
         in_win = in_candidates(pool.smiles[idx], [pool.hc(i) for i in idx], tk, tsig, M.to_key, graph_sig)
         rec["in_window"] = bool(in_win)
