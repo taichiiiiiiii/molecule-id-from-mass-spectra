@@ -18,7 +18,7 @@ Issue #214（親 #195 の A6、#3）。計画は `plan_2026-11-24_night.md` の�
 3. リポジトリの中のもの: 棚卸し、`lineage495-repro.md`、`src-audit.md`、`organizer-question-756893.md`、`kernels/lb495/`（ノートと kernel-metadata）、`scripts/train/fragnn_train.py`、`scripts/train/make_fpnet_full_kernel.py`、`scripts/engine2/build_tables.py`、Issue #74・#77・#82・#120・#195、PR #110
 4. Kaggle のファイル一覧: `ahmedberatozer/casmi26-training-code`（以下 TC。`--page-size 200` で 2 ページ）、`ahmedberatozer/casmi26-spec-cache`（6 ファイルと metadata）
 
-**読んでいないもの:** Code Competition FAQ、Kaggle の Terms of Service、コメント 0 件の話題 43 件の本文（JSON の API は話題の本文を返さないため。主催者の投稿した話題 741359・750330 の本文は表の形の出力で読んだ）。以下で「書いていない」と書くのは、**上の 3 ページと 135 件の話題の主催者のコメントの中に無い**、という意味である。
+**読んでいないもの:** Code Competition FAQ、Kaggle の Terms of Service、コメント 0 件の話題 43 件の本文（JSON の API は話題の本文を返さないため。主催者の投稿した話題 741359・750330 の本文は表の形の出力で読んだ）。ただし、Kaggle の運営（inversion）のお知らせ 3 件（746954「Rerun test dataset has been updated」、746878「Metric Update (RemoveStereochemistry)」、749430「Rerun / Rescore Complete」）は本文を読んだ。電子の質量の修正、指標の立体の除去、採点のやり直しのお知らせで、(a)〜(e) に当たる文は無い。以下で「書いていない」と書くのは、**上の 3 ページと 135 件の話題の主催者のコメントの中に無い**、という意味である。
 
 ## 1. 規則の 5 点
 
@@ -35,7 +35,7 @@ Issue #214（親 #195 の A6、#3）。計画は `plan_2026-11-24_night.md` の�
   - 748882（Marie Killian、2026-10-13、id 3538202）: 「existing third-party weights may be used if the original training code and permitted training data needed to reproduce them are provided」
   - 750330（Marie Killian、2026-11-22、id 3558024）: 「You may use a publicly shared checkpoint, but you remain responsible for ensuring that the training code and permitted data are available and that the model and final solution are reproducible, with reasonable allowance for variability due to random seeds.」
 - 名前を挙げて「可」とされたもの（すべて確認）
-  - DreaMS の `ssl_model.ckpt`: 760397 id 3557921（2026-11-21）、754610 id 3556278、748882 id 3558031
+  - DreaMS の `ssl_model.ckpt`: 760397 id 3557921（2026-11-21）、748882 id 3558031。754610 id 3556278 は「the official DreaMS ssl_model.ckpt is included in the officially released DreaMS checkpoints」で、同じスレッドの「Officially released DreaMS checkpoints are fine to use」（id 3550242）と合わせた間接の承認
   - GLACIER/ICEBERG・DreaMS・ChEBI/LIPID MAPS: 745841 id 3533343
   - MassSpecGym と MIST: 757307 id 3553101
   - COCONUT: 759916 id 3556196
@@ -50,7 +50,7 @@ Issue #214（親 #195 の A6、#3）。計画は `plan_2026-11-24_night.md` の�
   - 名前を挙げられていないデータ: 748552 id 3538183「Competitors are not limited to the external datasets that have been explicitly approved by name. Other publicly available datasets may be used, provided they comply with the competition's external-data rules and applicable licensing requirements.」
 - 名前を挙げて「不可」とされたもの（確認）
   - NIST: 750330 の本文、744470 id 3530300「any solution using or trained on NIST will be disqualified」
-  - SIRIUS / CSI:FingerID: 751373 id 3543071「SIRIUS / CSI:FingerID: correct, not allowed」（質問は「学習集合が公開されておらず NIST を含むかもしれない」という理由を挙げている）。#195 C5 の「SIRIUS / CSI:FingerID の持ち込み」は、この答えで見送りになる
+  - SIRIUS / CSI:FingerID: 751373 id 3543071「SIRIUS / CSI:FingerID: correct, not allowed」（質問の本文は理由として「the training set isn't fully public and may include NIST」と書いている）。#195 C5 の「SIRIUS / CSI:FingerID の持ち込み」は、この答えで見送りになる
   - METLIN と装置メーカーの商用ライブラリ: 742193 id 3527949「There are also fully commercial datasets like METLIN and those distributed by the mass spec companies (Thermo, Bruker, SciEx).  Also to avoid.」
   - PubChem の depositor の印のうち NIST MSDC を含むもの: 760328 id 3557924「Yes, this is allowed.」
 - **棚卸しから変わった点**: `lineage495-repro.md` §2.3 では GNPS-NIST14-MATCHES の 117 行を除く案にしていた。上の 2 件で可が明らかになったので、除く理由はなくなった
@@ -64,7 +64,7 @@ Issue #214（親 #195 の A6、#3）。計画は `plan_2026-11-24_night.md` の�
 
 **主催者の回答（確認）**
 - 752297（Marie Killian、2026-10-26、id 3544964）: 「Yes, automated, unsupervised processing across test spectra at inference time is allowed.」
-  - 質問の例は「確かに当たった test の分子を使って、スペクトルの似た別の test の分子の並べ替えに使う」（Vitalii Neibauer、id 3544112）。答えはこの形を含む読みになる
+  - 質問の例（Vitalii Neibauer、id 3544112）: 「letting a confidently identified test molecule inform the ranking of candidates for a spectrally related test molecule」。答えはこの形を含む読みになる
   - 同じ形をはっきり問うた 751373 の XZXZZX（id 3544243「Is fully automated, label-free use of similarity between test spectra of different molecule_ids at inference time allowed …?」）にも、David Healey が id 3545025（2026-10-26）で「yes its allowed」と答えている
 - Public LB は見える test.parquet ではなく、隠れテストの public の部分で計算される: 741404 id 3524688（David Healey）「the public leaderboard score is calculated not on the contents of the test.parquet downloadable dummy file … but rather on the public split of the Hidden test set provided to your submission notebook.」
 
@@ -116,7 +116,7 @@ Issue #214（親 #195 の A6、#3）。計画は `plan_2026-11-24_night.md` の�
 **書いていないこと**
 - 「reasonable delta」の大きさ（数値で書いた文は無い）
 - 他の参加者が Kaggle の dataset に置いた、ライセンス表示の無いコード（例: TC の `other` 表示のコード）が 3.6.c の「OSI のライセンス」に当たるか
-  - 748882 id 3538755 の原文: 「Use of public competition datasets and code shared by other competitors (including code files inside public Kaggle Datasets) is allowed, provided they come from permissible sources and comply with applicable licensing requirements.」。742265 id 3538804、745072 id 3538730 もほぼ同じ文
+  - 748882 id 3538755 の原文: 「Use of public competition datasets and code shared by other competitors (including code files inside public Kaggle Datasets) is allowed, provided they come from permissible sources and comply with applicable licensing requirements.」。似た文が 742265 id 3538804（括弧の中は「including code files inside public models」）と 745072 id 3538730（括弧なし）にもある。Kaggle の dataset の中のコードをはっきり含めているのは 3538755 だけ
   - 3.6.b の「みなし」が dataset の中のコードにも及ぶかについての文は無い
   - 761272（2026-11-23、「Rule 6: helper code loaded from public datasets without a stated licence」）は、取得の時点でコメント 0 件だった
 
@@ -156,7 +156,7 @@ Issue #214（親 #195 の A6、#3）。計画は `plan_2026-11-24_night.md` の�
   - 753662 id 3553097（David Healey、2026-11-11）も同じ向き: 「If we can't reproduce it because parts of the generating code is missing, the solution is open to being disqualified.  Use others' intermediate data artifacts at your own risk.」
   - 748882 id 3545819（Marie Killian、2026-10-27）: 「If the candidate tables are modified in any way from the original download, you should provide code to document the steps taken.」
   - 例外はビットの添字の表で、R8 により説明と表そのもので足りる
-- **危険（不可）**: 生成コード、または学習の入力が、公開物に見つからない。主催者が名指しで「再現できない」とした表もここに入れる
+- **危険（不可）**: 生成コード、または学習の入力が、公開物に見つからない。質問で表が名指しされ、主催者が一般の規則（再現できない中間物は違反）で答えたもの（754292 id 3550245、756893 id 3553098）もここに入れる
 - 「見つからない」は「X を探して見つからない」の意味で、「存在しない」とは言っていない（探した場所は棚卸しと `lineage495-repro.md` に書いてある）
 
 ### 2.2 共通の土台 F（凍結の 59 セル）
@@ -178,8 +178,8 @@ F の部品（表の「11/24 の判定」は 2.1 の決め方による。コー�
 | 5 | fe_v4 の表 | TC `class3_v2/priors_build.py`・`fe_v4/res_fragnet.py` ほか | MIT / other | 可（条件つき）。未決から移した。出力の後に編集されている。同上（3545819） |
 | 6 | v2 プール | TC `01`・`02`・`05_build_pool.py` | MIT / other | 可（変化なし）。入力の版か取得日の記録が要る（3545025）（COCONUT の版） |
 | 7 | `fp_bits.npy`（10,226） | TC `04_make_split.py` → `structs.select_bits` | MIT | 可（変化なし） |
-| 8 | `rank_train.npz` | 一部だけ（cubres・`prvsiyan/casmi26-generation-code`。FP ロジットのキャッシュの系統は作者自身が「unresolved」と書く） | CC-BY-NC-SA-4.0 | **危険（不可）**（変化なし。754292 で名指し） |
-| 9 | `sim_rank_rows_nofp.npz` | 見つからない（データセットの 6 ファイル） | CC0-1.0 | **危険（不可）**（変化なし。754292・756893 で名指し） |
+| 8 | `rank_train.npz` | 一部だけ（cubres・`prvsiyan/casmi26-generation-code`。FP ロジットのキャッシュの系統は作者自身が「unresolved」と書く） | CC-BY-NC-SA-4.0 | **危険（不可）**（変化なし。754292 の質問で名指しされ、id 3550245 が一般の規則で答えた） |
+| 9 | `sim_rank_rows_nofp.npz` | 見つからない（データセットの 6 ファイル） | CC0-1.0 | **危険（不可）**（変化なし。754292・756893 の質問で名指しされ、id 3550245・3553098 が一般の規則で答えた） |
 | 10 | prvsiyan の FP モデル | cubres の `train_fp3.py`/`train_fp4.py`（Apache-2.0） | CC-BY-NC-SA-4.0 | 可（条件つき）。未決から移した。学習の入力の版が固定されていない。750330 id 3557002 の質問への答え（id 3558024）は一般論。入力の版か取得日の記録が要る（3545025） |
 | 11a | COCONUT バンク（prvsiyan） | 説明だけ（データセットのカード） | CC-BY-NC-SA-4.0 | **危険（説明だけ）**（変化なし） |
 | 11b | ChEBI/LMSD バンク | 説明だけ（`ATTRIBUTION.md`） | CC BY 4.0 | **危険（説明だけ）**（変化なし） |
@@ -236,7 +236,7 @@ F だけの数え上げ: 危険（不可）2（8・9）、危険（説明だけ�
 | S4 HGB | ノートの中で、自前の表から学習する | — | 可（自前の表に従う） |
 | 20・21・22 | C2 と同じ | 同じ | 21 は不可、22 は説明だけ |
 
-**C3 の読み**: 主催者が名指しした 8・9 の危険は消える。ただし 21（ExtLib）と、説明だけの 11a〜c・19・22 が残るので、今のままでは危険がある。
+**C3 の読み**: 質問で名指しされた 8・9 の危険は消える。ただし 21（ExtLib）と、説明だけの 11a〜c・19・22 が残るので、今のままでは危険がある。
 
 #### C4: 0.487 ＋ 自前で学習し直した FPNet（#82、S2 `fpnet_final.pt`、提出 58699228、Public 0.449）
 | 依存 | 生成コードの所在 | ライセンス | 判定 |
