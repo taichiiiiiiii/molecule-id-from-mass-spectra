@@ -1,0 +1,687 @@
+{
+  "issue": 88,
+  "slug": "taichiiiii/casmi26-v4b-sim1-trial2",
+  "started_unix": 1794582517.7523448,
+  "budget_s": 3600,
+  "args": [
+    "--out",
+    "work/analysis/v1fe/sim1x/rows",
+    "--ctx",
+    "work/analysis/v1fe/sim1x/ctx",
+    "--folds",
+    "np,nplib,syn,plusk",
+    "--regimes",
+    "c1,c2,c3",
+    "--seed",
+    "21",
+    "--part_every",
+    "40",
+    "--engine_models",
+    "work/fpnet_a.pt",
+    "--shard",
+    "0",
+    "--nshard",
+    "6",
+    "--max_structs",
+    "40"
+  ],
+  "env": {
+    "PYTHONIOENCODING": "utf-8",
+    "NUMBA_NUM_THREADS": "2",
+    "OMP_NUM_THREADS": "2",
+    "MKL_NUM_THREADS": "2",
+    "OPENBLAS_NUM_THREADS": "2"
+  },
+  "status": "ok",
+  "steps": [
+    {
+      "name": "env",
+      "t": 0.4
+    },
+    {
+      "name": "pip",
+      "t": 26.6,
+      "versions": {
+        "torch": "2.11.0+cu130 13.0 Tesla T4",
+        "rdkit": "2026.03.3",
+        "numpy": "2.1.3",
+        "pandas": "2.3.3",
+        "pyarrow": "23.0.1",
+        "numba": "0.61.2",
+        "lightgbm": "4.7.0"
+      }
+    },
+    {
+      "name": "records",
+      "t": 32.4,
+      "v4b_manifest_same_as_embedded": true,
+      "spec_readme_same_as_embedded": true
+    },
+    {
+      "name": "layout",
+      "t": 43.2
+    },
+    {
+      "name": "verify",
+      "t": 70.7,
+      "n_data": 15,
+      "n_code": 23,
+      "n_bad": 0
+    },
+    {
+      "name": "stage1_started",
+      "t": 70.7,
+      "shards": [
+        0,
+        1
+      ]
+    },
+    {
+      "name": "stage1",
+      "t": 1197.9,
+      "rc0": 0,
+      "rc1": 0,
+      "wall_s": 1127.2,
+      "timed_out": []
+    },
+    {
+      "name": "summary",
+      "t": 1198.3,
+      "s": 1.1986329987480386,
+      "status": "ok"
+    }
+  ],
+  "env_kaggle": {
+    "python": "3.13.16",
+    "platform": "Linux-6.18.55+-x86_64-with-glibc2.39",
+    "nvidia_smi": "Fri Nov 13 15:08:37 2026       \n+-----------------------------------------------------------------------------------------+\n| NVIDIA-SMI 580.178.04             Driver Version: 580.178.04     CUDA Version: 13.0     |\n+-----------------------------------------+------------------------+----------------------+\n| GPU  Name                 Persistence-M | Bus-Id          Disp.A | Volatile Uncorr. ECC |\n| Fan  Temp   Perf          Pwr:Usage/Cap |           Memory-Usage | GPU-Util  Compute M. |\n|                                         |                        |               MIG M. |\n|=========================================+========================+======================|\n|   0  Tesla T4                       Off |   00000000:00:04.0 Off |                    0 |\n| N/A   45C    P8             11W /   70W |       0MiB /  15360MiB |      0%      Default |\n|                                         |                        |                  N/A |\n+-----------------------------------------+------------------------+----------------------+\n|   1  Tesla T4                       Off |   00000000:00:05.0 Off |                    0 |\n| N/A   46C    P8              9W /   70W |       0MiB /  15360MiB |      0%      Default |\n|                                         |                        |                  N/A |\n+-----------------------------------------+------------------------+----------------------+\n\n+-----------------------------------------------------------------------------------------+\n| Processes:                                                                              |\n|  GPU   GI   CI              PID   Type   Process name                        GPU Memory |\n|        ID   ID                                                               Usage      |\n|=========================================================================================|\n|  No running processes found                                                             |\n+-----------------------------------------------------------------------------------------+",
+    "lscpu": "Architecture:                            x86_64\nCPU op-mode(s):                          32-bit, 64-bit\nAddress sizes:                           46 bits physical, 48 bits virtual\nByte Order:                              Little Endian\nCPU(s):                                  4\nOn-line CPU(s) list:                     0-3\nVendor ID:                               GenuineIntel\nModel name:                              Intel(R) Xeon(R) CPU @ 2.00GHz\nCPU family:                              6\nModel:                                   85\nThread(s) per core:                      2\nCore(s) per socket:                      2\nSocket(s):                               1\nStepping:                                3\nBogoMIPS:                                4000.39\nFlags:                                   fpu vme de pse tsc msr pae mce cx8 apic sep mtrr pge mca cmov pat pse36 clflush mmx fxsr sse sse2 ss ht syscall nx pdpe1gb rdtscp lm constant_tsc rep_good nopl xtopology nonstop_tsc cpuid tsc_known_freq pni pclmulqdq ssse3 fma cx16 pcid sse4_1 sse4_2 x2apic movbe popcnt aes xsave avx f16c rdrand hypervisor lahf_lm abm 3dnowprefetch pti ssbd ibrs ibpb stibp fsgsbase tsc_adjust bmi1 hle avx2 smep bmi2 erms invpcid rtm mpx avx512f avx512dq rdseed adx smap clflushopt clwb avx512cd avx512bw avx512vl xsaveopt xsavec xgetbv1 xsaves arat md_clear arch_capabilities\nHypervisor vendor:                       KVM\nVirtualization type:                     full\nL1d cache:                               64 KiB (2 instances)\nL1i cache:                               64 KiB (2 instances)\nL2 cache:                                2 MiB (2 instances)\nL3 cache:                                38.5 MiB (1 instance)\nNUMA node(s):                            1\nNUMA node0 CPU(s):                       0-3\nVulnerability Gather data sampling:      Not affected\nVulnerability Ghostwrite:                Not affected\nVulnerability Indirect target selection: Mitigation; Aligned branch/return thunks\nVulnerability Itlb multihit:             Not affected\nVulnerability L1tf:                      Mitigation; PTE Inversion\nVulnerability Mds:                       Mitigation; Clear CPU buffers; SMT Host state unknown\nVulnerability Meltdown:                  Mitigation; PTI\nVulnerability Mmio stale data:           Vulnerable: Clear CPU buffers attempted, no microcode; SMT Host state unknown\nVulnerability Old microcode:             Not affected\nVulnerability Reg file data sampling:    Not affected\nVulnerability Retbleed:                  Mitigation; IBRS\nVulnerability Spec rstack overflow:      Not affected\nVulnerability Spec store bypass:         Mitigation; Speculative Store Bypass disabled via prctl\nVulnerability Spectre v1:                Mitigation; usercopy/swapgs barriers and __user pointer sanitization\nVulnerability Spectre v2:                Mitigation; IBRS; IBPB conditional; STIBP conditional; RSB filling; PBRSB-eIBRS Not affected; BHI SW loop, KVM SW loop\nVulnerability Srbds:                     Not affected\nVulnerability Tsa:                       Not affected\nVulnerability Tsx async abort:           Mitigation; Clear CPU buffers; SMT Host state unknown\nVulnerability Vmscape:                   Not affected",
+    "nproc": "4",
+    "meminfo": "MemTotal:       32869296 kB\nMemFree:        26983228 kB\nMemAvailable:   31474604 kB",
+    "df": "Filesystem      Size  Used Avail Use% Mounted on\noverlay         8.0T  7.1T  967G  89% /\n/dev/loop2       20G  216K   20G   1% /kaggle/working"
+  },
+  "elapsed_s": 1198.3,
+  "pip": {
+    "rdkit==2026.03.3": "ok",
+    "lightgbm==4.7.0": "ok"
+  },
+  "versions": {
+    "torch": "2.11.0+cu130 13.0 Tesla T4",
+    "rdkit": "2026.03.3",
+    "numpy": "2.1.3",
+    "pandas": "2.3.3",
+    "pyarrow": "23.0.1",
+    "numba": "0.61.2",
+    "lightgbm": "4.7.0"
+  },
+  "tc_env": "TC README §4: python 3.14.5, torch 2.14.0+cu130, lightgbm 4.7.0, rdkit 2026.03.3（ここと違う版は versions を見る）",
+  "mounts": {
+    "tc": "/kaggle/input/datasets/ahmedberatozer/casmi26-training-code",
+    "spec": "/kaggle/input/datasets/ahmedberatozer/casmi26-spec-cache/cache",
+    "pool": "/kaggle/input/datasets/ahmedberatozer/casmi26-v2-pool",
+    "v4b": "/kaggle/input/datasets/ahmedberatozer/casmi26-v4b-models"
+  },
+  "records": {
+    "v4b_manifest_sha256": "e64b960037769971e146a35932e29ed3f042de1716e4dbe281ebd84a7cfc3b6a",
+    "spec_readme_sha256": "2c9c357bce17ec2e73a20985f8c1f925ad1a1f593664deb304880e5ada53546c",
+    "v4b_manifest_same_as_embedded": true,
+    "spec_readme_same_as_embedded": true,
+    "embedded_sources": {
+      "casmi26-spec-cache/docs/README.md": "2c9c357bce17ec2e73a20985f8c1f925ad1a1f593664deb304880e5ada53546c",
+      "casmi26-attributed-v4g-reproduction-assets/MANIFEST.json": "2593c1e95b989309e9c5057d1c00216c22c75f50d87a960b363d24f99f1bad8f",
+      "casmi26-v4b-models/MANIFEST.json": "e64b960037769971e146a35932e29ed3f042de1716e4dbe281ebd84a7cfc3b6a"
+    }
+  },
+  "inputs": {
+    "spec_off.npy": {
+      "dataset": "ahmedberatozer/casmi26-spec-cache",
+      "rel": "cache/spec_off.npy",
+      "bytes": 20317000,
+      "sha256": "af2be108a532a278ec4563c023808b7fa19e40fdf4ea7dc888e980bb6f618e6c",
+      "record": "casmi26-spec-cache/docs/README.md",
+      "actual_sha256": "af2be108a532a278ec4563c023808b7fa19e40fdf4ea7dc888e980bb6f618e6c",
+      "actual_bytes": 20317000
+    },
+    "spec_mz.npy": {
+      "dataset": "ahmedberatozer/casmi26-spec-cache",
+      "rel": "cache/spec_mz.npy",
+      "bytes": 532912560,
+      "sha256": "482332fec3fabcc46e06ce1b23d79e633af7009b8190a3dcd0a675121b42342b",
+      "record": "casmi26-spec-cache/docs/README.md",
+      "actual_sha256": "482332fec3fabcc46e06ce1b23d79e633af7009b8190a3dcd0a675121b42342b",
+      "actual_bytes": 532912560
+    },
+    "spec_it.npy": {
+      "dataset": "ahmedberatozer/casmi26-spec-cache",
+      "rel": "cache/spec_it.npy",
+      "bytes": 532912560,
+      "sha256": "9e127f00eb9d4217403991304e69166adc9a36a5e624ce7fd1ddbf6b1417cc23",
+      "record": "casmi26-spec-cache/docs/README.md",
+      "actual_sha256": "9e127f00eb9d4217403991304e69166adc9a36a5e624ce7fd1ddbf6b1417cc23",
+      "actual_bytes": 532912560
+    },
+    "spec_meta.parquet": {
+      "dataset": "ahmedberatozer/casmi26-spec-cache",
+      "rel": "cache/spec_meta.parquet",
+      "bytes": 54036239,
+      "sha256": "4f968592dc75b9bf2b6256dda394be42bad3cd07fd243ff0078101e066a44376",
+      "record": "casmi26-spec-cache/docs/README.md",
+      "actual_sha256": "4f968592dc75b9bf2b6256dda394be42bad3cd07fd243ff0078101e066a44376",
+      "actual_bytes": 54036239
+    },
+    "split.parquet": {
+      "dataset": "ahmedberatozer/casmi26-spec-cache",
+      "rel": "cache/split.parquet",
+      "bytes": 9641941,
+      "sha256": "d05a2f9f71cffd480b92581c458547f7aeb782436b07af4fbf8f696f96649656",
+      "record": "casmi26-spec-cache/docs/README.md",
+      "actual_sha256": "d05a2f9f71cffd480b92581c458547f7aeb782436b07af4fbf8f696f96649656",
+      "actual_bytes": 9641941
+    },
+    "train_structs.parquet": {
+      "dataset": "ahmedberatozer/casmi26-v2-pool",
+      "rel": "train_structs.parquet",
+      "bytes": 23306834,
+      "sha256": "f20aa1cac23af42e430a6633707fda34e48dea97114bdc3e443897f692df3656",
+      "record": "casmi26-attributed-v4g-reproduction-assets/MANIFEST.json",
+      "actual_sha256": "f20aa1cac23af42e430a6633707fda34e48dea97114bdc3e443897f692df3656",
+      "actual_bytes": 23306834
+    },
+    "pool_meta.parquet": {
+      "dataset": "ahmedberatozer/casmi26-v2-pool",
+      "rel": "pool_meta.parquet",
+      "bytes": 36692358,
+      "sha256": "82b8c40315611289b9a4004b3af18d6d3402b3cd5baa4ee5723da07b7e2f6bb0",
+      "record": "casmi26-attributed-v4g-reproduction-assets/MANIFEST.json",
+      "actual_sha256": "82b8c40315611289b9a4004b3af18d6d3402b3cd5baa4ee5723da07b7e2f6bb0",
+      "actual_bytes": 36692358
+    },
+    "pool_fp.npy": {
+      "dataset": "ahmedberatozer/casmi26-v2-pool",
+      "rel": "pool_fp.npy",
+      "bytes": 908986707,
+      "sha256": "f02d91eeb4e2be5687ce678c199aa09a3acda1e821478372fc23fd1c7edf55e8",
+      "record": "casmi26-attributed-v4g-reproduction-assets/MANIFEST.json",
+      "actual_sha256": "f02d91eeb4e2be5687ce678c199aa09a3acda1e821478372fc23fd1c7edf55e8",
+      "actual_bytes": 908986707
+    },
+    "fp_bits.npy": {
+      "dataset": "ahmedberatozer/casmi26-v2-pool",
+      "rel": "fp_bits.npy",
+      "bytes": 41032,
+      "sha256": "c3869e86449d6fed6e79e9655f8a7d35bd55c3138ecddfc1dae5072627e78677",
+      "record": "casmi26-attributed-v4g-reproduction-assets/MANIFEST.json",
+      "actual_sha256": "c3869e86449d6fed6e79e9655f8a7d35bd55c3138ecddfc1dae5072627e78677",
+      "actual_bytes": 41032
+    },
+    "pool_frag_off.npy": {
+      "dataset": "ahmedberatozer/casmi26-v2-pool",
+      "rel": "pool_frag_off.npy",
+      "bytes": 5685744,
+      "sha256": "354015a6eab8b6762f9124384e959d606e961c35b999d1b088153d69538765e7",
+      "record": "casmi26-attributed-v4g-reproduction-assets/MANIFEST.json",
+      "actual_sha256": "354015a6eab8b6762f9124384e959d606e961c35b999d1b088153d69538765e7",
+      "actual_bytes": 5685744
+    },
+    "pool_frag_mass.npy": {
+      "dataset": "ahmedberatozer/casmi26-v2-pool",
+      "rel": "pool_frag_mass.npy",
+      "bytes": 357116708,
+      "sha256": "9afbdc02856b287e06e6c9f61a9f0032b2dd53b20557942c1d00542d9c490ffc",
+      "record": "casmi26-attributed-v4g-reproduction-assets/MANIFEST.json",
+      "actual_sha256": "9afbdc02856b287e06e6c9f61a9f0032b2dd53b20557942c1d00542d9c490ffc",
+      "actual_bytes": 357116708
+    },
+    "train_fp_sel.npy": {
+      "dataset": "ahmedberatozer/casmi26-v2-pool",
+      "rel": "train_fp_sel.npy",
+      "bytes": 352761118,
+      "sha256": "0e6ddfbfb188b6cffb9f1b0ad9c7ba268ef709ce60b2711d05f98096cd772a8d",
+      "record": "casmi26-attributed-v4g-reproduction-assets/MANIFEST.json",
+      "actual_sha256": "0e6ddfbfb188b6cffb9f1b0ad9c7ba268ef709ce60b2711d05f98096cd772a8d",
+      "actual_bytes": 352761118
+    },
+    "fpnet_a.pt": {
+      "dataset": "ahmedberatozer/casmi26-v4b-models",
+      "rel": "fe_A.pt",
+      "bytes": null,
+      "sha256": "edccf479a2a2e53461a06bc5e1aee4341b22abb32302c4f6d2c45281000d742a",
+      "record": "casmi26-v4b-models/MANIFEST.json",
+      "actual_sha256": "edccf479a2a2e53461a06bc5e1aee4341b22abb32302c4f6d2c45281000d742a",
+      "actual_bytes": 198790165
+    },
+    "fpnet_b.pt": {
+      "dataset": "ahmedberatozer/casmi26-v4b-models",
+      "rel": "fe_B.pt",
+      "bytes": null,
+      "sha256": "6f60a22b3c3b21aa48d47328bb9523bdf07cc004bfb72966e0f9713507c24f2e",
+      "record": "casmi26-v4b-models/MANIFEST.json",
+      "actual_sha256": "6f60a22b3c3b21aa48d47328bb9523bdf07cc004bfb72966e0f9713507c24f2e",
+      "actual_bytes": 198790165
+    },
+    "analysis/dreams_ft/s2/pilot_d1_step20k_ema.pt": {
+      "dataset": "ahmedberatozer/casmi26-v4b-models",
+      "rel": "fe_D.pt",
+      "bytes": null,
+      "sha256": "8ae5bee2c978f4f01ea7cfe29b514cd3e9112006ab51aa8b13f20e26e9365362",
+      "record": "casmi26-v4b-models/MANIFEST.json",
+      "actual_sha256": "8ae5bee2c978f4f01ea7cfe29b514cd3e9112006ab51aa8b13f20e26e9365362",
+      "actual_bytes": 486278727
+    }
+  },
+  "code_checked": 23,
+  "code_unrecorded_sha256": {
+    "work/analysis/engine_v6/code/casmi/__init__.py": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "work/analysis/engine_v6/code/casmi/build.py": "86776c14e237dc64dbf965d9bc200cc670dc7226bf946938380729d7e80c56f8",
+    "work/analysis/engine_v6/code/casmi/chem.py": "99474f23d8a67040b0c0f8c70e73592a6f7f656f50103e350ca473451e2169f1",
+    "work/analysis/engine_v6/code/casmi/derive.py": "301d3713c419020d3cec376b3e4fc29dcf48b1e144971b95ccafa96b986e5731",
+    "work/analysis/engine_v6/code/casmi/dreams_model.py": "5c09c3d22e8d2c09678b796cb1d57a449442437847e094f49f6ed2619a73a83c",
+    "work/analysis/engine_v6/code/casmi/engine.py": "78554b89d3709b554b6e7715c7bc9735654fd3f2406ffb8033020d26ce984a10",
+    "work/analysis/engine_v6/code/casmi/fpnet.py": "32542bb0039b2d24d9911030559f13221e630cef7df0d10c7d65f54424da2633",
+    "work/analysis/engine_v6/code/casmi/frag.py": "809f5582494cee4cf6dcace4b04699b8427e81022b78d42162cc0239a57773de",
+    "work/analysis/engine_v6/code/casmi/graphs.py": "8dcbe16bbf3b34b7a08866234eb9abf2de713d21c93c653e7156e94e9debcd55",
+    "work/analysis/engine_v6/code/casmi/library.py": "99eeaab9e02d3fedcc4b73db19aabb93e82b5096e8320f6bcff5b954074d0689",
+    "work/analysis/engine_v6/code/casmi/pipeline.py": "5b5783ed30eb99f1d8d78673fa90fe277932c52bd676460a46d22cb3205b1f08",
+    "work/analysis/engine_v6/code/casmi/pool.py": "c1acad9a7ebdc4776918fbda444ee9464c2109c79acfb9b2243f98e3bb47ac6d",
+    "work/analysis/engine_v6/code/casmi/pubchem.py": "4fd4a9702e0813f8651e3a3b99595f0803d7381c0434959abdfeee042049c12a",
+    "work/analysis/engine_v6/code/casmi/ranker.py": "98b335c22893bc094c88a87ba6ca2451b794d06bbf1e7730a2c76c6a7fa0e619",
+    "work/analysis/engine_v6/code/casmi/spectra.py": "41067c12e1287cff3a927d7940be78f1c2a0019310269fabc8ea161edf607930",
+    "work/analysis/engine_v6/code/casmi/structs.py": "2c70df89e8f96b3e716651fe8815d0a05af3ad26e2b448e552ea53c26ede334a",
+    "work/analysis/engine_v6/code/casmi/traindata.py": "cecb329d96362f11d16b40a26f1888f092610ff6202812408c13e2c293c6a2bc",
+    "work/analysis/engine_v6/code/casmi/xenc.py": "89fbb470e6fc085f7363bf79e4517c06d43eed3c1df197b7f374b65dacdb7310",
+    "work/analysis/fe_v4/build_feats.py": "2a8cc67710197b8fcd3729e66c3508488d73de4e638d61ecf11bb49bae0e71eb",
+    "work/analysis/fe_v4/build_v4.py": "f6bb87209706f2911007a6b5bacb5f2315d59d7eb1875665d547b68d18726fff",
+    "work/analysis/fe_v4/build_v4c.py": "4e9b47b809411b154c4f307abf8cc2bf95b70992f1e763eb79f557ad26dec2dd",
+    "work/analysis/fe_v4/build_v4d.py": "2696178b5a7fdf9b1f95567d3a00165dfcb9811a442c79894e2b540801ae15d5",
+    "work/analysis/fe_v4/build_v4e.py": "07ad4886c2f8c6c9b2a2ff95ef5243cee3a0cdd31404393070c016608fa17edc",
+    "work/analysis/fe_v4/build_v4h.py": "7d5278810aac7cb59fd98f29329f7e66e3e3ee046c419f0d65f70b2b0b518b90",
+    "work/analysis/fe_v4/build_v4j.py": "232b6f8175005aba74c9b9e603205b2da3dcee734dde1c203d6e2ddae2011937",
+    "work/analysis/fe_v4/build_v4k.py": "a1a45b0e6777cb6ba9e6f97d951903a178e1db5188e4a007ee9b4c982f1c6ebd",
+    "work/analysis/fe_v4/build_v4v1.py": "ff42cb95605f05347ccb346a6cb810997d3974666f57eacc804d930f57d6dedd",
+    "work/analysis/fe_v4/build_v5.py": "53f60abcca5c45cd25d7488ac5ac7092d49f075e15181d15a57d7456b381914e",
+    "work/analysis/fe_v4/ctx_addmodel.py": "a24111bc4af95378732afe0b7fa7d6f5927bf7b8dbceca7ebd0e956d04df63a6",
+    "work/analysis/fe_v4/dryrun_v4.py": "01f035296503125ac9e5ec32b26e51a3f8322c366b703320001417cf757b5d0b",
+    "work/analysis/fe_v4/dryrun_v4b.py": "9ab2caa806953eabaf7338f4a19e39f47402fabeca063b198c663f5d690c1d1e",
+    "work/analysis/fe_v4/evalfe.py": "597e7cfc350d07535d6a5a27f45c3b8cdc389c407731a6dcb7c3a0012652b42b",
+    "work/analysis/fe_v4/fams/__init__.py": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "work/analysis/fe_v4/fams/analog_struct.py": "2311219220c65bc83c2cd447a8cdb07db27a984124f6c88d687494556e7337b6",
+    "work/analysis/fe_v4/fams/derivation.py": "eb9aa474bef8e1d067cadccec0101042878ebb5aedf50d1168dc9dfd884dceae",
+    "work/analysis/fe_v4/fams/frag2.py": "bf17577ef673f8ab0121caa1c9335dc1e827e2f1eb44b3bbde0b0c0cbe858e6c",
+    "work/analysis/fe_v4/fams/fragnet.py": "d0952d34d227013b8486eff36c30a4233f491d2e32c3f816b9d000c493b7234e",
+    "work/analysis/fe_v4/fams/ids.py": "21b0e1d0ba498735de64d3b3db1cf175045eb622530800b1e23b147392e90423",
+    "work/analysis/fe_v4/fams/ionize.py": "119f9aa6cf03ea7d186fa24b54d92ef78cae12557070fb893395d13ff1bae0ce",
+    "work/analysis/fe_v4/fams/isomer.py": "e28235dadc1559d3caa858edf194d944d69eb3fef3b15facb934d8e8a662b6e6",
+    "work/analysis/fe_v4/fams/isomer_null.py": "bd98f8d24a0f24e264a8b03689b87090159829e19a979ff63eb4fd3619223060",
+    "work/analysis/fe_v4/fams/model_views.py": "aa964b12265bb70144d2d653b600a7f1a4972829032274bab76ea9e39afd7e79",
+    "work/analysis/fe_v4/fams/model_views2.py": "ccb423d14faa84860308ac251468684614d2e4f91bc5380575bed035ce12364b",
+    "work/analysis/fe_v4/gate_fam.py": "203d194f2f04ca660ad833283d994e632e9082c5479f5229b8969a5bad1ddd3a",
+    "work/analysis/fe_v4/hooks.py": "2f5a191c239aea26500def7b0383fdf390c7b7e653eb4d4f37c832b7d78eb835",
+    "work/analysis/fe_v4/make_fusion_nb.py": "5a0f302418157e2838b9a3ec13dc60a0a93f07d78b940d8e61f6106245ca31e4",
+    "work/analysis/fe_v4/paired_rr.py": "3de8ec9290e3bed4cc0705d8fdd181c92e83c86a7ecd37f5a226eefc18241fcc",
+    "work/analysis/fe_v4/parity_v1.py": "11647008b83ce3e756c84de2acc7e7716908890e90bffba2964ac3bc2eaf8de4",
+    "work/analysis/fe_v4/parity_v4.py": "6e16a76bef032e0e85b87b06b2b03e95645ba357c9a21c1c600f6d65fce61ee1",
+    "work/analysis/fe_v4/probe_fragnet_prov.py": "2b0dfc607e0c16c7fccc7b9734fac954194c5e26c16a5cb9bca9df692022edbc",
+    "work/analysis/fe_v4/probe_fragnet_style.py": "da634c46d8c9ed7ffef69721852b1c76809f5a3d30aa01171ef426bdd0553dd5",
+    "work/analysis/fe_v4/probe_ionize_prov.py": "81e70d4245d549db5b51f50cd34a408d43f09ff0242e08b9b60652a803b927da",
+    "work/analysis/fe_v4/probe_isomer_prov.py": "974a5cd31d0bd045cd3725a2926c1a63452fa7e38b6fbeaf62b738fdcdf3ab3b",
+    "work/analysis/fe_v4/provstrat_fam.py": "0d71544aaf0494c65d677a90edef39c4dcb5e86730d307b267fa652929021c27",
+    "work/analysis/fe_v4/replay_ctx.py": "ad765373fdc7626a00cc59746e82508c0ea7145a4cebbd491eec0cb1de3b9862",
+    "work/analysis/fe_v4/res_analog_struct.py": "53251093d07f5dae06e26de9876c2244254f2767c23d68d95d8e40b143f201f8",
+    "work/analysis/fe_v4/res_common.py": "1bbca24111a34b9a60407591570190791f6d5398a719e0691abb5c19fc110953",
+    "work/analysis/fe_v4/res_derivation.py": "46619962177b28242d958f52b04b253ad75a08c52bb00a1a89becbe498122512",
+    "work/analysis/fe_v4/res_frag2.py": "191b3433b7d8ee199dafdc6a44014629b6ac9d55d84323a7cd8b832b8da58f2f",
+    "work/analysis/fe_v4/res_fragnet.py": "02c98941f6f100c267b84ad42afbf0b7ebe76c92d889646a6e40622d0d724378",
+    "work/analysis/fe_v4/res_ionize.py": "0025c6f56960450820a12121ccece17978516d9e2a7a1be3705e1336a60d6f57",
+    "work/analysis/fe_v4/simulate_v1ctx.py": "11948e1145d8691abf04a20c48ca87defe30a1678e9db8e02f8c16a297dfb030",
+    "work/analysis/fe_v4/summarize_evals.py": "d818ece482004eb0cf1ce026bf0b159cec2dc3b245bde91e361c85ed345bf1cd",
+    "work/analysis/fe_v4/train_v4_ranker.py": "124c4bc805f5712e15a2e56d26a3b3d105e025e7a9cf086947d6cc28a65c2875",
+    "work/analysis/fe_v4/v4engine.py": "69cb6fcda260978d6b3269a59ec4516262b2a9742b66218f58f51099be6aa323"
+  },
+  "mismatch": [],
+  "stage1_timeout_s": 2700,
+  "day_shard0": {
+    "kernel": "taichiiiii/casmi26-v4b-sim1-trial v1",
+    "meta_sha256": "253c729adfcc27817a027398872dd59dd3cf183f65300ec181d2734b90bcb51c",
+    "n_queries": 200,
+    "n_structs": 40,
+    "t_query_sum": 928.8429119586945,
+    "query_signature": "6c64b7d4df0129725e3387e963463b0702475b1c8b4785a966449c16feca61f1",
+    "cpu": "Intel(R) Xeon(R) CPU @ 2.00GHz",
+    "vcpus": 4
+  },
+  "stage1_cmds": {
+    "0": {
+      "cmd": [
+        "/usr/bin/python3",
+        "work/analysis/fe_v4/simulate_v1ctx.py",
+        "--out",
+        "work/analysis/v1fe/sim1x/rows",
+        "--ctx",
+        "work/analysis/v1fe/sim1x/ctx",
+        "--folds",
+        "np,nplib,syn,plusk",
+        "--regimes",
+        "c1,c2,c3",
+        "--seed",
+        "21",
+        "--part_every",
+        "40",
+        "--engine_models",
+        "work/fpnet_a.pt",
+        "--shard",
+        "0",
+        "--nshard",
+        "6",
+        "--max_structs",
+        "40"
+      ],
+      "CUDA_VISIBLE_DEVICES": "0"
+    },
+    "1": {
+      "cmd": [
+        "/usr/bin/python3",
+        "work/analysis/fe_v4/simulate_v1ctx.py",
+        "--out",
+        "work/analysis/v1fe/sim1x/rows",
+        "--ctx",
+        "work/analysis/v1fe/sim1x/ctx",
+        "--folds",
+        "np,nplib,syn,plusk",
+        "--regimes",
+        "c1,c2,c3",
+        "--seed",
+        "21",
+        "--part_every",
+        "40",
+        "--engine_models",
+        "work/fpnet_a.pt",
+        "--shard",
+        "1",
+        "--nshard",
+        "6",
+        "--max_structs",
+        "40"
+      ],
+      "CUDA_VISIBLE_DEVICES": "1"
+    }
+  },
+  "stage1_start_gap_s": 0.0,
+  "stage1_end_s": {
+    "0": 1127.2,
+    "1": 778.5
+  },
+  "stage1_overlap_s": 778.5,
+  "stage1": {
+    "0": {
+      "returncode": 0,
+      "timed_out": false,
+      "header": {
+        "shard": 0,
+        "structs": 40,
+        "done_before": 0,
+        "seed": 21,
+        "init_s": 9
+      },
+      "done": {
+        "queries": 200,
+        "seconds": 1114
+      },
+      "progress": [
+        {
+          "structs": 10,
+          "of": 40,
+          "queries": 50,
+          "seconds": 172,
+          "s_per_q": 3.45
+        },
+        {
+          "structs": 20,
+          "of": 40,
+          "queries": 100,
+          "seconds": 396,
+          "s_per_q": 3.96
+        },
+        {
+          "structs": 30,
+          "of": 40,
+          "queries": 150,
+          "seconds": 837,
+          "s_per_q": 5.58
+        },
+        {
+          "structs": 40,
+          "of": 40,
+          "queries": 200,
+          "seconds": 1114,
+          "s_per_q": 5.57
+        }
+      ],
+      "gnu_time_max_rss_mb": null,
+      "tail": [
+        "[Library] 2,539,608 spectra, 275,810 structures, 133,228,108 peaks (1.9s)",
+        "[Pool] 710,701 structures, nbits 10226, frag yes (1.6s)",
+        "[Engine] reps 445,686 (0.5s)",
+        "[sim1x] shard 0: 40 structures, 0 done, seed 21, init 9s",
+        "  shard 0: 10/40 structs, 50 queries, 172s (3.45s/q, ETA 0.14h)",
+        "  shard 0: 20/40 structs, 100 queries, 396s (3.96s/q, ETA 0.11h)",
+        "  shard 0: 30/40 structs, 150 queries, 837s (5.58s/q, ETA 0.08h)",
+        "  shard 0: 40/40 structs, 200 queries, 1114s (5.57s/q, ETA 0.00h)",
+        "[sim1x] done shard 0: 200 new queries 1114s"
+      ]
+    },
+    "1": {
+      "returncode": 0,
+      "timed_out": false,
+      "header": {
+        "shard": 1,
+        "structs": 40,
+        "done_before": 0,
+        "seed": 21,
+        "init_s": 9
+      },
+      "done": {
+        "queries": 199,
+        "seconds": 765
+      },
+      "progress": [
+        {
+          "structs": 10,
+          "of": 40,
+          "queries": 49,
+          "seconds": 260,
+          "s_per_q": 5.3
+        },
+        {
+          "structs": 20,
+          "of": 40,
+          "queries": 99,
+          "seconds": 398,
+          "s_per_q": 4.02
+        },
+        {
+          "structs": 30,
+          "of": 40,
+          "queries": 149,
+          "seconds": 625,
+          "s_per_q": 4.19
+        },
+        {
+          "structs": 40,
+          "of": 40,
+          "queries": 199,
+          "seconds": 764,
+          "s_per_q": 3.84
+        }
+      ],
+      "gnu_time_max_rss_mb": null,
+      "tail": [
+        "[Library] 2,539,608 spectra, 275,810 structures, 133,228,108 peaks (1.9s)",
+        "[Pool] 710,701 structures, nbits 10226, frag yes (1.6s)",
+        "[Engine] reps 445,686 (0.5s)",
+        "[sim1x] shard 1: 40 structures, 0 done, seed 21, init 9s",
+        "  shard 1: 10/40 structs, 49 queries, 260s (5.30s/q, ETA 0.22h)",
+        "  shard 1: 20/40 structs, 99 queries, 398s (4.02s/q, ETA 0.11h)",
+        "  shard 1: 30/40 structs, 149 queries, 625s (4.19s/q, ETA 0.06h)",
+        "  shard 1: 40/40 structs, 199 queries, 764s (3.84s/q, ETA 0.00h)",
+        "[sim1x] done shard 1: 199 new queries 765s"
+      ]
+    }
+  },
+  "stage1_wall_s": 1127.2,
+  "stage1_peak": {
+    "rss_mb": {
+      "0": 5323.296875,
+      "1": 5297.703125
+    },
+    "rss_total_mb": 10565.8828125,
+    "gpu": {
+      "0": {
+        "mem_mb": 1397.0,
+        "util": 29.0
+      },
+      "1": {
+        "mem_mb": 1399.0,
+        "util": 29.0
+      }
+    },
+    "min_mem_available_mb": 20436.78125,
+    "loadavg1_max": 3.57,
+    "n_samples": 550
+  },
+  "outputs": {
+    "ctx/ctx_s0_c000.pkl": 103679764,
+    "ctx/ctx_s1_c000.pkl": 101963892,
+    "rows_0.npz": 2602150,
+    "rows_0_done_sids.txt": 179,
+    "rows_0_meta.parquet": 21787,
+    "rows_0_p000.npz": 2602150,
+    "rows_0_p000_meta.parquet": 21787,
+    "rows_1.npz": 3185037,
+    "rows_1_done_sids.txt": 180,
+    "rows_1_meta.parquet": 21941,
+    "rows_1_p000.npz": 3185037,
+    "rows_1_p000_meta.parquet": 21941
+  },
+  "shards": {
+    "0": {
+      "part": "rows_0_p000.npz",
+      "n_parts": 1,
+      "n_rows": 17590,
+      "n_cols": 94,
+      "n_features": 94,
+      "same_as_94": true,
+      "dtype": "float32",
+      "all_finite": true,
+      "n_groups": 200,
+      "n_pos": 173,
+      "meta": {
+        "n": 200,
+        "n_structs": 40,
+        "regime": {
+          "c1": 80,
+          "c2": 80,
+          "c3": 40
+        },
+        "has_truth": 173,
+        "t_query": {
+          "n": 200,
+          "sum": 1113.3417649269104,
+          "mean": 5.566708824634552
+        },
+        "t_query_median": 2.691060781478882,
+        "t_query_max": 73.38650274276733,
+        "t_query_mean_by_regime": {
+          "c1": 6.766922706365586,
+          "c2": 4.601631310582161,
+          "c3": 5.096436089277267
+        },
+        "query_signature": "6c64b7d4df0129725e3387e963463b0702475b1c8b4785a966449c16feca61f1",
+        "sha256": "99e814e18de7052345bf71494fb9212930f1089d6e952f12ed4b7e1c3052386e"
+      },
+      "ctx": {
+        "files": 1,
+        "bytes": 103679764
+      },
+      "summary": {
+        "structs": 40,
+        "queries": 200,
+        "seconds": 1114.0,
+        "s_per_struct": 27.85,
+        "s_per_query": 5.57,
+        "source": "done 行"
+      }
+    },
+    "1": {
+      "part": "rows_1_p000.npz",
+      "n_parts": 1,
+      "n_rows": 20623,
+      "n_cols": 94,
+      "n_features": 94,
+      "same_as_94": true,
+      "dtype": "float32",
+      "all_finite": true,
+      "n_groups": 199,
+      "n_pos": 165,
+      "meta": {
+        "n": 199,
+        "n_structs": 40,
+        "regime": {
+          "c1": 80,
+          "c2": 80,
+          "c3": 39
+        },
+        "has_truth": 165,
+        "t_query": {
+          "n": 199,
+          "sum": 763.8998954296112,
+          "mean": 3.8386929418573428
+        },
+        "t_query_median": 2.7490077018737793,
+        "t_query_max": 43.423139572143555,
+        "t_query_mean_by_regime": {
+          "c1": 4.825500807166099,
+          "c2": 3.1488251596689225,
+          "c3": 3.2295850790463962
+        },
+        "query_signature": "6bda53efa509409b69fb4c830f9c1331f7a80003116b9afe77db034ee220db8b",
+        "sha256": "93dad186374f862ede4bd44380e660afb73718c8825215773136ecfd696d5dcc"
+      },
+      "ctx": {
+        "files": 1,
+        "bytes": 101963892
+      },
+      "summary": {
+        "structs": 40,
+        "queries": 199,
+        "seconds": 765.0,
+        "s_per_struct": 19.125,
+        "s_per_query": 3.8442211055276383,
+        "source": "done 行"
+      }
+    }
+  },
+  "slowdown": {
+    "definition": "同時実行のシャード 0 の t_query 合計 ÷ 昼の試走のシャード 0 の t_query 合計",
+    "day_sum": 928.8429119586945,
+    "concurrent_sum": 1113.3417649269104,
+    "s": 1.1986329987480386,
+    "same_queries_as_day": true,
+    "n_queries": 200,
+    "day_n_queries": 200,
+    "cpu_this_session": {
+      "model": "Intel(R) Xeon(R) CPU @ 2.00GHz",
+      "vcpus": 4
+    },
+    "cpu_day_session": {
+      "model": "Intel(R) Xeon(R) CPU @ 2.00GHz",
+      "vcpus": 4
+    },
+    "note": "別のセッションなのでホストの CPU の違いが s に混ざる。numba の JIT キャッシュは 2 本で同じ /tmp/R を使う。シャード 1 が先に終わるとシャード 0 の後半は単独で走る（stage1_end_s・stage1_overlap_s を見る）",
+    "n_gpu_lines_in_nvidia_smi": 2,
+    "gpus_seen_by_monitor": [
+      "0",
+      "1"
+    ],
+    "s_valid": true
+  }
+}
