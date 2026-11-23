@@ -8,6 +8,7 @@
   5. 置き換えの行（commit で処理しない分子の決まった列）の分子数と、それを除いた一致数
 
 使い方: python scripts/research/commit_output_compare.py A.csv B.csv [--out report.json]
+       python scripts/research/commit_output_compare.py --dirs 出力A 出力B [--out report.json]
 標準ライブラリだけを使う。
 """
 from __future__ import annotations

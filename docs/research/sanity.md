@@ -23,7 +23,8 @@
 
 1. ファイルの sha256（18 ファイル）: 同じ 11、違う 7
    - 同じ: `submission.csv` と他の submission 系 csv 5 つ（すべて `e00a3a7c…`）、`bootstrap.log`、`merge_report.json`、`v8_report.json`、`ours_bundle/config.json`、`ours_bundle/config_used.json`
-   - 違う 7 つの中身: `apex_extlib_audit.json`・`n035net_audit.json` は `elapsed_s` だけ、`fr3to25_audit.json` は `load_s`・`total_s` と一時ディレクトリの名前（`model.code_dir`）だけ、`p5tail_audit.json` と `p5tail_e1.json` は時間の項目（`wall_s`・`timings`・`total_s`）だけ、`p5tail_runner.log` は各セルの秒数とオブジェクトのアドレスだけ、カーネルのログは時刻を含むので違う
+   - 違う 7 つの中身: `apex_extlib_audit.json`・`n035net_audit.json` は `elapsed_s` だけ、`fr3to25_audit.json` は `load_s`・`total_s` と一時ディレクトリの名前（`model.code_dir`）だけ、`p5tail_audit.json` と `p5tail_e1.json` は時間の項目（`wall_s`・`timings`・`total_s`）だけ、`p5tail_runner.log` は各セルの秒数・オブジェクトのアドレスと、**rdkit の wheel の候補 2 つ（`dmitriigluzdov/casmi26-attributed-v4g-reproduction-assets/…` と `metric/rdkit-2026-3-3-wheel/…`、同じファイル名 `rdkit-2026.3.3-cp312-…whl`）を並べた順が逆**（ファイルを探した順が実行ごとに違う。どちらの実行も RDKit 2026.03.3 を使っており、出力の中身は同じ）、カーネルのログ（43 行 / 43 行）は秒数と nbconvert が書いたバイト数（秒数の桁の違い、1103719 / 1103724 など）だけ
+   - つまり、時間でも一時パスでもない違いは「wheel の探索の順」1 つ。今回は同じ版の wheel だったので結果は変わらないが、どの wheel を先に入れるかが実行ごとに変わりうる
 2. `submission.csv`: 行数 400 / 400、molecule_id の集合と行の順も同じ、候補の列が完全に同じ分子 **400 / 400**（置き換えの行が 400 / 400 で、本当に処理した分子は 0）
 3. `p5tail_e1.json`（Engine 1 の回し直し、12 分子、cuda）: 分子の集合が同じ、分子ごとの記録（base・p6・p5・n_tr・gen・called）が完全に同じ分子 **12 / 12**
 4. `p5tail_audit.json`: 時間の項目を除くと完全に同じ（選びの 49 件の挿入なども同じ）。`fr3to25_audit.json`: 時間の項目を除いて違うのは一時ディレクトリの名前だけ
@@ -31,7 +32,7 @@
 6. 実行時間は揺れた: P5 の回し直し 212.6 s → 289.8 s、全体 288.5 s → 363.0 s
 
 ## 読み
-- commit の範囲では、時間と一時パスを除いて **出力は決定的**（同じ T4 の構成、同じ docker_image）
+- commit の範囲では、時間・一時パス・wheel の探索の順を除いて **出力は決定的**（同じ T4 の構成、同じ docker_image）
 - ただし commit の submission.csv は置き換えの行だけなので、**提出した csv（隠れテストでの再実行）の再現性は確かめられていない**。確かめられたのは、commit で走る部分（Engine 1 の 12 分子の回し直し・選び・fr3to25 の dry run）が 2 回で同じ答えを出すことまで
 - 実行時間は 1 回で 3 割ほど揺れた（P5: +36%）。再実行の時間の余裕を見積もるときは、この揺れを入れる
 - この結果で定数は動かしていない
