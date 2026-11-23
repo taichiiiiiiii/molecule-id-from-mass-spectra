@@ -17,6 +17,9 @@
                   z 合成で s に混ぜる。fragnnblind は同じ重み・同じ候補で、別の分子のスペクトルに入れ替えた点（対照）。
                   点は scripts/local_eval/fragnn_score.py が outputs/local_eval/<h>/fragnn_scores.npz・
                   fragnnblind_scores.npz に作る。fragnn と fragnnblind は同時に使えず、併用できるのは score・prior・frag だけ
+  2e. fragnn2    : （#196 (h)、指定時だけ）fragnn v2 の点。混ぜ方・置き場所は fragnn と同じで、読む npz だけが
+                  fragnn2_scores.npz・fragnn2blind_scores.npz（scripts/local_eval/fragnn2_score.py が作る）。fragnn・fragnnblind・
+                  fragnn2・fragnn2blind は 1 つだけ指定でき、併用できるのは score・prior・frag だけ
   4. frag       : 上位 TOPN の同一組成式グループを MetFrag-lite 断片説明率で並べ替え（0.479 版 v7c と同じ:
                   gl_fuse.rerank_multi、λ=0.5、学習なしなのでリーク無し）
   4b. elem      : （#90、指定時だけ）dedup 後の上位 TOPN で、C・H・N・O・P・S・F・Cl・Br・I 以外の元素を含む候補を
@@ -184,22 +187,22 @@ def nbz_crosscheck(pairs: list, path: Path) -> str:
     return "match"
 
 
-FRAGNN_STAGES = ("fragnn", "fragnnblind")   # #120: 段の名前 = npz の名前（<段>_scores.npz）
+FRAGNN_STAGES = ("fragnn", "fragnnblind", "fragnn2", "fragnn2blind")   # #120・#196 (h): 段の名前 = npz の名前（<段>_scores.npz）
 FRAGNN_ALLOWED = ("score", "prior", "frag")   # #120 で測る組み合わせ（score,fragnn[blind],prior,frag）の範囲
 
 
 def check_stages(stages: list[str]) -> None:
     """pmi（#97）・nbz（#103）と、それぞれ測っていない段の同時指定を止める。pmi と nbz の併用も止める。
-    fragnn・fragnnblind（#120）は同時に指定できず、併用できるのは FRAGNN_ALLOWED だけ。"""
+    fragnn・fragnnblind（#120）と fragnn2・fragnn2blind（#196 (h)）は 1 つだけ指定でき、併用できるのは FRAGNN_ALLOWED だけ。"""
     bad = [s for s in PMI_EXCLUSIVE if s in stages]
     assert not ("pmi" in stages and bad), f"pmi は {bad} と併用できない（#97 の範囲外）"
     bad = [s for s in NBZ_EXCLUSIVE if s in stages]
     assert not ("nbz" in stages and bad), f"nbz は {bad} と併用できない（#103 の範囲外）"
     assert not ("pmi" in stages and "nbz" in stages), "pmi と nbz は併用できない（どちらの事前登録の範囲でもない）"
     fn = [s for s in FRAGNN_STAGES if s in stages]
-    assert len(fn) <= 1, "fragnn と fragnnblind は同時に使えない（#120 は別々に 1 回ずつ採点する）"
+    assert len(fn) <= 1, f"{fn} は同時に使えない（#120・#196 は別々に 1 回ずつ採点する。v1 と v2 も混ぜない）"
     bad = [s for s in stages if fn and s not in FRAGNN_ALLOWED and s not in FRAGNN_STAGES]
-    assert not bad, f"{fn} は {bad} と併用できない（#120 の範囲外。使えるのは {FRAGNN_ALLOWED}）"
+    assert not bad, f"{fn} は {bad} と併用できない（#120・#196 の範囲外。使えるのは {FRAGNN_ALLOWED}）"
 
 
 # ---------------------------------------------------------------- 段 2b: sanpier（#60、等重み）
