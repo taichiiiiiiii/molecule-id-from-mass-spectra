@@ -1,0 +1,83 @@
+{
+ "n_hold": 55102,
+ "exclusion": {
+  "e_raw": 812,
+  "e_key": 812,
+  "e_grp": 797
+ },
+ "types": {
+  "v3_c1": {
+   "eligible_all": 414,
+   "excluded_by_orig": 204,
+   "eligible_new": 210
+  },
+  "v3_c2n": {
+   "eligible_all": 4729,
+   "excluded_by_orig": 200,
+   "eligible_new": 4529,
+   "overlap_with_c1_new": 1
+  },
+  "enveda_v1": {
+   "pool_groups": 36637,
+   "eligible_all_groups": 36583,
+   "excluded_by_orig": 600,
+   "eligible_new_groups": 35983,
+   "overlap_groups_with_c1_new": 210,
+   "overlap_groups_with_c2n_new": 6
+  },
+  "v3_c2": {
+   "note": "増やさない（事前登録 (f)）"
+  }
+ },
+ "orig_t10": {
+  "v3_c1": {
+   "n_mol": 200,
+   "n_spec": 1252,
+   "n_mol_t10": 197,
+   "n_spec_t10": 915,
+   "adducts_outside_t10": {
+    "[2M+Na]+": 180,
+    "[2M+H]+": 99,
+    "[2M-H]-": 58
+   }
+  },
+  "v3_c2": {
+   "n_mol": 200,
+   "n_spec": 1215,
+   "n_mol_t10": 197,
+   "n_spec_t10": 896,
+   "adducts_outside_t10": {
+    "[2M+Na]+": 197,
+    "[2M+H]+": 64,
+    "[2M-H]-": 58
+   }
+  },
+  "enveda_v1": {
+   "n_mol": 200,
+   "n_spec": 614,
+   "n_mol_t10": 186,
+   "n_spec_t10": 484,
+   "adducts_outside_t10": {
+    "[2M+Na]+": 67,
+    "[2M+H]+": 31,
+    "[2M-H]-": 30,
+    "[2M+CH2O2-H]-": 2
+   }
+  },
+  "v3_c2n": {
+   "n_mol": 195,
+   "n_spec": 1675,
+   "n_mol_t10": 195,
+   "n_spec_t10": 1667,
+   "adducts_outside_t10": {
+    "[2M+H]+": 4,
+    "[2M-H]-": 4
+   }
+  }
+ },
+ "inputs_sha256": {
+  "data/ext/foldsafe/split.parquet": "dd62549f81b9540890e0da17a06d0dcd216a2781b2c31687bd333445fe57d45e",
+  "data/ext/panel/casmi26-identity-disjoint-validation-folds/structures.parquet": "7c16c4968a15956e94eba58e3ff94d4a6c2f6899b10a2f2824047601a46bd6c8",
+  "data/ext/v4g/casmi26-v2-pool/train_structs.parquet": "f20aa1cac23af42e430a6633707fda34e48dea97114bdc3e443897f692df3656"
+ }
+}

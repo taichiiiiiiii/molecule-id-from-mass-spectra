@@ -1,0 +1,361 @@
+{
+ "seed": 20261123,
+ "before_sha256": {
+  "data/holdouts/v3_c1/HOLDOUT.json": "7d95fcfe9ab9ccdbee8c3ded8b9194cf56e7587f0e6b9d45082cfc53bcb86894",
+  "data/holdouts/v3_c1/drop_keys.txt": "efe37166f13da08c8acaa4c439e4131f5c70dc686981467cd1d0168a0eb27742",
+  "data/holdouts/v3_c1/drop_keys_manifest.json": "8c736f9be9f2384bcb104e6af8385397477721ef34252320515f253bb4c3f57f",
+  "data/holdouts/v3_c1/hide_rule.json": "f3982cf6c1a64ba44b30eff460ffd7eba37b2d01592bd2b709000ffe046d214a",
+  "data/holdouts/v3_c1/sample_submission.csv": "1381dd893728e971952f8c9b1f7e97a2dfc048194581c7d49d6eb40185cea233",
+  "data/holdouts/v3_c1/test.parquet": "4617acd401e758967c44b6297031976bef2ac6985661f9b2a11fbc2923589029",
+  "outputs/holdouts/v3_c1/truth.csv": "f36bb8a24f057f96da9757d5abb5aebea3974d21e0c35d56c362ba9ebeeaa551",
+  "data/holdouts/v3_c2/HOLDOUT.json": "b5d2cea2619c7c0784426cf4de0bd4a970641fed781408674420bda9f75ec475",
+  "data/holdouts/v3_c2/drop_keys.txt": "624fd5afe9b9747c389cbde8ee42c0a16f7e76456c440e1336e44d859d0ef034",
+  "data/holdouts/v3_c2/drop_keys_manifest.json": "9983bb43e9773cccaa162c32a4ab38e8a598c89ea7df9443a95ab64a09bd32c2",
+  "data/holdouts/v3_c2/hide_rule.json": "8349962a60ad3f4765d2abc232d906927d932f2f93043c2a809d130c85ec4913",
+  "data/holdouts/v3_c2/sample_submission.csv": "1381dd893728e971952f8c9b1f7e97a2dfc048194581c7d49d6eb40185cea233",
+  "data/holdouts/v3_c2/test.parquet": "4eea33c31a1b2a887e9973ac4fe7c15fe3241a5b2ad82d98726c3206e8981144",
+  "outputs/holdouts/v3_c2/truth.csv": "f4f164ffb20348c4debc8c862e6479570c984e48f7acc597e76795aa912fe027",
+  "data/holdouts/enveda_v1/HOLDOUT.json": "29a674e424682f83b3410b9fa8b1a7db199ebcf4e5ae16ed2f6507f3e64ce690",
+  "data/holdouts/enveda_v1/dataset-metadata.json": "50bdeebfb52a3a71277797ce3b9b436142bf92bb3e02f67f2483caa9b14ff5f2",
+  "data/holdouts/enveda_v1/drop_keys.txt": "bf05e606e263e3c37c95da2b97b7b5de0b52071afbbb629bc69a95ef1dd48847",
+  "data/holdouts/enveda_v1/drop_keys_manifest.json": "d9e9e80782097f75ad254a933aef1fee8d8d1b8d11105981e31a3eb13d4a0360",
+  "data/holdouts/enveda_v1/sample_submission.csv": "b6630f42de3ceead403b28d61af69f8c172256805b3cc3d30b4d6ed6cfe7b7b9",
+  "data/holdouts/enveda_v1/test.parquet": "c89d4a47aa6e068019f6fcd1722703f045df866a528f4f4c3d7efcc22edc261f",
+  "outputs/holdouts/enveda_v1/truth.csv": "77845dc82e95a2ff44ea3057af983878733704d62b4e38a065325ffb87c81885",
+  "data/holdouts/v3_c2n/HOLDOUT.json": "a2ad83c8eeb0c8a4bca34a537dc9230e89cf3c6b3dad194fa93b0882b239f33c",
+  "data/holdouts/v3_c2n/drop_keys.txt": "0d900919d2f832634e9459f338bcb85b005323b6abaee7437dd27c441c0453a9",
+  "data/holdouts/v3_c2n/drop_keys_manifest.json": "b47f7eea62f884b421fcd64db1e7aa44009edc1cd0ff3d349fcd626125e15871",
+  "data/holdouts/v3_c2n/hide_rule.json": "53f98ce67e7ea154c282cc3b53736fc2c96e451daa5bf81e0bf0f8b03c39ae38",
+  "data/holdouts/v3_c2n/sample_submission.csv": "4984cef129a5ba0f6e9d284a0ffbe0e88a41f13e6eb3f81fa061a06166702130",
+  "data/holdouts/v3_c2n/test.parquet": "961f1ea03ff5e5e3afdc51b2ab27bab81a7e00224baf35e66e96a6bf4bfaaff4",
+  "outputs/holdouts/v3_c2n/truth.csv": "48fd4c2236b5cb16fcb74412d0ca3832c2cfd67de75651644e8b8c4e54a0888f"
+ },
+ "sets": {
+  "v3_c1b": {
+   "name": "v3_c1b",
+   "seed": 20261123,
+   "rule": "enveda_libs",
+   "pool": "keep",
+   "query": "enveda",
+   "n_molecules": 200,
+   "n_spectra": 1265,
+   "instruments_of_queries": {
+    "timsTOF": 1265
+   },
+   "spectra_per_molecule": {
+    "count": 200.0,
+    "mean": 6.32,
+    "std": 3.15,
+    "min": 1.0,
+    "25%": 4.0,
+    "50%": 6.0,
+    "75%": 8.0,
+    "max": 16.0
+   },
+   "hidden_train_rows": 1269,
+   "remaining_ref_rows_of_truth": 2496,
+   "libs_of_queries": {
+    "enveda-180": 1265
+   },
+   "eligible_new": 210,
+   "picked": 200,
+   "truth_in_hold": "200/200",
+   "overlap_with_previous": 0,
+   "drop_keys_after_rebuild": 201
+  },
+  "v3_c2nb": {
+   "name": "v3_c2nb",
+   "seed": 20261123,
+   "rule": "all",
+   "pool": "keep",
+   "query": "prefer_enveda",
+   "n_molecules": 199,
+   "n_spectra": 1642,
+   "instruments_of_queries": {
+    "Orbitrap": 667,
+    "QTOF": 188,
+    "LC-ESI-QTOF": 150,
+    "ESI-QFT": 125,
+    "qtof": 79,
+    "orbitrap": 72,
+    "qTof": 47,
+    "LC-ESI-QFT": 46,
+    "LC-ESI-ITFT": 34,
+    "Maxis II HD Q-TOF Bruker": 31,
+    "iontrap": 28,
+    "ToF": 23,
+    "Linear Ion Trap": 23,
+    "LC-ESI-QQ": 13,
+    "ESI-QTOF": 9,
+    "ESI-TOF": 4,
+    "QIT": 4,
+    "Hybrid FT": 3,
+    "LC-ESI-IT": 3,
+    "LC-ESI-QQQ": 2,
+    "qToF": 2,
+    "nan": 2,
+    "Q-Exactive Plus": 1,
+    "APCI-ITFT": 1,
+    "LC-ESI-FT": 1,
+    "Ion Trap": 1,
+    "qTOF": 1,
+    "LC-Orbitrap MS": 1
+   },
+   "spectra_per_molecule": {
+    "count": 199.0,
+    "mean": 8.25,
+    "std": 6.15,
+    "min": 1.0,
+    "25%": 2.0,
+    "50%": 7.0,
+    "75%": 16.0,
+    "max": 16.0
+   },
+   "hidden_train_rows": 5505,
+   "remaining_ref_rows_of_truth": 0,
+   "libs_of_queries": {
+    "riken": 479,
+    "pluskal_ms2": 352,
+    "gnps": 296,
+    "spectraverse": 181,
+    "mona": 142,
+    "massbank": 135,
+    "msdial": 54,
+    "drug_plus": 2,
+    "masaryk": 1
+   },
+   "eligible_new": 4528,
+   "picked": 200,
+   "truth_in_hold": "200/200",
+   "overlap_with_previous": 0,
+   "drop_keys_after_rebuild": 218
+  },
+  "enveda_v1b": {
+   "seed": 20261143,
+   "fold": 0,
+   "np": false,
+   "n_molecules": 200,
+   "n_spectra": 576,
+   "scenario": {
+    "no_reference": 200
+   },
+   "spectra_per_molecule": {
+    "count": 200.0,
+    "mean": 2.88,
+    "std": 1.45,
+    "min": 1.0,
+    "25%": 2.0,
+    "50%": 3.0,
+    "75%": 4.0,
+    "max": 6.0
+   },
+   "train_rows_dropped": 1241,
+   "n_drop_keys": 201,
+   "name": "enveda_v1b",
+   "eligible_new_groups": 35783,
+   "picked": 200,
+   "truth_in_hold": "200/200",
+   "overlap_with_previous": 0,
+   "drop_keys_after_rebuild": 201
+  },
+  "v3_c1_t10": {
+   "source": "v3_c1",
+   "rule": "t10",
+   "adducts": [
+    "[M+H]+",
+    "[M+NH4]+",
+    "[M-H2O+H]+",
+    "[M-2H2O+H]+",
+    "[M+Na]+",
+    "[M+K]+",
+    "[M-H]-",
+    "[M-H2O-H]-",
+    "[M+CH2O2-H]-",
+    "[M+Cl]-"
+   ],
+   "n_molecules": 197,
+   "n_spectra": 915,
+   "n_molecules_removed": 3,
+   "n_spectra_removed": 337,
+   "adducts_outside_t10": {
+    "[2M+Na]+": 180,
+    "[2M+H]+": 99,
+    "[2M-H]-": 58
+   }
+  },
+  "v3_c2_t10": {
+   "source": "v3_c2",
+   "rule": "t10",
+   "adducts": [
+    "[M+H]+",
+    "[M+NH4]+",
+    "[M-H2O+H]+",
+    "[M-2H2O+H]+",
+    "[M+Na]+",
+    "[M+K]+",
+    "[M-H]-",
+    "[M-H2O-H]-",
+    "[M+CH2O2-H]-",
+    "[M+Cl]-"
+   ],
+   "n_molecules": 197,
+   "n_spectra": 896,
+   "n_molecules_removed": 3,
+   "n_spectra_removed": 319,
+   "adducts_outside_t10": {
+    "[2M+Na]+": 197,
+    "[2M+H]+": 64,
+    "[2M-H]-": 58
+   }
+  },
+  "enveda_v1_t10": {
+   "source": "enveda_v1",
+   "rule": "t10",
+   "adducts": [
+    "[M+H]+",
+    "[M+NH4]+",
+    "[M-H2O+H]+",
+    "[M-2H2O+H]+",
+    "[M+Na]+",
+    "[M+K]+",
+    "[M-H]-",
+    "[M-H2O-H]-",
+    "[M+CH2O2-H]-",
+    "[M+Cl]-"
+   ],
+   "n_molecules": 186,
+   "n_spectra": 484,
+   "n_molecules_removed": 14,
+   "n_spectra_removed": 130,
+   "adducts_outside_t10": {
+    "[2M+Na]+": 67,
+    "[2M+H]+": 31,
+    "[2M-H]-": 30,
+    "[2M+CH2O2-H]-": 2
+   }
+  },
+  "v3_c2n_t10": {
+   "source": "v3_c2n",
+   "rule": "t10",
+   "adducts": [
+    "[M+H]+",
+    "[M+NH4]+",
+    "[M-H2O+H]+",
+    "[M-2H2O+H]+",
+    "[M+Na]+",
+    "[M+K]+",
+    "[M-H]-",
+    "[M-H2O-H]-",
+    "[M+CH2O2-H]-",
+    "[M+Cl]-"
+   ],
+   "n_molecules": 195,
+   "n_spectra": 1667,
+   "n_molecules_removed": 0,
+   "n_spectra_removed": 8,
+   "adducts_outside_t10": {
+    "[2M+H]+": 4,
+    "[2M-H]-": 4
+   }
+  },
+  "v3_c1b_t10": {
+   "source": "v3_c1b",
+   "rule": "t10",
+   "adducts": [
+    "[M+H]+",
+    "[M+NH4]+",
+    "[M-H2O+H]+",
+    "[M-2H2O+H]+",
+    "[M+Na]+",
+    "[M+K]+",
+    "[M-H]-",
+    "[M-H2O-H]-",
+    "[M+CH2O2-H]-",
+    "[M+Cl]-"
+   ],
+   "n_molecules": 197,
+   "n_spectra": 921,
+   "n_molecules_removed": 3,
+   "n_spectra_removed": 344,
+   "adducts_outside_t10": {
+    "[2M+Na]+": 166,
+    "[2M+H]+": 100,
+    "[2M-H]-": 78
+   }
+  },
+  "v3_c1u_t10": {
+   "parts": [
+    "v3_c1_t10",
+    "v3_c1b_t10"
+   ],
+   "n_molecules": 394,
+   "n_spectra": 1836,
+   "n_drop_keys": 403
+  },
+  "v3_c2nb_t10": {
+   "source": "v3_c2nb",
+   "rule": "t10",
+   "adducts": [
+    "[M+H]+",
+    "[M+NH4]+",
+    "[M-H2O+H]+",
+    "[M-2H2O+H]+",
+    "[M+Na]+",
+    "[M+K]+",
+    "[M-H]-",
+    "[M-H2O-H]-",
+    "[M+CH2O2-H]-",
+    "[M+Cl]-"
+   ],
+   "n_molecules": 199,
+   "n_spectra": 1642,
+   "n_molecules_removed": 0,
+   "n_spectra_removed": 0,
+   "adducts_outside_t10": {}
+  },
+  "v3_c2nu_t10": {
+   "parts": [
+    "v3_c2n_t10",
+    "v3_c2nb_t10"
+   ],
+   "n_molecules": 394,
+   "n_spectra": 3309,
+   "n_drop_keys": 426
+  },
+  "enveda_v1b_t10": {
+   "source": "enveda_v1b",
+   "rule": "t10",
+   "adducts": [
+    "[M+H]+",
+    "[M+NH4]+",
+    "[M-H2O+H]+",
+    "[M-2H2O+H]+",
+    "[M+Na]+",
+    "[M+K]+",
+    "[M-H]-",
+    "[M-H2O-H]-",
+    "[M+CH2O2-H]-",
+    "[M+Cl]-"
+   ],
+   "n_molecules": 187,
+   "n_spectra": 465,
+   "n_molecules_removed": 13,
+   "n_spectra_removed": 111,
+   "adducts_outside_t10": {
+    "[2M+Na]+": 73,
+    "[2M+H]+": 27,
+    "[2M-H]-": 11
+   }
+  },
+  "enveda_v1u_t10": {
+   "parts": [
+    "enveda_v1_t10",
+    "enveda_v1b_t10"
+   ],
+   "n_molecules": 373,
+   "n_spectra": 949,
+   "n_drop_keys": 403
+  }
+ },
+ "after_sha256_equal": true
+}
