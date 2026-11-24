@@ -25,6 +25,8 @@
   4b. elem      : （#90、指定時だけ）dedup 後の上位 TOPN で、C・H・N・O・P・S・F・Cl・Br・I 以外の元素を含む候補を
                   含まない候補の後ろへ回す（安定な分割、定数なし。scripts/local_eval/elem_rule.py）
   5. output     : InChIKey14 で重複除去した上位 25 → submission 形式 → MRR@25
+  記録: （#230、指定時だけ）--dump-ranks <path> で深い順位を CSV に書く。最終の並び（dedup 後の上位 TOPN）に続けて
+        窓の残りを score の順（key で dedup）。書き出すだけで、submission の CSV と MRR は変えない
 
     python scripts/local_eval/run.py --holdout np_v2
     python scripts/local_eval/run.py --holdout enveda_v1 --stages score      # 文献 prior 無し
@@ -284,6 +286,24 @@ PC_LIB_TAU, REL_TH, PROMOTE_REL = 0.9, 600.0, 150.0
 SLOTS_AGG, SLOTS_GENTLE = [2, 4, 6, 8, 10], [4, 8, 12, 16, 20]
 
 
+def deep_list(head, score_rows, pool: Pool):
+    """#230: 深い順位。最終の並び head に続けて、score の順の残り（pool の key で dedup、head の key は飛ばす）。"""
+    seen = {pool.key[i] for _, i in head}
+    tail = [r for r in dedup(score_rows, pool, len(score_rows) + 1) if pool.key[r[1]] not in seen]
+    return list(head) + tail
+
+
+def write_ranks(path, deep: dict, pool: Pool) -> None:
+    """#230: molecule_id, rank（1 始まり）, pool_row, key, smiles。"""
+    path = Path(path)
+    path.parent.mkdir(parents=True, exist_ok=True)
+    with open(path, "w", newline="") as f:
+        w = csv.writer(f); w.writerow(["molecule_id", "rank", "pool_row", "key", "smiles"])
+        for mid, rows in deep.items():
+            for r, (_, i) in enumerate(rows, start=1):
+                w.writerow([mid, r, int(i), pool.key[i], pool.smiles[i]])
+
+
 def merge_slots(base, base_keys, pc, pc_keys, slots, n=K):
     """PubChem 提案を指定の順位（1 始まり）に差し込む。base と同じキーの提案は飛ばす。"""
     seen = set(base_keys)
@@ -311,11 +331,13 @@ def truth_path(holdout: str, truth_dir: str | Path | None = None) -> Path:
 
 
 def run(holdout: str, stages: list[str], logits_run: str | None = None, logits_dir: str | Path | None = None,
-        truth_dir: str | Path | None = None) -> dict:
+        truth_dir: str | Path | None = None, dump_ranks: str | Path | None = None) -> dict:
     """logits_dir・truth_dir は #199 で足した引数（既定 None = 今と同じ outputs/holdout_eval/<run>/・outputs/holdouts/<holdout>/）。"""
     from mrr25 import calculate_mrr25, read_truth
     from elem_rule import demote_unusual
     check_stages(stages)
+    if dump_ranks and ("pubchem" in stages or "joint" in stages):   # #230: 深い順位はプールの並びだけ
+        raise ValueError("--dump-ranks は pubchem・joint と併用しない")
     t0 = time.time()
     run_name = logits_run or f"{holdout}_fold0"
     zf = np.load(logits_path(run_name, logits_dir), allow_pickle=True)
@@ -358,7 +380,7 @@ def run(holdout: str, stages: list[str], logits_run: str | None = None, logits_d
                         nbz_s_median=round(float(np.median([p[2] for p in pairs])), 4) if pairs else None,
                         nbz_crosscheck_101=nbz_crosscheck(pairs, ROOT / f"outputs/local_eval/query_network_{holdout}.json"),
                         nbz_connected=sorted(nbz_z))
-    lists = {}
+    lists, score_rows = {}, {}
     for mid in truth:
         if mid not in targets:
             continue
@@ -369,6 +391,8 @@ def run(holdout: str, stages: list[str], logits_run: str | None = None, logits_d
             rows = sanpier_mix(rows, nscores[mid])
         if fragnn_stage:   # #120: score の直後、prior・frag の前（npz に分子が無ければ KeyError で止まる）
             rows = sanpier_mix(rows, fscores[mid])
+        if dump_ranks:
+            score_rows[mid] = rows
         if "prior" in stages:
             rows = rerank_with_prior(rows, pool)
         if "frag" in stages:
@@ -392,6 +416,10 @@ def run(holdout: str, stages: list[str], logits_run: str | None = None, logits_d
                 rows = [r for r in rows if pool.key[r[1]] not in refs] + [r for r in rows if pool.key[r[1]] in refs]
             lists[mid] = rows
     preds = {mid: [pool.smiles[i] for _, i in lists[mid][:K]] if mid in lists else [] for mid in truth}
+    if dump_ranks:   # #230: 書き出すだけ（preds は変えない）
+        deep = {mid: deep_list(lists[mid], score_rows[mid], pool) for mid in lists}
+        assert all([pool.smiles[i] for _, i in deep[m][:K]] == preds[m] for m in deep)
+        write_ranks(dump_ranks, deep, pool)
     if "joint" in stages:   # 構造案: プール候補と PubChem 候補を同じ f·z の尺度で一列に並べる（差し込み枠を使わない）
         import pubchem as PC
         pool_keys = set(pool.key) - hidden
@@ -460,8 +488,10 @@ def main() -> None:
     ap.add_argument("--logits-run", default=None, help="outputs/holdout_eval/<run>/pc_logits.npz（既定 <holdout>_fold0）")
     ap.add_argument("--logits-dir", default=None, help="#199: pc_logits.npz のあるディレクトリ（既定は outputs/holdout_eval/<run>/）")
     ap.add_argument("--truth-dir", default=None, help="#199: truth.csv のあるディレクトリ（既定は outputs/holdouts/<holdout>/）")
+    ap.add_argument("--dump-ranks", default=None, help="#230: 深い順位を書く CSV（既定は書かない。submission は変えない）")
     args = ap.parse_args()
-    print(json.dumps(run(args.holdout, args.stages.split(","), args.logits_run, args.logits_dir, args.truth_dir), indent=2))
+    print(json.dumps(run(args.holdout, args.stages.split(","), args.logits_run, args.logits_dir, args.truth_dir,
+                         args.dump_ranks), indent=2))
 
 
 if __name__ == "__main__":
