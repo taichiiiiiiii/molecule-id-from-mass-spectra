@@ -108,12 +108,34 @@ def summarize(m: pd.DataFrame) -> dict:
                 best_cos_ext_median=round(float(m.best_cos_ext.median()), 4))
 
 
+def struct_overlap(best_keys, tables: dict[str, set]) -> dict:
+    """補助（#230 の定義の外、結果の後に足した説明）: 見える test の train の最良一致の構造（headroom の A5 表の best_key）が、
+    各外部ライブラリの構造表（inchikey 先頭 14 文字）にいくつあるか。"""
+    bk = [str(k) for k in best_keys]
+    return {name: dict(k=sum(k in keys for k in bk), n=len(bk), n_struct=len(keys)) for name, keys in tables.items()}
+
+
+def struct_tables(msg_paths, extlib_meta=None, mbh_struct=None) -> dict[str, set]:
+    t = {"massspecgym": set()}
+    for p in msg_paths:
+        for ch in pd.read_csv(p, sep="\t", usecols=["inchikey"], chunksize=100_000, dtype=str):
+            t["massspecgym"] |= set(ch.inchikey.astype(str).str[:14])
+    if extlib_meta:
+        t["extlib_meta"] = set(pd.read_parquet(extlib_meta, columns=["inchikey14"]).inchikey14.astype(str))
+    if mbh_struct:
+        t["massbank_harmonized"] = set(pd.read_parquet(mbh_struct, columns=["inchikey"]).inchikey.astype(str).str[:14])
+    return t
+
+
 def main() -> None:
     ap = argparse.ArgumentParser()
     ap.add_argument("--msg", nargs="+", required=True)
     ap.add_argument("--test", default=str(ROOT / "data/test.parquet"))
     ap.add_argument("--train", default=str(ROOT / "data/train.parquet"))
     ap.add_argument("--out-dir", required=True)
+    ap.add_argument("--a5-table", default=str(ROOT / "docs/research/headroom-1123/a5_visible_test_per_molecule.csv"))
+    ap.add_argument("--extlib-meta", default=None, help="補助: ExtLib の ext_meta.parquet（構造の重なりだけ）")
+    ap.add_argument("--mbh-struct", default=None, help="補助: MassBank harmonized の structures_with_fingerprints.parquet")
     a = ap.parse_args()
     t0 = time.time()
     out = Path(a.out_dir); out.mkdir(parents=True, exist_ok=True)
@@ -127,6 +149,9 @@ def main() -> None:
     summ = dict(summarize(m), n_test_spectra=int(len(te)), n_ref_loaded={k: len(v) for k, v in refs.items()},
                 spectra_without_ref=int((spec.n_ref == 0).sum()), secs=round(time.time() - t0, 1),
                 inputs={Path(p).name: hashlib.sha256(Path(p).read_bytes()).hexdigest() for p in [a.test, *a.msg]})
+    a5 = pd.read_csv(a.a5_table)
+    summ["aux_visible_best_key_in_ext_struct"] = struct_overlap(
+        a5.best_key, struct_tables(a.msg, a.extlib_meta, a.mbh_struct))
     m.to_csv(out / "a5_extlib_per_molecule.csv", index=False)
     (out / "a5_extlib.json").write_text(json.dumps(summ, indent=2, ensure_ascii=False))
     print(json.dumps(summ, ensure_ascii=False))

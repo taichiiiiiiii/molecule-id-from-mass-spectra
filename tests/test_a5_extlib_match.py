@@ -55,3 +55,11 @@ def test_prep_peaks_sorts_and_normalises():
     mz, it = E.prep_peaks("150.0,100.0", "4.0,1.0")
     assert mz.tolist() == [100.0, 150.0]
     assert abs((it * it).sum() - 1.0) < 1e-12 and it[1] > it[0]
+
+
+def test_struct_overlap(tmp_path):
+    mp = write_msg(tmp_path)
+    t = E.struct_tables([mp])
+    assert "AAAAAAAAAAAAAA" in t["massspecgym"] and len(t["massspecgym"]) == 5
+    o = E.struct_overlap(["AAAAAAAAAAAAAA", "ZZZZZZZZZZZZZZ"], t)
+    assert o["massspecgym"] == dict(k=1, n=2, n_struct=5)
