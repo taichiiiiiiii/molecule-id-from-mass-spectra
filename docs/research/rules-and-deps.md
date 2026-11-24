@@ -122,7 +122,7 @@ Issue #214（親 #195 の A6、#3）。計画は `plan_2026-11-24_night.md` の�
 - 「reasonable delta」の大きさ（数値で書いた文は無い）
 - 他の参加者が Kaggle の dataset に置いた、ライセンス表示の無いコード（例: TC の `other` 表示のコード）が 3.6.c の「OSI のライセンス」に当たるか
   - 748882 id 3538755 の原文: 「Use of public competition datasets and code shared by other competitors (including code files inside public Kaggle Datasets) is allowed, provided they come from permissible sources and comply with applicable licensing requirements.」。似た文が 742265 id 3538804（括弧の中は「including code files inside public models」）と 745072 id 3538730（括弧なし）にもある。Kaggle の dataset の中のコードをはっきり含めているのは 3538755 だけ
-  - 3.6.b の「みなし」が dataset の中のコードにも及ぶかについての文は無い
+  - 3.6.b の「みなし」が dataset の中のコードにも及ぶかについての文は無い（135 件の取得の時点。761272 の答えで解消、下の追補）
   - 761272（2026-11-23、「Rule 6: helper code loaded from public datasets without a stated licence」）は、135 件の取得の時点ではコメント 0 件だった。**その後に答えが付いた（追補、下）**
 
 **追補: 761272 の答え（確認）**
