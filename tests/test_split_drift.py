@@ -55,6 +55,14 @@ def test_p_greater():
     assert S.p_greater(x, y) + S.p_greater(y, x) == pytest.approx(1.0)
 
 
+def test_band_of_and_mde():
+    import split_drift_bands as B
+    assert list(B.band_of(np.array([20, 21, 22, 25, 26, 40]), 21.0, 26.0)) == [0, 0, 1, 1, 2, 2]
+    assert B.band_mde(0.02, 400, 100) == 0.04
+    assert B.band_mde(None, 400, 100) is None
+    assert B.band_mde(0.02, 400, 0) is None
+
+
 def test_heavy_atoms():
     pytest.importorskip("rdkit")
     assert list(S.heavy_atoms(["CCO", "c1ccccc1", "[Na+].[Cl-]"])) == [3, 6, 2]
