@@ -1,0 +1,454 @@
+{
+ "rule_comment": "https://github.com/taichiiiiiiii/molecule-id-from-mass-spectra/issues/216#issuecomment-7121356702",
+ "exclusion": {
+  "sets": [
+   "v3_c1",
+   "v3_c2",
+   "enveda_v1",
+   "v3_c2n",
+   "v3_c1b",
+   "v3_c2nb",
+   "enveda_v1b"
+  ],
+  "e_raw": 1432,
+  "e_key": 1432,
+  "e_grp": 1397
+ },
+ "gates": {
+  "fold0_split_reproduced": {
+   "hold_equal": true,
+   "np_equal": true,
+   "n_hold": 55102,
+   "n_np": 265
+  },
+  "fold0_a3a_counts_reproduced": {
+   "got": {
+    "c1": [
+     414,
+     210
+    ],
+    "c2n": [
+     4729,
+     4529
+    ],
+    "enveda": [
+     36583,
+     35983
+    ]
+   },
+   "expected": {
+    "c1": [
+     414,
+     210
+    ],
+    "c2n": [
+     4729,
+     4529
+    ],
+    "enveda": [
+     36583,
+     35983
+    ]
+   },
+   "equal": true
+  }
+ },
+ "folds": {
+  "0": {
+   "n_hold": 55102,
+   "n_np": 265,
+   "n_train_side": 220443,
+   "hold_hit_by_v3_a3a_exclusion": 1423,
+   "components": {
+    "fpnet_fold_k_train_side_vs_hold": {
+     "raw_inchikey14": 0,
+     "canonical_key": 0,
+     "scorer_key": 0
+    },
+    "pool_meta_contains_hold": {
+     "by_canonical_key": 54781,
+     "by_raw_inchikey14": 54224,
+     "n_hold": 55102
+    },
+    "prior_pool_popularity_rows_of_hold": {
+     "by_raw_inchikey14": 54224,
+     "by_canonical_key": 54781
+    },
+    "library_ref_rows_of_hold_before_hiding": {
+     "rows": 499930,
+     "structures": 55102,
+     "enveda_rows": 230108,
+     "public_rows": 269822
+    }
+   },
+   "type_overlap_groups": {
+    "a_b": 0,
+    "a_c": 0,
+    "a_d": 10,
+    "b_c": 5,
+    "b_d": 5,
+    "c_d": 35573
+   },
+   "types": {
+    "a_v3_c1u": {
+     "eligible_all": 414,
+     "excluded": 404,
+     "eligible": 10,
+     "with_public_refs": 10
+    },
+    "b_v3_c2nu": {
+     "eligible_all": 4729,
+     "excluded": 401,
+     "eligible": 4328
+    },
+    "c_v3_c2": {
+     "eligible_all": 36169,
+     "excluded": 596,
+     "eligible": 35573
+    },
+    "d_enveda_v1u_groups": {
+     "pool_groups": 36637,
+     "eligible_all": 36583,
+     "excluded": 1000,
+     "eligible": 35583
+    }
+   },
+   "n_bal": 10
+  },
+  "1": {
+   "n_hold": 55106,
+   "n_np": 265,
+   "n_train_side": 220439,
+   "check_inputs": {
+    "excluded_fold_structure_rows": 55106,
+    "excluded_np_structure_rows": 265,
+    "training_structure_rows": 220439,
+    "fold_training_overlap": 0,
+    "passed": true
+   },
+   "check_inputs_match": true,
+   "hold_hit_by_v3_a3a_exclusion": 0,
+   "components": {
+    "fpnet_fold_k_train_side_vs_hold": {
+     "raw_inchikey14": 0,
+     "canonical_key": 0,
+     "scorer_key": 0
+    },
+    "pool_meta_contains_hold": {
+     "by_canonical_key": 54785,
+     "by_raw_inchikey14": 54239,
+     "n_hold": 55106
+    },
+    "prior_pool_popularity_rows_of_hold": {
+     "by_raw_inchikey14": 54239,
+     "by_canonical_key": 54785
+    },
+    "library_ref_rows_of_hold_before_hiding": {
+     "rows": 497820,
+     "structures": 55106,
+     "enveda_rows": 230914,
+     "public_rows": 266906
+    }
+   },
+   "type_overlap_groups": {
+    "a_b": 1,
+    "a_c": 0,
+    "a_d": 454,
+    "b_c": 11,
+    "b_d": 12,
+    "c_d": 36133
+   },
+   "types": {
+    "a_v3_c1u": {
+     "eligible_all": 454,
+     "excluded": 0,
+     "eligible": 454,
+     "with_public_refs": 454
+    },
+    "b_v3_c2nu": {
+     "eligible_all": 4731,
+     "excluded": 0,
+     "eligible": 4731
+    },
+    "c_v3_c2": {
+     "eligible_all": 36133,
+     "excluded": 0,
+     "eligible": 36133
+    },
+    "d_enveda_v1u_groups": {
+     "pool_groups": 36637,
+     "eligible_all": 36587,
+     "excluded": 0,
+     "eligible": 36587
+    }
+   },
+   "n_bal": 454
+  },
+  "2": {
+   "n_hold": 55118,
+   "n_np": 265,
+   "n_train_side": 220427,
+   "check_inputs": {
+    "excluded_fold_structure_rows": 55118,
+    "excluded_np_structure_rows": 265,
+    "training_structure_rows": 220427,
+    "fold_training_overlap": 0,
+    "passed": true
+   },
+   "check_inputs_match": true,
+   "hold_hit_by_v3_a3a_exclusion": 0,
+   "components": {
+    "fpnet_fold_k_train_side_vs_hold": {
+     "raw_inchikey14": 0,
+     "canonical_key": 0,
+     "scorer_key": 0
+    },
+    "pool_meta_contains_hold": {
+     "by_canonical_key": 54786,
+     "by_raw_inchikey14": 54277,
+     "n_hold": 55118
+    },
+    "prior_pool_popularity_rows_of_hold": {
+     "by_raw_inchikey14": 54277,
+     "by_canonical_key": 54786
+    },
+    "library_ref_rows_of_hold_before_hiding": {
+     "rows": 494027,
+     "structures": 55118,
+     "enveda_rows": 231060,
+     "public_rows": 262967
+    }
+   },
+   "type_overlap_groups": {
+    "a_b": 1,
+    "a_c": 0,
+    "a_d": 449,
+    "b_c": 5,
+    "b_d": 6,
+    "c_d": 36138
+   },
+   "types": {
+    "a_v3_c1u": {
+     "eligible_all": 449,
+     "excluded": 0,
+     "eligible": 449,
+     "with_public_refs": 449
+    },
+    "b_v3_c2nu": {
+     "eligible_all": 4679,
+     "excluded": 0,
+     "eligible": 4679
+    },
+    "c_v3_c2": {
+     "eligible_all": 36138,
+     "excluded": 0,
+     "eligible": 36138
+    },
+    "d_enveda_v1u_groups": {
+     "pool_groups": 36637,
+     "eligible_all": 36587,
+     "excluded": 0,
+     "eligible": 36587
+    }
+   },
+   "n_bal": 449
+  },
+  "3": {
+   "n_hold": 55119,
+   "n_np": 265,
+   "n_train_side": 220426,
+   "check_inputs": {
+    "excluded_fold_structure_rows": 55119,
+    "excluded_np_structure_rows": 265,
+    "training_structure_rows": 220426,
+    "fold_training_overlap": 0,
+    "passed": true
+   },
+   "check_inputs_match": true,
+   "hold_hit_by_v3_a3a_exclusion": 0,
+   "components": {
+    "fpnet_fold_k_train_side_vs_hold": {
+     "raw_inchikey14": 0,
+     "canonical_key": 0,
+     "scorer_key": 0
+    },
+    "pool_meta_contains_hold": {
+     "by_canonical_key": 54791,
+     "by_raw_inchikey14": 54263,
+     "n_hold": 55119
+    },
+    "prior_pool_popularity_rows_of_hold": {
+     "by_raw_inchikey14": 54263,
+     "by_canonical_key": 54791
+    },
+    "library_ref_rows_of_hold_before_hiding": {
+     "rows": 499869,
+     "structures": 55119,
+     "enveda_rows": 231475,
+     "public_rows": 268394
+    }
+   },
+   "type_overlap_groups": {
+    "a_b": 3,
+    "a_c": 0,
+    "a_d": 492,
+    "b_c": 7,
+    "b_d": 10,
+    "c_d": 36099
+   },
+   "types": {
+    "a_v3_c1u": {
+     "eligible_all": 492,
+     "excluded": 0,
+     "eligible": 492,
+     "with_public_refs": 492
+    },
+    "b_v3_c2nu": {
+     "eligible_all": 4723,
+     "excluded": 0,
+     "eligible": 4723
+    },
+    "c_v3_c2": {
+     "eligible_all": 36099,
+     "excluded": 0,
+     "eligible": 36099
+    },
+    "d_enveda_v1u_groups": {
+     "pool_groups": 36638,
+     "eligible_all": 36591,
+     "excluded": 0,
+     "eligible": 36591
+    }
+   },
+   "n_bal": 492
+  },
+  "4": {
+   "n_hold": 55100,
+   "n_np": 265,
+   "n_train_side": 220445,
+   "check_inputs": {
+    "excluded_fold_structure_rows": 55100,
+    "excluded_np_structure_rows": 265,
+    "training_structure_rows": 220445,
+    "fold_training_overlap": 0,
+    "passed": true
+   },
+   "check_inputs_match": true,
+   "hold_hit_by_v3_a3a_exclusion": 0,
+   "components": {
+    "fpnet_fold_k_train_side_vs_hold": {
+     "raw_inchikey14": 0,
+     "canonical_key": 0,
+     "scorer_key": 0
+    },
+    "pool_meta_contains_hold": {
+     "by_canonical_key": 54793,
+     "by_raw_inchikey14": 54212,
+     "n_hold": 55100
+    },
+    "prior_pool_popularity_rows_of_hold": {
+     "by_raw_inchikey14": 54212,
+     "by_canonical_key": 54793
+    },
+    "library_ref_rows_of_hold_before_hiding": {
+     "rows": 490689,
+     "structures": 55100,
+     "enveda_rows": 230228,
+     "public_rows": 260461
+    }
+   },
+   "type_overlap_groups": {
+    "a_b": 2,
+    "a_c": 0,
+    "a_d": 479,
+    "b_c": 7,
+    "b_d": 9,
+    "c_d": 36114
+   },
+   "types": {
+    "a_v3_c1u": {
+     "eligible_all": 479,
+     "excluded": 0,
+     "eligible": 479,
+     "with_public_refs": 479
+    },
+    "b_v3_c2nu": {
+     "eligible_all": 4784,
+     "excluded": 0,
+     "eligible": 4784
+    },
+    "c_v3_c2": {
+     "eligible_all": 36114,
+     "excluded": 0,
+     "eligible": 36114
+    },
+    "d_enveda_v1u_groups": {
+     "pool_groups": 36637,
+     "eligible_all": 36593,
+     "excluded": 0,
+     "eligible": 36593
+    }
+   },
+   "n_bal": 479
+  }
+ },
+ "components_note": {
+  "frag": "data/ext/frag/frag_rescore.py（学習なしの MetFrag-lite）・gl_fuse.rerank_multi はファイルを読まない（学習した値・train 由来の表なし）。対象なし",
+  "pubchem_tier": "学習しない外部の表。数えない（(c) の正解の有無は集合を作る段で記録）",
+  "fixed_constants": "fp_bits・PPM 10・TOPN 60・μ 0.15・λ 0.5 は公開の部品の固定値。fold k を見ていないとは確かめられない"
+ },
+ "feasibility": {
+  "train_sums_leave_one_out": {
+   "1": 1420,
+   "2": 1425,
+   "3": 1382,
+   "4": 1395
+  },
+  "eval_sum": 1874,
+  "min_train": 80,
+  "min_eval": 200,
+  "ok_train": true,
+  "ok_eval": true,
+  "feasible": true
+ },
+ "table_eligible": {
+  "0": {
+   "a_v3_c1u": 10,
+   "b_v3_c2nu": 4328,
+   "c_v3_c2": 35573,
+   "d_enveda_v1u_groups": 35583
+  },
+  "1": {
+   "a_v3_c1u": 454,
+   "b_v3_c2nu": 4731,
+   "c_v3_c2": 36133,
+   "d_enveda_v1u_groups": 36587
+  },
+  "2": {
+   "a_v3_c1u": 449,
+   "b_v3_c2nu": 4679,
+   "c_v3_c2": 36138,
+   "d_enveda_v1u_groups": 36587
+  },
+  "3": {
+   "a_v3_c1u": 492,
+   "b_v3_c2nu": 4723,
+   "c_v3_c2": 36099,
+   "d_enveda_v1u_groups": 36591
+  },
+  "4": {
+   "a_v3_c1u": 479,
+   "b_v3_c2nu": 4784,
+   "c_v3_c2": 36114,
+   "d_enveda_v1u_groups": 36593
+  }
+ },
+ "inputs_sha256": {
+  "data/ext/foldsafe/split.parquet": "dd62549f81b9540890e0da17a06d0dcd216a2781b2c31687bd333445fe57d45e",
+  "data/ext/panel/casmi26-identity-disjoint-validation-folds/structures.parquet": "7c16c4968a15956e94eba58e3ff94d4a6c2f6899b10a2f2824047601a46bd6c8",
+  "data/ext/v4g/casmi26-v2-pool/train_structs.parquet": "f20aa1cac23af42e430a6633707fda34e48dea97114bdc3e443897f692df3656",
+  "data/ext/v4g/casmi26-v2-pool/pool_meta.parquet": "82b8c40315611289b9a4004b3af18d6d3402b3cd5baa4ee5723da07b7e2f6bb0",
+  "data/ext/pop/pool_popularity.csv": "33955e2fb32d3e8b6d030f5585f7823097194829f434df90f8214be44b7ba764"
+ },
+ "seconds": 23.8
+}
