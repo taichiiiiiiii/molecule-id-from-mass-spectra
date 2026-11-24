@@ -7,6 +7,7 @@
 ### 1.1 やったこと
 - `scripts/local_eval/run.py` に、深い順位を書き出すだけの引数 `--dump-ranks <path>` を足した（a0311d0）。中身は「最終の並び（dedup 後の上位 TOPN=60、prior・frag の後）」に続けて「窓の残りを score の順（pool の key で dedup、すでに出た key は飛ばす）」。`pubchem`・`joint` とは併用できない
 - 既定の出力は変わらない: 引数ありで `score,prior,frag` を 4 集合で実行した `submission_score+prior+frag.csv` の sha256 は、前からある CSV と同じ（v3_c1u_t10 `ebc59d2c…`・v3_c2_t10 `7716fc27…`・enveda_v1u_t10 `cc200529…`・v3_c2nu_t10 `acfaade8…`）。MRR も前と同じ（0.8878 / 0.0000 / 0.8513 / 0.6357）。深い順位の先頭 25 が submission の並びと同じことは、run.py の中の assert と `a13_slot_dup.py --sub` の両方で確かめた
+- 深い順位の 1 回目の出力（00:42〜00:45 JST）は、a0311d0 と同じ内容の run.py を commit する前の作業木で走らせた。完了レビューの指摘で、commit 済みの c4e8836（`git rev-parse HEAD` をログに残した、`logs/a13_dump2_1124.log`）で出し直し、4 集合の深い順位の CSV と submission の CSV の sha256 が 1 回目と同じことを確かめた。引数なしの run.py（c4e8836）でも v3_c1u_t10 の submission の sha256 は `ebc59d2c…` のまま（`logs/a13_final_1124.log`）
 - 数えた: `scripts/research/a13_slot_dup.py`（70d13c2 で数え、be410dd で補助の数だけを足して数え直し。主の値は同じ）。peak RSS は run.py 0.88〜1.14 GB、a13_slot_dup.py 0.07 GB。ログ `logs/a13_dump_1124.log`・`logs/a13_count3_1124.log`（git の対象外）
 - 深い順位の CSV（git の対象外、`outputs/local_eval/a13_1124/ranks_<h>.csv`）の sha256: v3_c1u_t10 `4ff334d3…`・v3_c2_t10 `d251cd5d…`・enveda_v1u_t10 `3689a330…`・v3_c2nu_t10 `97f41e83…`
 - 分子ごとの表と集合ごとの json の写し: `docs/research/a13-1124/`
@@ -33,6 +34,7 @@
 
 ### 2.1 やったこと
 - headroom.md §1.2 と同じ方法（`library_coverage.py` の `cosine`、同じ付加イオン・前駆体 ±10 ppm、分子ごとの最大値）を、MassSpecGym（`data/ext/msg/MassSpecGym.tsv`・`MassSpecGym1.5.tsv` の 462,208 行）の参照に当てた: `scripts/research/a5_extlib_match.py`（主の値は a445486 で数え、c609d10 で補助の構造の重なりを足して数え直した。主の値は同じ）。数え直しは peak RSS 2.0 GB（補助なしの 1 回目は 3.6 s・1.22 GB）。ログ `logs/a5_extlib_1124.log`・`logs/a5_extlib2_1124.log`（git の対象外）
+- `library_coverage.py` との違い（完了レビューの指摘で記録）: 参照を付加イオンの文字列だけで分ける（MassSpecGym にイオンモードの列が無いため。付加イオンは正イオンだけなので結果は同じ）。窓の上端は 1 回目の計算では「含む」だったが、c4e8836で library_coverage.py と同じ「含まない」にそろえ、数え直して分子ごとの表がバイト一致、集計が secs 以外同じことを確かめた
 - MassSpecGym は [M+H]+ と [M+Na]+ だけ。見える test 1,213 スペクトルのうち 388 は比べる相手が無い（負イオン・ほかの付加イオン・±10 ppm に参照が無い）。比べる相手が 1 件以上ある分子は 315/400
 - ExtLib（takumuhata/casmi26-extlib）は手元にピークが無い（`ext_meta.parquet` だけ）ので、スペクトルの一致は数えていない。MassBank harmonized のスペクトルも手元に無い
 - 分子ごとの表: `docs/research/headroom-1123/a5_extlib_per_molecule.csv`、集計: `docs/research/headroom-1123/a5_extlib.json`

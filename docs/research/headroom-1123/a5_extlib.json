@@ -38,7 +38,7 @@
     "[M+Na]+": 24
   },
   "spectra_without_ref": 388,
-  "secs": 1.7,
+  "secs": 1.4,
   "inputs": {
     "test.parquet": "2fa29c4aa06e93b48e0cd6619fd2de3f4e956f0019d242141678b7287f2b43e0",
     "MassSpecGym.tsv": "0c9cc50450def3f0d4fe2dc09dea1105fc15e635db8c6656bc3e3be37a3bcd95",
