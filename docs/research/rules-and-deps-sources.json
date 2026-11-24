@@ -1,0 +1,858 @@
+{
+ "retrieved": "2026-11-24 JST",
+ "pages": {
+  "rules": {
+   "url": "https://www.kaggle.com/competitions/enveda-CASMI26-molecule-id-mass-spectra/rules",
+   "innerText_sha256": "9f75b372f2bc90dbb4259c480d872c472c4e6275195c9bbd8f8dfa8666e6c408"
+  },
+  "overview": {
+   "url": "https://www.kaggle.com/competitions/enveda-CASMI26-molecule-id-mass-spectra/overview",
+   "innerText_sha256": "a1c94dbcf3cdeabf3e0262b99cd1bac64ea77f31bbd361a64a3244c7445ee171"
+  },
+  "data": {
+   "url": "https://www.kaggle.com/competitions/enveda-CASMI26-molecule-id-mass-spectra/data",
+   "innerText_sha256": "88ab271c5ff8c0fe5c522bd6c7237ae5eab53f04b56c39f7e8ac02573a35a537"
+  }
+ },
+ "topic_list_pages": 9,
+ "topic_list_rows": 178,
+ "topics_fetched_count": 135,
+ "topics_fetched": [
+  740671,
+  741359,
+  741404,
+  741423,
+  741471,
+  741548,
+  741597,
+  741607,
+  741641,
+  741756,
+  741791,
+  741815,
+  741844,
+  741851,
+  741857,
+  741876,
+  741912,
+  741984,
+  742011,
+  742042,
+  742055,
+  742082,
+  742087,
+  742088,
+  742171,
+  742186,
+  742193,
+  742265,
+  742274,
+  742275,
+  742278,
+  742463,
+  742789,
+  742991,
+  743234,
+  743236,
+  743254,
+  743368,
+  743395,
+  743569,
+  743774,
+  743974,
+  744172,
+  744338,
+  744343,
+  744446,
+  744470,
+  744556,
+  744612,
+  744893,
+  745029,
+  745056,
+  745070,
+  745072,
+  745134,
+  745148,
+  745228,
+  745468,
+  745604,
+  745615,
+  745645,
+  745715,
+  745758,
+  745832,
+  745841,
+  745866,
+  745952,
+  746302,
+  746430,
+  748029,
+  748065,
+  748068,
+  748357,
+  748363,
+  748524,
+  748552,
+  748799,
+  748882,
+  749209,
+  749217,
+  749251,
+  749397,
+  749799,
+  749908,
+  750241,
+  750252,
+  750330,
+  750401,
+  750461,
+  750612,
+  750614,
+  750684,
+  751300,
+  751356,
+  751373,
+  751689,
+  752234,
+  752297,
+  752498,
+  752541,
+  753419,
+  753502,
+  753662,
+  753686,
+  753775,
+  753900,
+  754292,
+  754610,
+  754732,
+  755039,
+  755089,
+  755319,
+  755373,
+  756064,
+  756504,
+  756893,
+  756912,
+  757307,
+  757309,
+  758233,
+  758541,
+  758596,
+  759222,
+  759394,
+  759916,
+  760105,
+  760327,
+  760328,
+  760347,
+  760376,
+  760387,
+  760397,
+  760683,
+  761105,
+  761272
+ ],
+ "organizer_comments_count": 112,
+ "organizer_comments": [
+  {
+   "topic": 741404,
+   "comment": 3524688,
+   "author": "David Healey",
+   "postDate": "2026-09-15T16:06:23.807000"
+  },
+  {
+   "topic": 741844,
+   "comment": 3525542,
+   "author": "David Healey",
+   "postDate": "2026-09-18T04:34:28.697000"
+  },
+  {
+   "topic": 741857,
+   "comment": 3525543,
+   "author": "David Healey",
+   "postDate": "2026-09-18T04:42:25.903000"
+  },
+  {
+   "topic": 741857,
+   "comment": 3536677,
+   "author": "David Healey",
+   "postDate": "2026-10-11T02:06:28.277000"
+  },
+  {
+   "topic": 741876,
+   "comment": 3525546,
+   "author": "David Healey",
+   "postDate": "2026-09-18T04:47:36.737000"
+  },
+  {
+   "topic": 741876,
+   "comment": 3525815,
+   "author": "David Healey",
+   "postDate": "2026-09-19T02:59:52.230000"
+  },
+  {
+   "topic": 741912,
+   "comment": 3525813,
+   "author": "David Healey",
+   "postDate": "2026-09-19T02:53:41.590000"
+  },
+  {
+   "topic": 742011,
+   "comment": 3525801,
+   "author": "David Healey",
+   "postDate": "2026-09-19T01:13:21.620000"
+  },
+  {
+   "topic": 742193,
+   "comment": 3526290,
+   "author": "David Healey",
+   "postDate": "2026-09-20T22:21:35.530000"
+  },
+  {
+   "topic": 742193,
+   "comment": 3527949,
+   "author": "David Healey",
+   "postDate": "2026-09-25T04:10:25.090000"
+  },
+  {
+   "topic": 742265,
+   "comment": 3527952,
+   "author": "David Healey",
+   "postDate": "2026-09-25T04:15:57.890000"
+  },
+  {
+   "topic": 742265,
+   "comment": 3529574,
+   "author": "Marie Killian",
+   "postDate": "2026-09-28T14:46:55.437000"
+  },
+  {
+   "topic": 742265,
+   "comment": 3538804,
+   "author": "Marie Killian",
+   "postDate": "2026-10-14T19:59:50.950000"
+  },
+  {
+   "topic": 742274,
+   "comment": 3527095,
+   "author": "David Healey",
+   "postDate": "2026-09-23T00:04:32.497000"
+  },
+  {
+   "topic": 742991,
+   "comment": 3527946,
+   "author": "David Healey",
+   "postDate": "2026-09-25T04:00:54.883000"
+  },
+  {
+   "topic": 743234,
+   "comment": 3528238,
+   "author": "David Healey",
+   "postDate": "2026-09-25T17:33:08.953000"
+  },
+  {
+   "topic": 743236,
+   "comment": 3528347,
+   "author": "David Healey",
+   "postDate": "2026-09-25T23:00:04.337000"
+  },
+  {
+   "topic": 743368,
+   "comment": 3529239,
+   "author": "David Healey",
+   "postDate": "2026-09-27T18:01:05.703000"
+  },
+  {
+   "topic": 743395,
+   "comment": 3530233,
+   "author": "David Healey",
+   "postDate": "2026-09-29T19:51:50.477000"
+  },
+  {
+   "topic": 743569,
+   "comment": 3529232,
+   "author": "David Healey",
+   "postDate": "2026-09-27T17:51:51.837000"
+  },
+  {
+   "topic": 743569,
+   "comment": 3529651,
+   "author": "Marie Killian",
+   "postDate": "2026-09-28T17:37:18.837000"
+  },
+  {
+   "topic": 743774,
+   "comment": 3529238,
+   "author": "David Healey",
+   "postDate": "2026-09-27T17:57:13.760000"
+  },
+  {
+   "topic": 744338,
+   "comment": 3530189,
+   "author": "David Healey",
+   "postDate": "2026-09-29T18:28:16.217000"
+  },
+  {
+   "topic": 744470,
+   "comment": 3530300,
+   "author": "David Healey",
+   "postDate": "2026-09-29T23:42:35.140000"
+  },
+  {
+   "topic": 744470,
+   "comment": 3558016,
+   "author": "Marie Killian",
+   "postDate": "2026-11-22T02:37:41.293000"
+  },
+  {
+   "topic": 744470,
+   "comment": 3558017,
+   "author": "Marie Killian",
+   "postDate": "2026-11-22T02:43:02.927000"
+  },
+  {
+   "topic": 744556,
+   "comment": 3530612,
+   "author": "David Healey",
+   "postDate": "2026-09-30T14:59:32.040000"
+  },
+  {
+   "topic": 745072,
+   "comment": 3536169,
+   "author": "David Healey",
+   "postDate": "2026-10-09T20:42:50.440000"
+  },
+  {
+   "topic": 745072,
+   "comment": 3538730,
+   "author": "Marie Killian",
+   "postDate": "2026-10-14T18:26:56.123000"
+  },
+  {
+   "topic": 745072,
+   "comment": 3545813,
+   "author": "Marie Killian",
+   "postDate": "2026-10-27T21:20:36.723000"
+  },
+  {
+   "topic": 745072,
+   "comment": 3545817,
+   "author": "Marie Killian",
+   "postDate": "2026-10-27T21:23:50.623000"
+  },
+  {
+   "topic": 745134,
+   "comment": 3538761,
+   "author": "Marie Killian",
+   "postDate": "2026-10-14T19:04:38.070000"
+  },
+  {
+   "topic": 745134,
+   "comment": 3539853,
+   "author": "Marie Killian",
+   "postDate": "2026-10-16T16:43:40.840000"
+  },
+  {
+   "topic": 745134,
+   "comment": 3545931,
+   "author": "Marie Killian",
+   "postDate": "2026-10-28T01:42:00.510000"
+  },
+  {
+   "topic": 745134,
+   "comment": 3556258,
+   "author": "Marie Killian",
+   "postDate": "2026-11-17T21:54:12.707000"
+  },
+  {
+   "topic": 745134,
+   "comment": 3556263,
+   "author": "Marie Killian",
+   "postDate": "2026-11-17T21:58:31.007000"
+  },
+  {
+   "topic": 745148,
+   "comment": 3533255,
+   "author": "Marie Killian",
+   "postDate": "2026-10-05T19:27:10.090000"
+  },
+  {
+   "topic": 745228,
+   "comment": 3533256,
+   "author": "Marie Killian",
+   "postDate": "2026-10-05T19:27:53.213000"
+  },
+  {
+   "topic": 745604,
+   "comment": 3533258,
+   "author": "Marie Killian",
+   "postDate": "2026-10-05T19:29:01.260000"
+  },
+  {
+   "topic": 745615,
+   "comment": 3538192,
+   "author": "Marie Killian",
+   "postDate": "2026-10-13T20:13:59.407000"
+  },
+  {
+   "topic": 745758,
+   "comment": 3533332,
+   "author": "Marie Killian",
+   "postDate": "2026-10-05T21:59:42.670000"
+  },
+  {
+   "topic": 745832,
+   "comment": 3534532,
+   "author": "David Healey",
+   "postDate": "2026-10-07T19:33:03.857000"
+  },
+  {
+   "topic": 745832,
+   "comment": 3534580,
+   "author": "David Healey",
+   "postDate": "2026-10-07T20:25:17.957000"
+  },
+  {
+   "topic": 745832,
+   "comment": 3536140,
+   "author": "David Healey",
+   "postDate": "2026-10-09T19:44:54.763000"
+  },
+  {
+   "topic": 745832,
+   "comment": 3538745,
+   "author": "Marie Killian",
+   "postDate": "2026-10-14T18:47:20.160000"
+  },
+  {
+   "topic": 745841,
+   "comment": 3533343,
+   "author": "David Healey",
+   "postDate": "2026-10-05T22:41:18.727000"
+  },
+  {
+   "topic": 745841,
+   "comment": 3538174,
+   "author": "Marie Killian",
+   "postDate": "2026-10-13T19:40:36.623000"
+  },
+  {
+   "topic": 745841,
+   "comment": 3540007,
+   "author": "Marie Killian",
+   "postDate": "2026-10-16T22:22:39.297000"
+  },
+  {
+   "topic": 746430,
+   "comment": 3538189,
+   "author": "Marie Killian",
+   "postDate": "2026-10-13T20:02:48.417000"
+  },
+  {
+   "topic": 746430,
+   "comment": 3539861,
+   "author": "Marie Killian",
+   "postDate": "2026-10-16T16:55:38.443000"
+  },
+  {
+   "topic": 748065,
+   "comment": 3537876,
+   "author": "David Healey",
+   "postDate": "2026-10-13T07:53:52.230000"
+  },
+  {
+   "topic": 748065,
+   "comment": 3550185,
+   "author": "David Healey",
+   "postDate": "2026-11-04T22:18:43.680000"
+  },
+  {
+   "topic": 748357,
+   "comment": 3537875,
+   "author": "David Healey",
+   "postDate": "2026-10-13T07:47:53.747000"
+  },
+  {
+   "topic": 748363,
+   "comment": 3537873,
+   "author": "David Healey",
+   "postDate": "2026-10-13T07:46:35.620000"
+  },
+  {
+   "topic": 748552,
+   "comment": 3538183,
+   "author": "Marie Killian",
+   "postDate": "2026-10-13T19:56:49.717000"
+  },
+  {
+   "topic": 748799,
+   "comment": 3537871,
+   "author": "David Healey",
+   "postDate": "2026-10-13T07:43:33.057000"
+  },
+  {
+   "topic": 748882,
+   "comment": 3538202,
+   "author": "Marie Killian",
+   "postDate": "2026-10-13T20:48:38.123000"
+  },
+  {
+   "topic": 748882,
+   "comment": 3538734,
+   "author": "Marie Killian",
+   "postDate": "2026-10-14T18:32:37.870000"
+  },
+  {
+   "topic": 748882,
+   "comment": 3538755,
+   "author": "Marie Killian",
+   "postDate": "2026-10-14T18:59:49.600000"
+  },
+  {
+   "topic": 748882,
+   "comment": 3542226,
+   "author": "Marie Killian",
+   "postDate": "2026-10-21T16:00:57.930000"
+  },
+  {
+   "topic": 748882,
+   "comment": 3545819,
+   "author": "Marie Killian",
+   "postDate": "2026-10-27T21:28:56.473000"
+  },
+  {
+   "topic": 748882,
+   "comment": 3545820,
+   "author": "Marie Killian",
+   "postDate": "2026-10-27T21:29:10.933000"
+  },
+  {
+   "topic": 748882,
+   "comment": 3558031,
+   "author": "Marie Killian",
+   "postDate": "2026-11-22T03:15:48.680000"
+  },
+  {
+   "topic": 748882,
+   "comment": 3558039,
+   "author": "Marie Killian",
+   "postDate": "2026-11-22T03:54:14.177000"
+  },
+  {
+   "topic": 749209,
+   "comment": 3538739,
+   "author": "Marie Killian",
+   "postDate": "2026-10-14T18:38:54.863000"
+  },
+  {
+   "topic": 749217,
+   "comment": 3538798,
+   "author": "Marie Killian",
+   "postDate": "2026-10-14T19:53:38.527000"
+  },
+  {
+   "topic": 749217,
+   "comment": 3539863,
+   "author": "Marie Killian",
+   "postDate": "2026-10-16T16:58:06.393000"
+  },
+  {
+   "topic": 749217,
+   "comment": 3539870,
+   "author": "Marie Killian",
+   "postDate": "2026-10-16T17:11:10.777000"
+  },
+  {
+   "topic": 749217,
+   "comment": 3558035,
+   "author": "Marie Killian",
+   "postDate": "2026-11-22T03:40:34.220000"
+  },
+  {
+   "topic": 749397,
+   "comment": 3545109,
+   "author": "Marie Killian",
+   "postDate": "2026-10-26T19:30:04.323000"
+  },
+  {
+   "topic": 750252,
+   "comment": 3541154,
+   "author": "Marie Killian",
+   "postDate": "2026-10-19T16:17:53.800000"
+  },
+  {
+   "topic": 750252,
+   "comment": 3542228,
+   "author": "Marie Killian",
+   "postDate": "2026-10-21T16:04:11.300000"
+  },
+  {
+   "topic": 750330,
+   "comment": 3558022,
+   "author": "Marie Killian",
+   "postDate": "2026-11-22T02:54:02.787000"
+  },
+  {
+   "topic": 750330,
+   "comment": 3558024,
+   "author": "Marie Killian",
+   "postDate": "2026-11-22T02:58:41.830000"
+  },
+  {
+   "topic": 750461,
+   "comment": 3541155,
+   "author": "Marie Killian",
+   "postDate": "2026-10-19T16:22:57.437000"
+  },
+  {
+   "topic": 750612,
+   "comment": 3541157,
+   "author": "Marie Killian",
+   "postDate": "2026-10-19T16:26:44.700000"
+  },
+  {
+   "topic": 750684,
+   "comment": 3545841,
+   "author": "Marie Killian",
+   "postDate": "2026-10-27T21:48:34.377000"
+  },
+  {
+   "topic": 751373,
+   "comment": 3543071,
+   "author": "David Healey",
+   "postDate": "2026-10-22T21:23:15.250000"
+  },
+  {
+   "topic": 751373,
+   "comment": 3545007,
+   "author": "David Healey",
+   "postDate": "2026-10-26T16:45:52.370000"
+  },
+  {
+   "topic": 751373,
+   "comment": 3545025,
+   "author": "David Healey",
+   "postDate": "2026-10-26T17:04:47.867000"
+  },
+  {
+   "topic": 752297,
+   "comment": 3544964,
+   "author": "Marie Killian",
+   "postDate": "2026-10-26T15:23:00.067000"
+  },
+  {
+   "topic": 752541,
+   "comment": 3545027,
+   "author": "David Healey",
+   "postDate": "2026-10-26T17:09:28.173000"
+  },
+  {
+   "topic": 753419,
+   "comment": 3550249,
+   "author": "David Healey",
+   "postDate": "2026-11-05T00:42:15.023000"
+  },
+  {
+   "topic": 753502,
+   "comment": 3558037,
+   "author": "Marie Killian",
+   "postDate": "2026-11-22T03:43:21.827000"
+  },
+  {
+   "topic": 753662,
+   "comment": 3547273,
+   "author": "David Healey",
+   "postDate": "2026-10-30T17:18:58.123000"
+  },
+  {
+   "topic": 753662,
+   "comment": 3550191,
+   "author": "David Healey",
+   "postDate": "2026-11-04T22:25:33.053000"
+  },
+  {
+   "topic": 753662,
+   "comment": 3553097,
+   "author": "David Healey",
+   "postDate": "2026-11-11T00:15:52.773000"
+  },
+  {
+   "topic": 753662,
+   "comment": 3558032,
+   "author": "Marie Killian",
+   "postDate": "2026-11-22T03:27:08.110000"
+  },
+  {
+   "topic": 753775,
+   "comment": 3558040,
+   "author": "Marie Killian",
+   "postDate": "2026-11-22T04:04:44.653000"
+  },
+  {
+   "topic": 753900,
+   "comment": 3558038,
+   "author": "Marie Killian",
+   "postDate": "2026-11-22T03:49:18.703000"
+  },
+  {
+   "topic": 754292,
+   "comment": 3550245,
+   "author": "David Healey",
+   "postDate": "2026-11-05T00:32:05.243000"
+  },
+  {
+   "topic": 754610,
+   "comment": 3550242,
+   "author": "David Healey",
+   "postDate": "2026-11-05T00:24:21.220000"
+  },
+  {
+   "topic": 754610,
+   "comment": 3556275,
+   "author": "Marie Killian",
+   "postDate": "2026-11-17T22:49:12.690000"
+  },
+  {
+   "topic": 754610,
+   "comment": 3556278,
+   "author": "Marie Killian",
+   "postDate": "2026-11-17T22:53:13.703000"
+  },
+  {
+   "topic": 754732,
+   "comment": 3550225,
+   "author": "David Healey",
+   "postDate": "2026-11-04T23:58:26.520000"
+  },
+  {
+   "topic": 756064,
+   "comment": 3553096,
+   "author": "David Healey",
+   "postDate": "2026-11-11T00:09:50.010000"
+  },
+  {
+   "topic": 756893,
+   "comment": 3553098,
+   "author": "David Healey",
+   "postDate": "2026-11-11T00:16:58.207000"
+  },
+  {
+   "topic": 756893,
+   "comment": 3555495,
+   "author": "David Healey",
+   "postDate": "2026-11-16T00:52:38.937000"
+  },
+  {
+   "topic": 756893,
+   "comment": 3558043,
+   "author": "Marie Killian",
+   "postDate": "2026-11-22T04:10:02.940000"
+  },
+  {
+   "topic": 756893,
+   "comment": 3558044,
+   "author": "Marie Killian",
+   "postDate": "2026-11-22T04:13:03.157000"
+  },
+  {
+   "topic": 757307,
+   "comment": 3553101,
+   "author": "David Healey",
+   "postDate": "2026-11-11T00:20:38.967000"
+  },
+  {
+   "topic": 757307,
+   "comment": 3555496,
+   "author": "David Healey",
+   "postDate": "2026-11-16T00:53:23.297000"
+  },
+  {
+   "topic": 757307,
+   "comment": 3557906,
+   "author": "Marie Killian",
+   "postDate": "2026-11-21T18:03:24.343000"
+  },
+  {
+   "topic": 757309,
+   "comment": 3553100,
+   "author": "David Healey",
+   "postDate": "2026-11-11T00:19:09.460000"
+  },
+  {
+   "topic": 758233,
+   "comment": 3556176,
+   "author": "Marie Killian",
+   "postDate": "2026-11-17T18:26:34.327000"
+  },
+  {
+   "topic": 759222,
+   "comment": 3556592,
+   "author": "Marie Killian",
+   "postDate": "2026-11-18T19:28:54.393000"
+  },
+  {
+   "topic": 759222,
+   "comment": 3557902,
+   "author": "Marie Killian",
+   "postDate": "2026-11-21T17:56:14.073000"
+  },
+  {
+   "topic": 759916,
+   "comment": 3556196,
+   "author": "Marie Killian",
+   "postDate": "2026-11-17T19:11:18.470000"
+  },
+  {
+   "topic": 760328,
+   "comment": 3557924,
+   "author": "Marie Killian",
+   "postDate": "2026-11-21T18:59:17.127000"
+  },
+  {
+   "topic": 760376,
+   "comment": 3557917,
+   "author": "Marie Killian",
+   "postDate": "2026-11-21T18:45:22.140000"
+  },
+  {
+   "topic": 760397,
+   "comment": 3557921,
+   "author": "Marie Killian",
+   "postDate": "2026-11-21T18:54:30.537000"
+  },
+  {
+   "topic": 760683,
+   "comment": 3558033,
+   "author": "Marie Killian",
+   "postDate": "2026-11-22T03:35:39.363000"
+  }
+ ],
+ "addenda": {
+  "retrieved": "2026-11-24 13:04 JST",
+  "note": "135 件の取得の後に主催者の答えが付いた話題。topics_fetched_count・organizer_comments_count には含めない",
+  "topics": [
+   {
+    "topic": 761105,
+    "title": "Class 3 lookup key, and NIST-imputed collision energies in MassSpecGym weights",
+    "topic_author": "zyvren",
+    "topic_postDate": "2026-11-22T19:48:25.856000",
+    "url": "https://www.kaggle.com/competitions/enveda-CASMI26-molecule-id-mass-spectra/discussion/761105",
+    "comment": 3558579,
+    "author": "Marie Killian",
+    "postDate": "2026-11-23T17:30:58.387000"
+   },
+   {
+    "topic": 761272,
+    "title": "Rule 6: helper code loaded from public datasets without a stated licence",
+    "topic_author": "Young Uk Song",
+    "topic_postDate": "2026-11-23T15:48:17.465000",
+    "url": "https://www.kaggle.com/competitions/enveda-CASMI26-molecule-id-mass-spectra/discussion/761272",
+    "comment": 3558585,
+    "author": "Marie Killian",
+    "postDate": "2026-11-23T17:39:33.940000"
+   }
+  ]
+ }
+}
