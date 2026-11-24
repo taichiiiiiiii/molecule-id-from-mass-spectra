@@ -1,0 +1,28 @@
+{
+  "set": "enveda_v1u_t10",
+  "n": 373,
+  "dup_total": 0,
+  "none_total": 0,
+  "mol_with_dup": 0,
+  "mol_with_dup_share": 0.0,
+  "mol_with_dup_wilson95": [
+    0.0,
+    0.0102
+  ],
+  "dup_per_mol_max": 0,
+  "mol_dup_above_truth": 0,
+  "mol_enter_top25_after_dedup": 0,
+  "truth_in_top25": 372,
+  "truth_deep_only": 1,
+  "truth_absent": 0,
+  "empty_window": 0,
+  "inputs": {
+    "ranks": "3689a33077ee6d67c8f12a75e8b0f147e6a03530a93657a57c81d8fc65be5945",
+    "truth": "5da732d895ecf5675c0aa060b2cc43b1d4b968c6eb3f2e95277ec320e5e99fc6",
+    "sub": "cc20052905b710c9970cc8ec6ea1252b60211eac908aed28c4c33ceda7b855cd"
+  },
+  "aux_top25_pool_key_eq_to_key": {
+    "n": 8925,
+    "eq": 8925
+  }
+}

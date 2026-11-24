@@ -1,0 +1,21 @@
+{
+  "set": "lb479_repro_v1_real12",
+  "n": 12,
+  "dup_total": 0,
+  "none_total": 0,
+  "mol_with_dup": 0,
+  "mol_with_dup_share": 0.0,
+  "mol_with_dup_wilson95": [
+    0.0,
+    0.2425
+  ],
+  "dup_per_mol_max": 0,
+  "mol_dup_above_truth": null,
+  "mol_enter_top25_after_dedup": null,
+  "truth_in_top25": null,
+  "truth_deep_only": null,
+  "truth_absent": null,
+  "inputs": {
+    "sub": "d2027d8918d15b27fa271ba4961faa63c28fa7f4efbea0dd8069ecbfe6a5060b"
+  }
+}

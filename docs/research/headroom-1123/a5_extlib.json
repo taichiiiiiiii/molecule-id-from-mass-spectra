@@ -1,0 +1,64 @@
+{
+  "n": 400,
+  "copy_like_ext": {
+    "k": 0,
+    "n": 400,
+    "share": 0.0,
+    "wilson95": [
+      0.0,
+      0.0095
+    ]
+  },
+  "copy_like_ext_not_in_train": {
+    "k": 0,
+    "n": 400,
+    "share": 0.0,
+    "wilson95": [
+      0.0,
+      0.0095
+    ]
+  },
+  "ge_tau_ext": {
+    "k": 3,
+    "n": 400,
+    "share": 0.0075,
+    "wilson95": [
+      0.0026,
+      0.0218
+    ]
+  },
+  "has_ref": {
+    "k": 315,
+    "n": 400
+  },
+  "best_cos_ext_median": 0.1675,
+  "n_test_spectra": 1213,
+  "n_ref_loaded": {
+    "[M+H]+": 13594,
+    "[M+Na]+": 24
+  },
+  "spectra_without_ref": 388,
+  "secs": 1.7,
+  "inputs": {
+    "test.parquet": "2fa29c4aa06e93b48e0cd6619fd2de3f4e956f0019d242141678b7287f2b43e0",
+    "MassSpecGym.tsv": "0c9cc50450def3f0d4fe2dc09dea1105fc15e635db8c6656bc3e3be37a3bcd95",
+    "MassSpecGym1.5.tsv": "50cfdd1d22f79543c59555f9ce43c6893bd788a19a42b21fb4e2e3a54673c06a"
+  },
+  "aux_visible_best_key_in_ext_struct": {
+    "massspecgym": {
+      "k": 0,
+      "n": 400,
+      "n_struct": 28929
+    },
+    "extlib_meta": {
+      "k": 0,
+      "n": 400,
+      "n_struct": 151338
+    },
+    "massbank_harmonized": {
+      "k": 0,
+      "n": 400,
+      "n_struct": 18316
+    }
+  }
+}
