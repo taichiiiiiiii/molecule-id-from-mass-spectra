@@ -1,0 +1,325 @@
+{
+  "definitions": "選択的予測の測定（Issue #216）: 対照 score,prior,frag の「1 位の確信度」と「1 位が正解か」の関係を記録する。\n\n定義は #216 の事前登録のとおり（数字を見てから変えない。しきい値は選ばない）:\n  L        = frag 後の重複除去した上位 60（run.py の lists[mid]）。各候補の点 f は prior 段の z(s) + 0.15·pop\n  κ_gap    = f(L[0]) − f(L[1])（frag の入れ替えで負になりうる）\n  κ_conf   = softmax(f over L, T=1)[0]（T は固定）\n  κ_lib    = lib_max（L の候補の参照とのエントロピー類似度の最大、参照が無ければ 0。run.py の lib 段の diag と同じ）\n  |L| = 1  → κ_gap = +inf・κ_conf = 1、|L| = 0 → 3 種とも −inf\n  正解     = mrr25.reciprocal_rank == 1\n  AURC     = 損失 1 − 正解、確信度の降順、同点は中の順がランダムとしたときの期待値（厳密）\n  AUC      = P(κ_A > κ_B) + 0.5·P(同点)（A = 正解がプールにある型、B = v3_c2_t10）\n  CI       = 分子の bootstrap 2000 回（seed 0）のパーセンタイル 95%",
+  "n_boot": 2000,
+  "seed": 0,
+  "sets": {
+    "v3_c1u_t10": {
+      "n": 394,
+      "top1": 0.8046,
+      "mrr25": 0.8878,
+      "n_list_lt2": 0,
+      "n_list0": 0,
+      "match": {
+        "ref": "outputs/local_eval/v3_c1u_t10/submission_score+prior+frag.csv",
+        "ref_sha256": "ebc59d2ce80715e370ad5c29d43c186bdfbbf566ca15f28f3fc7c9010729ea10",
+        "got_sha256": "ebc59d2ce80715e370ad5c29d43c186bdfbbf566ca15f28f3fc7c9010729ea10",
+        "byte_identical": true
+      },
+      "secs": 76.4,
+      "kappa": {
+        "gap": {
+          "aurc": 0.0604,
+          "random": 0.1954,
+          "oracle": 0.0207,
+          "rel_aurc": 0.2272,
+          "aurc_ci95": [
+            0.0418,
+            0.0815
+          ],
+          "rel_aurc_ci95": [
+            0.1632,
+            0.3011
+          ],
+          "median": 0.923
+        },
+        "conf": {
+          "aurc": 0.0931,
+          "random": 0.1954,
+          "oracle": 0.0207,
+          "rel_aurc": 0.4141,
+          "aurc_ci95": [
+            0.0663,
+            0.1225
+          ],
+          "rel_aurc_ci95": [
+            0.3159,
+            0.517
+          ],
+          "median": 0.273
+        },
+        "lib": {
+          "aurc": 0.3363,
+          "random": 0.1954,
+          "oracle": 0.0207,
+          "rel_aurc": 1.8064,
+          "aurc_ci95": [
+            0.2688,
+            0.4016
+          ],
+          "rel_aurc_ci95": [
+            1.5561,
+            2.0657
+          ],
+          "median": 0.8293
+        }
+      }
+    },
+    "v3_c2_t10": {
+      "n": 197,
+      "top1": 0.0,
+      "mrr25": 0.0,
+      "n_list_lt2": 0,
+      "n_list0": 0,
+      "match": {
+        "ref": "outputs/local_eval/v3_c2_t10/submission_score+prior+frag.csv",
+        "ref_sha256": "7716fc271dcc1fc01e1a2472ec63308b701f5fca02e79b3d821b4c0b1604411d",
+        "got_sha256": "7716fc271dcc1fc01e1a2472ec63308b701f5fca02e79b3d821b4c0b1604411d",
+        "byte_identical": true
+      },
+      "secs": 46.4,
+      "kappa": {
+        "gap": {
+          "aurc": 1.0,
+          "random": 1.0,
+          "oracle": 1.0,
+          "rel_aurc": null,
+          "aurc_ci95": [
+            1.0,
+            1.0
+          ],
+          "rel_aurc_ci95": [
+            null,
+            null
+          ],
+          "median": 0.4132
+        },
+        "conf": {
+          "aurc": 1.0,
+          "random": 1.0,
+          "oracle": 1.0,
+          "rel_aurc": null,
+          "aurc_ci95": [
+            1.0,
+            1.0
+          ],
+          "rel_aurc_ci95": [
+            null,
+            null
+          ],
+          "median": 0.1595
+        },
+        "lib": {
+          "aurc": 1.0,
+          "random": 1.0,
+          "oracle": 1.0,
+          "rel_aurc": null,
+          "aurc_ci95": [
+            1.0,
+            1.0
+          ],
+          "rel_aurc_ci95": [
+            null,
+            null
+          ],
+          "median": 0.5671
+        }
+      }
+    },
+    "enveda_v1u_t10": {
+      "n": 373,
+      "top1": 0.748,
+      "mrr25": 0.8513,
+      "n_list_lt2": 0,
+      "n_list0": 0,
+      "match": {
+        "ref": "outputs/local_eval/enveda_v1u_t10/submission_score+prior+frag.csv",
+        "ref_sha256": "cc20052905b710c9970cc8ec6ea1252b60211eac908aed28c4c33ceda7b855cd",
+        "got_sha256": "cc20052905b710c9970cc8ec6ea1252b60211eac908aed28c4c33ceda7b855cd",
+        "byte_identical": true
+      },
+      "secs": 67.1,
+      "kappa": {
+        "gap": {
+          "aurc": 0.083,
+          "random": 0.252,
+          "oracle": 0.0352,
+          "rel_aurc": 0.2208,
+          "aurc_ci95": [
+            0.0603,
+            0.1102
+          ],
+          "rel_aurc_ci95": [
+            0.1665,
+            0.2846
+          ],
+          "median": 0.8855
+        },
+        "conf": {
+          "aurc": 0.1211,
+          "random": 0.252,
+          "oracle": 0.0352,
+          "rel_aurc": 0.3962,
+          "aurc_ci95": [
+            0.089,
+            0.1573
+          ],
+          "rel_aurc_ci95": [
+            0.3043,
+            0.5007
+          ],
+          "median": 0.2612
+        },
+        "lib": {
+          "aurc": 0.451,
+          "random": 0.252,
+          "oracle": 0.0352,
+          "rel_aurc": 1.9177,
+          "aurc_ci95": [
+            0.374,
+            0.521
+          ],
+          "rel_aurc_ci95": [
+            1.7148,
+            2.1247
+          ],
+          "median": 0.5311
+        }
+      }
+    },
+    "v3_c2nu_t10": {
+      "n": 394,
+      "top1": 0.5102,
+      "mrr25": 0.6357,
+      "n_list_lt2": 7,
+      "n_list0": 3,
+      "match": {
+        "ref": "outputs/local_eval/v3_c2nu_t10/submission_score+prior+frag.csv",
+        "ref_sha256": "acfaade80b152a41841a374aaab47e84ae86f142bbd3629f332c9904a81a1c93",
+        "got_sha256": "acfaade80b152a41841a374aaab47e84ae86f142bbd3629f332c9904a81a1c93",
+        "byte_identical": true
+      },
+      "secs": 75.2,
+      "kappa": {
+        "gap": {
+          "aurc": 0.3688,
+          "random": 0.4898,
+          "oracle": 0.1471,
+          "rel_aurc": 0.6467,
+          "aurc_ci95": [
+            0.3043,
+            0.4358
+          ],
+          "rel_aurc_ci95": [
+            0.5153,
+            0.7848
+          ],
+          "median": 0.5393
+        },
+        "conf": {
+          "aurc": 0.3691,
+          "random": 0.4898,
+          "oracle": 0.1471,
+          "rel_aurc": 0.6477,
+          "aurc_ci95": [
+            0.303,
+            0.4391
+          ],
+          "rel_aurc_ci95": [
+            0.5158,
+            0.7836
+          ],
+          "median": 0.2396
+        },
+        "lib": {
+          "aurc": 0.6154,
+          "random": 0.4898,
+          "oracle": 0.1471,
+          "rel_aurc": 1.3662,
+          "aurc_ci95": [
+            0.5483,
+            0.6764
+          ],
+          "rel_aurc_ci95": [
+            1.2359,
+            1.4834
+          ],
+          "median": 0.5228
+        }
+      }
+    }
+  },
+  "auc_vs_c2": {
+    "v3_c1u_t10": {
+      "role": "main",
+      "gap": {
+        "auc": 0.6738,
+        "ci95": [
+          0.6293,
+          0.7174
+        ]
+      },
+      "conf": {
+        "auc": 0.7247,
+        "ci95": [
+          0.6804,
+          0.7664
+        ]
+      },
+      "lib": {
+        "auc": 0.7612,
+        "ci95": [
+          0.7103,
+          0.8107
+        ]
+      }
+    },
+    "enveda_v1u_t10": {
+      "role": "secondary",
+      "gap": {
+        "auc": 0.6439,
+        "ci95": [
+          0.5987,
+          0.6903
+        ]
+      },
+      "conf": {
+        "auc": 0.7012,
+        "ci95": [
+          0.6551,
+          0.7435
+        ]
+      },
+      "lib": {
+        "auc": 0.4406,
+        "ci95": [
+          0.3933,
+          0.4911
+        ]
+      }
+    },
+    "v3_c2nu_t10": {
+      "role": "secondary",
+      "gap": {
+        "auc": 0.5659,
+        "ci95": [
+          0.5189,
+          0.6121
+        ]
+      },
+      "conf": {
+        "auc": 0.6306,
+        "ci95": [
+          0.5867,
+          0.6724
+        ]
+      },
+      "lib": {
+        "auc": 0.4113,
+        "ci95": [
+          0.3684,
+          0.4567
+        ]
+      }
+    }
+  }
+}
