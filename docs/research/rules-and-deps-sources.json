@@ -828,5 +828,31 @@
    "author": "Marie Killian",
    "postDate": "2026-11-22T03:35:39.363000"
   }
- ]
+ ],
+ "addenda": {
+  "retrieved": "2026-11-24 13:04 JST",
+  "note": "135 件の取得の後に主催者の答えが付いた話題。topics_fetched_count・organizer_comments_count には含めない",
+  "topics": [
+   {
+    "topic": 761105,
+    "title": "Class 3 lookup key, and NIST-imputed collision energies in MassSpecGym weights",
+    "topic_author": "zyvren",
+    "topic_postDate": "2026-11-22T19:48:25.856000",
+    "url": "https://www.kaggle.com/competitions/enveda-CASMI26-molecule-id-mass-spectra/discussion/761105",
+    "comment": 3558579,
+    "author": "Marie Killian",
+    "postDate": "2026-11-23T17:30:58.387000"
+   },
+   {
+    "topic": 761272,
+    "title": "Rule 6: helper code loaded from public datasets without a stated licence",
+    "topic_author": "Young Uk Song",
+    "topic_postDate": "2026-11-23T15:48:17.465000",
+    "url": "https://www.kaggle.com/competitions/enveda-CASMI26-molecule-id-mass-spectra/discussion/761272",
+    "comment": 3558585,
+    "author": "Marie Killian",
+    "postDate": "2026-11-23T17:39:33.940000"
+   }
+  ]
+ }
 }

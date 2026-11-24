@@ -17,8 +17,12 @@ Issue #214（親 #195 の A6、#3）。計画は `plan_2026-11-24_night.md` の�
 2. ディスカッション。`kaggle competitions topics list` で 9 ページ・178 件の題を取った。**コメントが 1 件以上ある話題はすべて**（132 件）と、コメント 0 件の 3 件、合わせて 135 件を `topics show --format json --page-size 200` で取った。その中の主催者（David Healey・Marie Killian）のコメント 112 件はすべて読んだ（初版は 49 件・72 件だった。レビュー 1 回目の指摘で広げた）。取った話題の ID は `rules-and-deps-sources.json` にある。この JSON の API は話題の本文を返さない。そこで、本文が要る 741359（Welcome）・750330・756064・756893・760397・760683 などは、表の形の出力（`topics show` を `--format` なしで実行）で本文を読んだ
 3. リポジトリの中のもの: 棚卸し、`lineage495-repro.md`、`src-audit.md`、`organizer-question-756893.md`、`kernels/lb495/`（ノートと kernel-metadata）、`scripts/train/fragnn_train.py`、`scripts/train/make_fpnet_full_kernel.py`、`scripts/engine2/build_tables.py`、Issue #74・#77・#82・#120・#195、PR #110
 4. Kaggle のファイル一覧: `ahmedberatozer/casmi26-training-code`（以下 TC。`--page-size 200` で 2 ページ）、`ahmedberatozer/casmi26-spec-cache`（6 ファイルと metadata）
+5. **追補（2026-11-24 13:04 JST に取得、#214・昼の計画の項目 5）**: 上の取得の後に主催者の答えが付いた話題 2 件を `topics show`（JSON と表の形の両方）で取り直した。どちらもコメントは主催者の 1 件だけ
+   - 761105「Class 3 lookup key, and NIST-imputed collision energies in MassSpecGym weights」（zyvren、2026-11-22）: https://www.kaggle.com/competitions/enveda-CASMI26-molecule-id-mass-spectra/discussion/761105 。Marie Killian の答え id 3558579（2026-11-23 17:30:58 UTC）
+   - 761272「Rule 6: helper code loaded from public datasets without a stated licence」（Young Uk Song、2026-11-23）: https://www.kaggle.com/competitions/enveda-CASMI26-molecule-id-mass-spectra/discussion/761272 。Marie Killian の答え id 3558585（2026-11-23 17:39:33 UTC）
+   - この 2 件は `rules-and-deps-sources.json` の `addenda` に入れた。上の 135 件・112 件の数には含めていない
 
-**読んでいないもの:** Code Competition FAQ、Kaggle の Terms of Service、コメント 0 件の話題 43 件の本文（JSON の API は話題の本文を返さないため。主催者の投稿した話題 741359・750330 の本文は表の形の出力で読んだ）。ただし、Kaggle の運営（inversion）のお知らせ 3 件（746954「Rerun test dataset has been updated」、746878「Metric Update (RemoveStereochemistry)」、749430「Rerun / Rescore Complete」）は本文を読んだ。電子の質量の修正、指標の立体の除去、採点のやり直しのお知らせで、(a)〜(e) に当たる文は無い。以下で「書いていない」と書くのは、**上の 3 ページと 135 件の話題の主催者のコメントの中に無い**、という意味である。
+**読んでいないもの:** Code Competition FAQ、Kaggle の Terms of Service、コメント 0 件の話題 43 件の本文（JSON の API は話題の本文を返さないため。主催者の投稿した話題 741359・750330 の本文は表の形の出力で読んだ）。ただし、Kaggle の運営（inversion）のお知らせ 3 件（746954「Rerun test dataset has been updated」、746878「Metric Update (RemoveStereochemistry)」、749430「Rerun / Rescore Complete」）は本文を読んだ。電子の質量の修正、指標の立体の除去、採点のやり直しのお知らせで、(a)〜(e) に当たる文は無い。以下で「書いていない」と書くのは、**上の 3 ページと 135 件の話題の主催者のコメント（と 5. の追補 2 件）の中に無い**、という意味である。
 
 ## 1. 規則の 5 点
 
@@ -37,6 +41,7 @@ Issue #214（親 #195 の A6、#3）。計画は `plan_2026-11-24_night.md` の�
 - 名前を挙げて「可」とされたもの（すべて確認）
   - DreaMS の `ssl_model.ckpt`: 760397 id 3557921（2026-11-21）、748882 id 3558031。754610 id 3556278 は「the official DreaMS ssl_model.ckpt is included in the officially released DreaMS checkpoints」で、同じスレッドの「Officially released DreaMS checkpoints are fine to use」（id 3550242）と合わせた間接の承認
   - GLACIER/ICEBERG・DreaMS・ChEBI/LIPID MAPS: 745841 id 3533343
+  - **MassSpecGym で学習したモデル（ICEBERG・GLACIER の重みを含む）（追補）**: 761105 id 3558579（Marie Killian、2026-11-23 17:30 UTC）「MassSpecGym-trained models, including the ICEBERG and GLACIER checkpoints, are allowed.」。質問は「MassSpecGym の約 47% のスペクトルの衝突エネルギーを NIST'20 で学習した ICEBERG で補った（FOAM 論文 arXiv 2602.07709 の記述、と質問者が書く）。そうして学習した MassSpecGym の ICEBERG/GLACIER の重みも可か」で、それへの答えである。だから、衝突エネルギーの補い方の点を含めて可、と読む（**こちらの読み**。答えの文そのものは補い方に触れていない）。FOAM 論文の記述はこちらでは読んでいない（未確認）
   - MassSpecGym と MIST: 757307 id 3553101
   - COCONUT: 759916 id 3556196
   - PubChem: 741857 id 3525543・3536677
@@ -118,7 +123,12 @@ Issue #214（親 #195 の A6、#3）。計画は `plan_2026-11-24_night.md` の�
 - 他の参加者が Kaggle の dataset に置いた、ライセンス表示の無いコード（例: TC の `other` 表示のコード）が 3.6.c の「OSI のライセンス」に当たるか
   - 748882 id 3538755 の原文: 「Use of public competition datasets and code shared by other competitors (including code files inside public Kaggle Datasets) is allowed, provided they come from permissible sources and comply with applicable licensing requirements.」。似た文が 742265 id 3538804（括弧の中は「including code files inside public models」）と 745072 id 3538730（括弧なし）にもある。Kaggle の dataset の中のコードをはっきり含めているのは 3538755 だけ
   - 3.6.b の「みなし」が dataset の中のコードにも及ぶかについての文は無い
-  - 761272（2026-11-23、「Rule 6: helper code loaded from public datasets without a stated licence」）は、取得の時点でコメント 0 件だった
+  - 761272（2026-11-23、「Rule 6: helper code loaded from public datasets without a stated licence」）は、135 件の取得の時点ではコメント 0 件だった。**その後に答えが付いた（追補、下）**
+
+**追補: 761272 の答え（確認）**
+- 質問（Young Uk Song）: 公開ノートブックが公開の Kaggle dataset からヘルパーのコード（runner・fusion のスクリプト）を読み込んでいて、その dataset にライセンスが書かれていない場合がある。規則 6 の「forum/notebooks で共有した」の規定は、公開ノートブックが使う公開 dataset の中のコードにも及ぶか。それとも dataset が OSI のライセンスを書いているときだけ頼るべきか
+- 761272 id 3558585（Marie Killian、2026-11-23 17:39 UTC）: 「Code shared on public Kaggle datasets is included under that provision. Just note that you are responsible for the reproducibility of anything you use.」
+- 読み（**こちらの読み**）: 「that provision」は質問の言う規則 6 の共有コードの規定で、このメモの 3.6.b（Kaggle で公開して共有したコードは OSI のライセンスとみなす）に当たる。だから、ライセンス表示の無い公開 dataset の中のコード（例: TC の `other` 表示のコード）も 3.6.b のみなしで OSI のライセンスとして扱える。**ライセンスの点は答えが出たが、再現性の責任はこちらに残る**（「you are responsible for the reproducibility of anything you use」）。§2 の判定は再現性（生成コードと入力の有無）で決めているので、この答えで変わる行は無い
 
 ### (d) ホスト型 AI へデータを送ってよいか
 **規則の本文（確認）**
@@ -186,7 +196,7 @@ F の部品（表の「11/24 の判定」は 2.1 の決め方による。コー�
 | 11c | PubChemLite の指紋 | 説明だけ（`MANIFEST.json`） | CC0-1.0 | **危険（説明だけ）**（変化なし）。入力の版か取得日の記録が要る（3545025） |
 | 11d | Engine 2 の 6,930 ビット | `prvsiyan/casmi26-generation-code`。こちらで再現済み（#84） | Apache-2.0 | 可（変化なし） |
 | 12 | MetFrag-lite `frag_rescore.py` | ソースそのもの | Apache-2.0（コメントの記載） | 可（変化なし） |
-| 13・14 | ICEBERG・GLACIER の重み | ms-pred の公開版 | MIT | 可（変化なし）。ランナーのライセンス表記は未確認 |
+| 13・14 | ICEBERG・GLACIER の重み | ms-pred の公開版 | MIT | 可（変化なし）。761105 id 3558579 で名指しで可（追補）。ランナーのライセンス表記は未確認 |
 | 15 | PubChem 層 | TC `scripts/02c_build_pubchem.py`（ファイル一覧で確認） | MIT / other | 可（変化なし）。入力の版か取得日の記録が要る（3545025）（PubChem の版） |
 | 16 | 文献 prior | データセットの `scripts/` | other（PubChem・LOTUS・NPAtlas） | 可（変化なし） |
 | 17 | fold-safe FPNet 5 本 | dmitriigluzdov のキット | other（スクリプトは Apache-2.0） | 可（変化なし） |
@@ -298,7 +308,8 @@ fragnn は v1 が不採用（#120）、v2 も R1 で不採用（#196、11/24）�
 - (b) test-time adaptation（test のスペクトルだけで重みを更新する）と、擬似ラベル: 書いていない
 - (e) test の id ごとに構造が違うか: 書いていない
 - reasonable delta の大きさ: 書いていない
-- ライセンス表示の無い、Kaggle の dataset の中のコードに、3.6.b の「みなし」が及ぶか: 書いていない（761272 はコメント 0 件）
+- ~~ライセンス表示の無い、Kaggle の dataset の中のコードに、3.6.b の「みなし」が及ぶか: 書いていない（761272 はコメント 0 件）~~ → **答えが出た（追補）**: 761272 id 3558585「Code shared on public Kaggle datasets is included under that provision.」。及ぶ、と読む（§1(c) の追補）。ただし再現性の責任はこちら
+- 761105 の質問の前半（class 3 の「PubChem に無い」の照合に使ったキーは、完全な InChIKey か、第 1 ブロックか、指標のキーか）: キーは答えられていない。答えは「Class 3 molecules by definition need to be found by de novo generation (not database retrieval).」（id 3558579、確認）で、class 3 はデータベースの検索では届かない、と定義として述べている。照合のキーが何かは書いていない
 - 760683 の Baligh の追加の質問への答え: 取得の時点で無い
 - 部品ごとに主催者が確かめたかどうか: していない、と主催者自身が書いている（3558031・3557917）
 - `dmitriigluzdov/casmi26-identity-disjoint-validation-folds` の生成コード（C3 の入力）、spec-cache の `03_build_spec_cache.py` の中身、v80 カーネルのライセンス、ICEBERG/GLACIER のランナーのライセンス、S1: いずれも未確認
