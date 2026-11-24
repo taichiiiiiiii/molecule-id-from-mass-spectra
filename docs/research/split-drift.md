@@ -14,7 +14,7 @@ Issue #222（#195 の分布の観点、B10 の前段）。計画 `plan_2026-11-2
 ### 1.1 Oga ほか「Critical Mass: Structure-Disjoint Splits Drift With the Libraries They Are Built On」
 
 - arXiv:2610.12694v1（2026-10-08）、DOI https://doi.org/10.48550/arXiv.2610.12694 。NeurIPS 2026 の workshop「AI Data Readiness for Scientific Discovery」。本文は HTML 版 https://arxiv.org/html/2610.12694v1 で読んだ（本文と付録の見出しまで読み、付録 B〜F は一部だけ）
-- split の定義（§1 Introduction、§2 Methods の「Problem formulation」）: 分子の組ごとの距離を出し、しきい値 T より近い組を辺にして、連結成分ごとに 1 つの fold に入れる（single-linkage）。距離は myopic MCES で、重原子のグラフの辺の編集距離（付録 A.1 の式 (1)(2)、結合の重みは単 1・芳香 1.5・二重 2・三重 3）。MassSpecGym の MCES-10（T = 10）に合わせている
+- split の定義（§1 Introduction、§2 Methods の「Problem formulation」）: 分子の組ごとの距離を出し、しきい値 T より近い組を辺にして、連結成分ごとに 1 つの fold に入れる（single-linkage）。距離は Kretschmer ほかの MCES 距離で、重原子のグラフの辺の編集距離（付録 A.1 の式 (1)(2)、結合の重みは単 1・芳香 1.5・二重 2・三重 3）。MassSpecGym の MCES-10（T = 10）に合わせている。myopic MCES は MassSpecGym が使った計算法で、この論文は admissible な下界と union-find の skip で同じ分割を厳密に速く求める方法を足している（§2「Exploiting the partition」）
 - 偏りの指標（§2「Experimental design」の最後の段落、Figure 2 の見出し）: 「mass AUC」は、一様に引いた保留側の化合物が一様に引いた学習側の化合物より重い確率。0.5 が偏りなし
 - 要点（§3、Figure 2・3 の見出し）:
   - 公開ライブラリの和集合（227,690 構造）で MCES-10 をかけると、最大の連結成分が 95.5% を占め、保留側は最大 4.5% しか取れない（Enveda-180 だけだと 0.84%）
@@ -49,8 +49,8 @@ Issue #222（#195 の分布の観点、B10 の前段）。計画 `plan_2026-11-2
   - precursor_mz（単位はスペクトルの行）。G1〜G4 は各 holdout の `test.parquet` の全行。G5 は train.parquet の行のうち inchikey14 が G5 にあり、付加イオンが t10 の 10 種に入る 1,692,436 行（G5 の全付加イオンは 1,982,405 行）。G6 は `data/test.parquet` の全行（付加イオンはすべて t10 の中）
   - 重原子数（単位は構造）。RDKit 2026.09.1 の `GetNumHeavyAtoms()`。G5 の値は `structures.parquet` の `n_heavy` と 220,443 件すべて一致した
   - 件数・中央値・第 1/第 3 四分位（numpy linear）、G5 との 2 標本 KS の D と p 値（scipy 1.18.1 `ks_2samp`。ここで書いた numpy の D と 1e-12 以内で一致することを assert した）、補助に P(群 > G5)（Mann–Whitney の U/(n1·n2)、同値は 0.5。Critical Mass の mass AUC と同じ形）
-- コード: `scripts/research/split_drift.py`（純粋な関数は `tests/test_split_drift.py`）。実行は 1 回、16 秒、peak RSS 0.73 GB（`/usr/bin/time -l` の maximum resident set size 729,088,000 B）。出力 `outputs/local_eval/split_drift/split_drift.json`（写しは `docs/research/split-drift/split_drift.json`、sha256 e25aa00b…）。ログ `logs/split_drift_222.log`
-- 漏れの確認: G1〜G4 の正解のうち G5 に入るものは 0（4 集合とも）。見える test の構造は 317/400 が G5 に入る（残りの 83 は fold 0 か panel の構造）
+- コード: `scripts/research/split_drift.py`（純粋な関数は `tests/test_split_drift.py`）。実行は 1 回、16 秒、peak RSS 0.73 GB = 0.68 GiB（`/usr/bin/time -l` の maximum resident set size 729,088,000 B。JSON の `maxrss_gb` は GiB で 0.68）。出力 `outputs/local_eval/split_drift/split_drift.json`（写しは `docs/research/split-drift/split_drift.json`、sha256 e25aa00b…）。ログ `logs/split_drift_222.log`
+- 漏れの確認: G1〜G4 の正解のうち G5 に入るものは 0（4 集合とも）。見える test の構造は 317/400 が G5 に入る（残りの 83 はすべて split.parquet の hold = fold 0 の構造）
 
 ## 3. 結果
 
@@ -89,9 +89,9 @@ precursor_mz（スペクトルの行）
 ## 4. v3 で測る案（オーナーの判断に回す。KS の値によらない）
 
 - 案: 採否の報告（#196 の R1 で読む 4 集合の差）に、**重原子数の帯ごとの差を記述として添える**。判定の規則（R1）は変えない。帯の差は採否に使わない
-- 帯: G5 の重原子数の第 1・第 3 四分位で 3 つに分ける（≤ 21 / 22〜25 / ≥ 26）。境界は学習側だけで決まり、保留側の値は使わない（`scripts/research/split_drift_bands.py`、`outputs/local_eval/split_drift/bands.json`、写しは `docs/research/split-drift/bands.json`）
+- 帯: G5 の重原子数の第 1・第 3 四分位で 3 つに分ける（≤ 21 / 22〜25 / ≥ 26）。境界は学習側だけで決まり、保留側の値は使わない。計画の文言は「質量の帯」だが、ここでは**質量の代わりに重原子数で帯を切った**。理由: precursor_mz は付加イオンで変わり、1 つの分子に複数の値がある（帯は分子の単位で決める必要がある）。重原子数は構造ごとに 1 つで、分子の大きさの指標としても §3 の表で質量と同じ向きに動いている。中性の単同位体質量（`structures.parquet` の `mono_mass`）で切る形もあり得る。どちらにするかもオーナーの判断に含める（`scripts/research/split_drift_bands.py`、`outputs/local_eval/split_drift/bands.json`、写しは `docs/research/split-drift/bands.json`）
 - 帯ごとの分子数: v3_c1u_t10 138 / 179 / 77、v3_c2_t10 58 / 106 / 33、enveda_v1u_t10 104 / 199 / 70、v3_c2nu_t10 97 / 82 / 215
-- MDE: 集合の MDE は 2.8/1.96 × fragnn v1 − 対照の 95% bootstrap 区間の半幅（`outputs/local_eval/a0i_1123/a0i_result.json`、#195 A0 (i)）で、v3_c1u_t10 0.0249・enveda_v1u_t10 0.0279・v3_c2nu_t10 0.0279（#199 の v3_c1u_t10 の値は 0.0230 で、見積もり方が違う）。帯の MDE は MDE_集合 × √(n/n_帯) で粗く見積もると 0.037〜0.064（帯の間で sd(Δrr) が同じという仮定つき、未確認）。v3_c2_t10 は手元の対照が 0（正解が手元の候補に無い）なので MDE は出さない。**帯の差は MDE が集合の 1.5〜2.3 倍で、どの帯でも普通の効果（+0.01〜0.02）は見分けられない。** 使えるのは「集合の差が 1 つの帯だけから来ていないか」の目安だけである
+- MDE: 集合の MDE は 2.8/1.96 × fragnn v1 − 対照の 95% bootstrap 区間の半幅（2.8 = 1.96 + 0.84 で、両側 5%・検出力 80%。対になった差 Δrr の区間を使うので対の設計の分は入っている。半幅 ∝ 1/√n）（`outputs/local_eval/a0i_1123/a0i_result.json`、#195 A0 (i)）で、v3_c1u_t10 0.0249・enveda_v1u_t10 0.0279・v3_c2nu_t10 0.0279（#199 の v3_c1u_t10 の値は 0.0230 で、見積もり方が違う）。帯の MDE は MDE_集合 × √(n/n_帯) で粗く見積もると 0.037〜0.064（帯の間で sd(Δrr) が同じという仮定つき、未確認）。v3_c2_t10 は手元の対照が 0（正解が手元の候補に無い）なので MDE は出さない。**帯の差は MDE が集合の 1.5〜2.3 倍で、どの帯でも、これまでの段の差の大きさ（fragnn v1 − 対照: v3_c1u_t10 +0.0033・enveda_v1u_t10 +0.0058・v3_c2nu_t10 +0.014、`a0i_result.json`）は見分けられない。** 使えるのは「集合の差が 1 つの帯だけから来ていないか」の目安だけである
 - 費用: 報告のスクリプトに帯の集計（既にある submission CSV・truth.csv・重原子数を読むだけ、CPU で数秒）と、そのテストを足す。GPU 0、提出 0、Kaggle 0。差の帯ごとの区間は既存の bootstrap の関数を帯ごとに呼ぶだけ
 - やらない理由になり得ること: 帯の差を見ると、それで採否を変えたくなる（選択の危険）。足すなら「帯の差は記述だけ、採否は R1 だけ」と報告の雛形に書いておく必要がある
 
@@ -99,8 +99,8 @@ precursor_mz（スペクトルの行）
 
 - Critical Mass: arXiv の perpetual non-exclusive license。読んだ範囲（本文・付録の見出し・参考文献）でコードの公開先は見つからなかった（「無い」ではなく「読んだ範囲で見つからない」）。この調査では論文のコードもデータも使っていない。使ったのは指標の形（mass AUC）だけ
 - MassSpecGym: arXiv の perpetual non-exclusive license。データとコードは https://github.com/pluskal-lab/MassSpecGym で公開と本文にある。ライセンスの種類は本文の読んだ範囲では確認していない。この調査ではデータもコードも使っていない
-- identity-disjoint folds・fold-safe FPNet: 構造と識別子は競技の training file から来ており、競技のデータの規約（非商用・帰属表示）に従う（README の「Licence and credits」）。fold-safe FPNet の学習・評価のスクリプトは Apache-2.0。ここでは `structures.parquet`（fold の割り当て・SMILES・n_heavy）と `split.parquet` を読んだだけで、競技の外へは出していない
-- 再現: `.venv/bin/python scripts/research/split_drift.py`（16 秒、peak 0.73 GB）と `.venv/bin/python scripts/research/split_drift_bands.py`（数秒）。入力は手元の train.parquet・test.parquet・4 集合の truth.csv と test.parquet・`outputs/test_library_match.parquet`・上の 2 つの parquet。乱数は使わない。重原子数は RDKit 2026.09.1、KS の p 値は scipy 1.18.1
+- identity-disjoint folds・fold-safe FPNet: 構造と識別子は競技の training file から来ており、競技のデータの規約に従う（identity-disjoint folds の README の「Licence and credits」は「competition data terms」とだけ書く）。fold-safe FPNet の README の「Licence and credits」は、checkpoint と競技由来のファイルを「non-commercial use with attribution」とし、学習・評価のスクリプトを Apache-2.0 としている。ここでは `structures.parquet`（fold の割り当て・SMILES・n_heavy）と `split.parquet` を読んだだけで、競技の外へは出していない
+- 再現: `.venv/bin/python scripts/research/split_drift.py`（16 秒、peak 0.73 GB = 0.68 GiB）と `.venv/bin/python scripts/research/split_drift_bands.py`（数秒）。入力は手元の train.parquet・test.parquet・4 集合の truth.csv と test.parquet・`outputs/test_library_match.parquet`・上の 2 つの parquet。乱数は使わない。重原子数は RDKit 2026.09.1、KS の p 値は scipy 1.18.1
 
 ## 6. まだ分からないこと・次の段
 
