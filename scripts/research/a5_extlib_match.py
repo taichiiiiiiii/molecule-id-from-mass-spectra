@@ -76,7 +76,7 @@ def match(test: pd.DataFrame, off, mz, it, refs: dict[str, list]) -> pd.DataFram
         if r.adduct in idx:
             pm, rs = idx[r.adduct]
             d = r.precursor_mz * PPM * 1e-6
-            lo, hi = np.searchsorted(pm, r.precursor_mz - d), np.searchsorted(pm, r.precursor_mz + d, side="right")
+            lo, hi = np.searchsorted(pm, r.precursor_mz - d), np.searchsorted(pm, r.precursor_mz + d)
             n = hi - lo
             for _, key, rm, ri in rs[lo:hi]:
                 s = cosine(qm, qv, rm, ri)
