@@ -135,7 +135,7 @@ def main() -> None:
     ap.add_argument("--out-dir", required=True)
     a = ap.parse_args()
     out_dir = Path(a.out_dir); out_dir.mkdir(parents=True, exist_ok=True)
-    inputs = {}
+    inputs, summ_empty = {}, 0
     if a.submission_only:
         sub = read_sub(a.sub); inputs["sub"] = sha(a.sub)
         if a.skip_rows:
@@ -151,15 +151,17 @@ def main() -> None:
                 print(f"深い順位の先頭 {K} が submission と違う: {len(bad)} 分子（例 {bad[:3]}）", file=sys.stderr)
                 sys.exit(2)
         missing = [m for m in truth if m not in lists]
-        if missing:
-            print(f"深い順位に無い分子: {len(missing)}", file=sys.stderr)
+        # 窓に候補が 1 件も無い分子は深い順位に行が無い。submission も空のときだけ空のリストとして数える
+        if missing and (not a.sub or any(sub.get(m) for m in missing)):
+            print(f"深い順位に無い分子: {len(missing)}（submission が空でないか、--sub が無い）", file=sys.stderr)
             sys.exit(2)
-        lists = {m: lists[m] for m in truth}
+        summ_empty = len(missing)
+        lists = {m: lists.get(m, []) for m in truth}
     per = []
     for m, c in lists.items():
-        st = molecule_stats(c, truth_keys(truth[m]) if truth else set())
+        st = molecule_stats(c, truth_keys(truth[m])) if truth else molecule_stats(c, set())
         per.append(dict(molecule_id=m, **st))
-    summ = dict(set=a.set, **summarize(per), inputs=inputs)
+    summ = dict(set=a.set, **summarize(per), empty_window=summ_empty, inputs=inputs)
     with open(out_dir / f"a13_{a.set}_per_molecule.csv", "w", newline="") as f:
         w = csv.DictWriter(f, fieldnames=list(per[0].keys())); w.writeheader(); w.writerows(per)
     (out_dir / f"a13_{a.set}.json").write_text(json.dumps(summ, indent=2, ensure_ascii=False))

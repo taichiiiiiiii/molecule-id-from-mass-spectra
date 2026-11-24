@@ -82,6 +82,14 @@ def test_cli_rank_file_and_sub_check(tmp_path):
            "--truth", str(truth), "--sub", str(sub), "--out-dir", str(tmp_path / "o")]
     out = json.loads(subprocess.run(cmd, check=True, capture_output=True, text=True).stdout)
     assert out["mol_with_dup"] == 2 and out["dup_total"] == 2 and out["mol_dup_above_truth"] == 1 and out["truth_absent"] == 1
+    # 窓が空の分子（深い順位に行が無く、submission も空）は空のリストとして数える
+    truth3 = tmp_path / "t3.csv"
+    pd.DataFrame(dict(molecule_id=["m1", "m2", "m3"], smiles=[OTHER, "CCCCCCCCN", OTHER])).to_csv(truth3, index=False)
+    sub3 = tmp_path / "s3.csv"
+    pd.DataFrame(dict(molecule_id=["m1", "m2", "m3"], smiles=[f"{S_R};{S_S};{OTHER}", f"{T_OH};{T_NH}", ""])).to_csv(sub3, index=False)
+    cmd3 = cmd[:-6] + ["--truth", str(truth3), "--sub", str(sub3), "--out-dir", str(tmp_path / "o3")]
+    out3 = json.loads(subprocess.run(cmd3, check=True, capture_output=True, text=True).stdout)
+    assert out3["n"] == 3 and out3["empty_window"] == 1 and out3["truth_absent"] == 2
     bad = tmp_path / "b.csv"
     pd.DataFrame(dict(molecule_id=["m1", "m2"], smiles=[f"{S_S};{S_R};{OTHER}", f"{T_OH};{T_NH}"])).to_csv(bad, index=False)
     r = subprocess.run(cmd[:-6] + ["--truth", str(truth), "--sub", str(bad), "--out-dir", str(tmp_path / "o")],
