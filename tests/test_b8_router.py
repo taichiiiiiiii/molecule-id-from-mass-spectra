@@ -158,3 +158,9 @@ def test_run_end_to_end_synthetic(monkeypatch):
     assert out["decision"]["rule"] == "r1_and_s6" and not out["decision"]["refused"]
     for rd in out["rounds"].values():
         assert rd["n_train"] == 360 and rd["w"]["conf_L"] >= 0 and rd["w"]["conf_Q"] <= 0
+
+
+def test_impute_counts():
+    X = np.array([[np.nan, math.inf], [1.0, -math.inf], [2.0, 3.0]])
+    c = FE.impute_counts(X, ("conf_Q", "gap_L"))
+    assert c == {"conf_Q": dict(nan=1, pinf=0, ninf=0), "gap_L": dict(nan=0, pinf=1, ninf=1)}

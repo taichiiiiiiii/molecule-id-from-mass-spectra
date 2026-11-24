@@ -66,6 +66,12 @@ def impute_stats(Xr: np.ndarray, feats=FEATURES) -> dict:
     return st
 
 
+def impute_counts(Xr: np.ndarray, feats=FEATURES) -> dict:
+    """置き換える値の数（記録用、§2「置いた数を記録」）: 列ごとの nan・+inf・−inf の件数。"""
+    return {f: dict(nan=int(np.isnan(Xr[:, j]).sum()), pinf=int((Xr[:, j] == math.inf).sum()),
+                    ninf=int((Xr[:, j] == -math.inf).sum())) for j, f in enumerate(feats)}
+
+
 def impute(Xr: np.ndarray, st: dict, feats=FEATURES) -> np.ndarray:
     X = Xr.copy()
     for j, f in enumerate(feats):
@@ -206,10 +212,11 @@ def run(rule: str) -> dict:
                   w=dict(zip(FEATURES, model["w"].round(6).tolist())), b=round(model["b"], 6),
                   baseline_w=float(base["w"][0]), baseline_b=float(base["b"]),
                   n_train_by_type={t: sum(len(rows[(k, t)]) for k in FOLDS if k != j) for t in TRAIN_TYPES},
-                  impute_stats=st, eval={})
+                  impute_stats=st, impute_counts_train=impute_counts(Xr), eval={})
         for t in ALL_TYPES:
             ms = rows[(j, t)]
-            Xe = impute(raw_matrix(ms), st)
+            Xe_raw = raw_matrix(ms)
+            Xe = impute(Xe_raw, st)
             p = predict(model, Xe)
             pb = predict(base, Xe[:, [jc]])
             for m, pi, pbi in zip(ms, p, pb):
@@ -218,7 +225,7 @@ def run(rule: str) -> dict:
                 n_ = reciprocal_rank(keys, compose(m["L"], m["Q"], float(pi)))
                 nb = reciprocal_rank(keys, compose(m["L"], m["Q"], float(pbi)))
                 deltas[t].append(n_ - c); deltas_b[t].append(nb - c); ctrl_rr[t].append(c); new_rr[t].append(n_)
-            rd["eval"][t] = dict(n=len(ms), p_mean=float(p.mean()) if len(p) else None,
+            rd["eval"][t] = dict(n=len(ms), p_mean=float(p.mean()) if len(p) else None, impute_counts=impute_counts(Xe_raw),
                                  y_mean=float(np.mean([m["y"] for m in ms])) if ms else None)
         out["rounds"][j] = rd
     for t in ALL_TYPES:
