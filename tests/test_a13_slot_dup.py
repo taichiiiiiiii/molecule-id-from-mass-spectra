@@ -120,3 +120,11 @@ def test_dump_ranks_refuses_pubchem():
     import pytest
     with pytest.raises(ValueError, match="dump-ranks"):
         le.run("x", ["score", "pubchem"], dump_ranks="y.csv")
+
+
+def test_pool_key_agreement(tmp_path):
+    ranks = tmp_path / "r.csv"
+    pd.DataFrame(dict(molecule_id=["m1"] * 3, rank=[1, 2, 3], pool_row=range(3),
+                      key=[A.to_key(S_R), "WRONGKEYWRONGK", A.to_key(OTHER)], smiles=[S_R, T_OH, OTHER])).to_csv(ranks, index=False)
+    assert A.pool_key_agreement(ranks) == dict(n=3, eq=2)
+    assert A.pool_key_agreement(ranks, k=1) == dict(n=1, eq=1)

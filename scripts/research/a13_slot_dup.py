@@ -102,6 +102,17 @@ def summarize(per: list[dict], k: int = K) -> dict:
                 truth_absent=sum(1 for p in labelled if p["found"] is False) if labelled else None)
 
 
+def pool_key_agreement(path, k: int = K, key_fn=to_key) -> dict:
+    """補助（#230 の定義の外、結果の後に足した説明）: 深い順位の上位 k で、run.py の dedup が使う pool の key と
+    metric の to_key が同じ候補の数。同じなら run.py の dedup がすでに metric の単位の重複を除いている。"""
+    n = eq = 0
+    with open(path, newline="") as f:
+        for r in csv.DictReader(f):
+            if int(r["rank"]) <= k:
+                n += 1; eq += int(key_fn(r["smiles"]) == r["key"][:14])
+    return dict(n=n, eq=eq)
+
+
 def read_ranks(path) -> dict[str, list[str]]:
     out: dict[str, list[tuple[int, str]]] = {}
     with open(path, newline="") as f:
@@ -162,6 +173,8 @@ def main() -> None:
         st = molecule_stats(c, truth_keys(truth[m])) if truth else molecule_stats(c, set())
         per.append(dict(molecule_id=m, **st))
     summ = dict(set=a.set, **summarize(per), empty_window=summ_empty, inputs=inputs)
+    if a.ranks and not a.submission_only:
+        summ["aux_top25_pool_key_eq_to_key"] = pool_key_agreement(a.ranks)
     with open(out_dir / f"a13_{a.set}_per_molecule.csv", "w", newline="") as f:
         w = csv.DictWriter(f, fieldnames=list(per[0].keys())); w.writeheader(); w.writerows(per)
     (out_dir / f"a13_{a.set}.json").write_text(json.dumps(summ, indent=2, ensure_ascii=False))
