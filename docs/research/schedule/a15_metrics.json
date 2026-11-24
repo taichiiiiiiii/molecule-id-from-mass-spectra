@@ -1,0 +1,129 @@
+{
+ "window": {
+  "start": "2026-11-17T02:40:00Z",
+  "end": "2026-11-24T02:40:00Z",
+  "hours": 168.0
+ },
+ "a_experiments": [
+  {
+   "issue": 218,
+   "title": "fragnn v3 の仕組みの確認（読み: 作らない）",
+   "total_h": 0.123,
+   "compute_h": 0.031,
+   "procedure_h": 0.092,
+   "procedure_share": 0.748,
+   "conclusion_ref": "#218 issuecomment-7120202349"
+  },
+  {
+   "issue": 196,
+   "title": "fragnn v2（不採用）",
+   "total_h": 24.387,
+   "compute_h": 16.312,
+   "procedure_h": 8.075,
+   "procedure_share": 0.331,
+   "conclusion_ref": "#196 issuecomment-7104440530"
+  },
+  {
+   "issue": 171,
+   "title": "rep 段（不採用）",
+   "total_h": 1.27,
+   "compute_h": 0.22,
+   "procedure_h": 1.049,
+   "procedure_share": 0.827,
+   "conclusion_ref": "#171 issuecomment-7030112858"
+  },
+  {
+   "issue": 150,
+   "title": "lfus 段（不採用）",
+   "total_h": 0.651,
+   "compute_h": 0.377,
+   "procedure_h": 0.274,
+   "procedure_share": 0.421,
+   "conclusion_ref": "#150 issuecomment-6983654541"
+  },
+  {
+   "issue": 140,
+   "title": "cos(σ(z), fp) の採点式（cos140）",
+   "total_h": 0.384,
+   "compute_h": 0.142,
+   "procedure_h": 0.242,
+   "procedure_share": 0.63,
+   "conclusion_ref": "#140 issuecomment-6952203071"
+  }
+ ],
+ "a_summary": {
+  "n": 5,
+  "total_h_sum": 26.815,
+  "compute_h_sum": 17.082,
+  "procedure_h_sum": 9.733,
+  "procedure_share_pooled": 0.363,
+  "median_total_h": 0.651
+ },
+ "b_training": {
+  "train_h": 41.923,
+  "share": 0.2495,
+  "own_design_h": 17.01,
+  "own_design_share": 0.1012,
+  "n_intervals": 10
+ },
+ "c_breakdown": {
+  "n_issues": 39,
+  "experiment": {
+   "n": 6,
+   "share": 0.154,
+   "issues": [
+    140,
+    150,
+    171,
+    191,
+    196,
+    218
+   ]
+  },
+  "research": {
+   "n": 15,
+   "share": 0.385,
+   "issues": [
+    138,
+    144,
+    148,
+    154,
+    156,
+    160,
+    169,
+    174,
+    178,
+    184,
+    187,
+    193,
+    203,
+    206,
+    216
+   ]
+  },
+  "repro_audit": {
+   "n": 18,
+   "share": 0.462,
+   "issues": [
+    146,
+    152,
+    158,
+    162,
+    164,
+    165,
+    167,
+    177,
+    180,
+    183,
+    189,
+    195,
+    197,
+    199,
+    208,
+    210,
+    212,
+    214
+   ]
+  }
+ }
+}
