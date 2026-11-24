@@ -60,8 +60,8 @@
   "median_total_h": 0.651
  },
  "b_training": {
-  "train_h": 41.901,
-  "share": 0.2494,
+  "train_h": 41.923,
+  "share": 0.2495,
   "own_design_h": 17.01,
   "own_design_share": 0.1012,
   "n_intervals": 10

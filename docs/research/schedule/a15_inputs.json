@@ -1,36 +1,211 @@
 {
   "_note": "#220 A15 の入力。時刻はすべて UTC。Issue の時刻は `gh issue view <n> --json createdAt,comments`（2026-11-24 11:4x JST に取得）、学習の時間は各ループ／速度測定のドライバのログの開始・終了の行（JST を UTC に直した）。ログのパスは clone /Users/taichi/work/molecule-id-dev からの相対。",
-  "window": {"start": "2026-11-17T02:40:00Z", "end": "2026-11-24T02:40:00Z", "label": "2026-11-17 11:40 JST から 2026-11-24 11:40 JST の 168 h（終わりはこの Issue #220 を作る直前）"},
+  "window": {
+    "start": "2026-11-17T02:40:00Z",
+    "end": "2026-11-24T02:40:00Z",
+    "label": "2026-11-17 11:40 JST から 2026-11-24 11:40 JST の 168 h（終わりはこの Issue #220 を作る直前）"
+  },
   "training_intervals": [
-    {"name": "fragnn v1 r3（自前、収束まで）", "own_design": true, "start": "2026-11-17T03:06:28Z", "end": "2026-11-17T04:01:54Z", "source": "outputs/fragnn_train/train_r3.loop"},
-    {"name": "FPNet MPS 速度測定 1（キット、memguard で 20 s で停止）", "own_design": false, "start": "2026-11-17T15:42:01Z", "end": "2026-11-17T15:42:24Z", "source": "outputs/fpnet_full_mps/speed_driver.out"},
-    {"name": "FPNet MPS 速度測定 2（キット）", "own_design": false, "start": "2026-11-18T03:57:14Z", "end": "2026-11-18T04:22:35Z", "source": "outputs/fpnet_full_mps/speed2/speed_driver.log"},
-    {"name": "Engine 2 S2 速度測定 1（公開の作り直し）", "own_design": false, "start": "2026-11-18T16:18:15Z", "end": "2026-11-18T16:43:39Z", "source": "outputs/engine2_fp_retrain/speed1/speed_driver.log"},
-    {"name": "Engine 2 S2 速度測定 2（公開の作り直し）", "own_design": false, "start": "2026-11-19T02:41:58Z", "end": "2026-11-19T03:07:22Z", "source": "outputs/engine2_fp_retrain/speed2/speed_driver.log"},
-    {"name": "Engine 2 S2 本番（公開の作り直し）", "own_design": false, "start": "2026-11-19T03:17:02Z", "end": "2026-11-19T10:43:56Z", "source": "logs/engine2_fp_retrain/run1/loop.log"},
-    {"name": "Engine 2 M1 速度測定（公開の作り直し）", "own_design": false, "start": "2026-11-19T15:38:49Z", "end": "2026-11-19T16:04:14Z", "source": "outputs/engine2_m1_retrain/speed1/speed_driver.log"},
-    {"name": "Engine 2 M1 本番（公開の作り直し）", "own_design": false, "start": "2026-11-19T16:08:39Z", "end": "2026-11-20T07:53:17Z", "source": "logs/engine2_m1_retrain/run1/loop.log"},
-    {"name": "fragnn v2 round 1（自前、memguard で停止）", "own_design": true, "start": "2026-11-22T17:03:19Z", "end": "2026-11-23T06:34:32Z", "source": "outputs/fragnn_train_v2/train.loop"},
-    {"name": "fragnn v2 r2（自前、収束）", "own_design": true, "start": "2026-11-23T06:57:32Z", "end": "2026-11-23T09:31:28Z", "source": "outputs/fragnn_train_v2/train_r2.loop"}
+    {
+      "name": "fragnn v1 r3（自前、収束まで）",
+      "own_design": true,
+      "start": "2026-11-17T03:06:28Z",
+      "end": "2026-11-17T04:01:54Z",
+      "source": "outputs/fragnn_train/train_r3.loop"
+    },
+    {
+      "name": "FPNet MPS 速度測定 1（キット、round 1 は memguard で 20 s で停止、round 2 は短時間）",
+      "own_design": false,
+      "start": "2026-11-17T15:42:01Z",
+      "end": "2026-11-17T15:43:44Z",
+      "source": "outputs/fpnet_full_mps/speed_driver.out（開始 00:42:01 JST）。終わりは同じ測定の outputs/fpnet_full_mps/speed/mem.tsv の最終更新 15:43:44Z（ドライバのログに round 2 の終わりの行が無いため）"
+    },
+    {
+      "name": "FPNet MPS 速度測定 2（キット）",
+      "own_design": false,
+      "start": "2026-11-18T03:57:14Z",
+      "end": "2026-11-18T04:22:35Z",
+      "source": "outputs/fpnet_full_mps/speed2/speed_driver.log"
+    },
+    {
+      "name": "Engine 2 S2 速度測定 1（公開の作り直し）",
+      "own_design": false,
+      "start": "2026-11-18T16:18:15Z",
+      "end": "2026-11-18T16:43:39Z",
+      "source": "outputs/engine2_fp_retrain/speed1/speed_driver.log"
+    },
+    {
+      "name": "Engine 2 S2 速度測定 2（公開の作り直し）",
+      "own_design": false,
+      "start": "2026-11-19T02:41:58Z",
+      "end": "2026-11-19T03:07:22Z",
+      "source": "outputs/engine2_fp_retrain/speed2/speed_driver.log"
+    },
+    {
+      "name": "Engine 2 S2 本番（公開の作り直し）",
+      "own_design": false,
+      "start": "2026-11-19T03:17:02Z",
+      "end": "2026-11-19T10:43:56Z",
+      "source": "logs/engine2_fp_retrain/run1/loop.log"
+    },
+    {
+      "name": "Engine 2 M1 速度測定（公開の作り直し）",
+      "own_design": false,
+      "start": "2026-11-19T15:38:49Z",
+      "end": "2026-11-19T16:04:14Z",
+      "source": "outputs/engine2_m1_retrain/speed1/speed_driver.log"
+    },
+    {
+      "name": "Engine 2 M1 本番（公開の作り直し）",
+      "own_design": false,
+      "start": "2026-11-19T16:08:39Z",
+      "end": "2026-11-20T07:53:17Z",
+      "source": "logs/engine2_m1_retrain/run1/loop.log"
+    },
+    {
+      "name": "fragnn v2 round 1（自前、memguard で停止）",
+      "own_design": true,
+      "start": "2026-11-22T17:03:19Z",
+      "end": "2026-11-23T06:34:32Z",
+      "source": "outputs/fragnn_train_v2/train.loop"
+    },
+    {
+      "name": "fragnn v2 r2（自前、収束）",
+      "own_design": true,
+      "start": "2026-11-23T06:57:32Z",
+      "end": "2026-11-23T09:31:28Z",
+      "source": "outputs/fragnn_train_v2/train_r2.loop"
+    }
   ],
   "experiments": [
-    {"issue": 218, "title": "fragnn v3 の仕組みの確認（読み: 作らない）", "start": "2026-11-24T02:22:25Z", "conclusion": "2026-11-24T02:29:49Z", "conclusion_ref": "#218 issuecomment-7120202349",
-     "compute": [{"start": "2026-11-24T02:25:59Z", "end": "2026-11-24T02:27:51Z", "source": "logs/fragnn3_mechanism.log（/usr/bin/time の real 111.87 s と終了 11:27:51 JST）"}]},
-    {"issue": 196, "title": "fragnn v2（不採用）", "start": "2026-11-22T14:20:19Z", "conclusion": "2026-11-23T14:43:34Z", "conclusion_ref": "#196 issuecomment-7104440530",
-     "compute": [{"start": "2026-11-22T17:03:19Z", "end": "2026-11-23T06:34:32Z", "source": "outputs/fragnn_train_v2/train.loop"},
-                 {"start": "2026-11-23T06:57:32Z", "end": "2026-11-23T09:31:28Z", "source": "outputs/fragnn_train_v2/train_r2.loop"},
-                 {"start": "2026-11-23T14:17:46Z", "end": "2026-11-23T14:31:21Z", "source": "#196 issuecomment-7104440530（判定のチェーン 23:17:46〜23:31:21 JST）"}]},
-    {"issue": 171, "title": "rep 段（不採用）", "start": "2026-11-20T02:52:05Z", "conclusion": "2026-11-20T04:08:16Z", "conclusion_ref": "#171 issuecomment-7030112858",
-     "compute": [{"start": "2026-11-20T03:45:05Z", "end": "2026-11-20T03:58:18Z", "source": "logs/rep_once_driver.log"}]},
-    {"issue": 150, "title": "lfus 段（不採用）", "start": "2026-11-18T15:10:55Z", "conclusion": "2026-11-18T15:49:58Z", "conclusion_ref": "#150 issuecomment-6983654541",
-     "compute": [{"start": "2026-11-18T15:26:15Z", "end": "2026-11-18T15:48:51Z", "source": "outputs/lfus_run/logs/run_all_driver.log"}]},
-    {"issue": 140, "title": "cos(σ(z), fp) の採点式（cos140）", "start": "2026-11-17T14:53:47Z", "conclusion": "2026-11-17T15:16:50Z", "conclusion_ref": "#140 issuecomment-6952203071",
-     "compute": [{"start": "2026-11-17T15:04:20Z", "end": "2026-11-17T15:12:52Z", "source": "logs/cos140_run.log（ALL DONE 15:12:52Z）。開始の行が無いので、最初の対照の出力 logs/cos140_ctrl_v3_c1.json の mtime 15:05:01Z から 1 集合の対照の時間（約 40 s、v3_c2 との mtime の差 46 s）を引いた見込み"}]}
+    {
+      "issue": 218,
+      "title": "fragnn v3 の仕組みの確認（読み: 作らない）",
+      "start": "2026-11-24T02:22:25Z",
+      "conclusion": "2026-11-24T02:29:49Z",
+      "conclusion_ref": "#218 issuecomment-7120202349",
+      "compute": [
+        {
+          "start": "2026-11-24T02:25:59Z",
+          "end": "2026-11-24T02:27:51Z",
+          "source": "logs/fragnn3_mechanism.log（/usr/bin/time の real 111.87 s と終了 11:27:51 JST）"
+        }
+      ]
+    },
+    {
+      "issue": 196,
+      "title": "fragnn v2（不採用）",
+      "start": "2026-11-22T14:20:19Z",
+      "conclusion": "2026-11-23T14:43:34Z",
+      "conclusion_ref": "#196 issuecomment-7104440530",
+      "compute": [
+        {
+          "start": "2026-11-22T17:03:19Z",
+          "end": "2026-11-23T06:34:32Z",
+          "source": "outputs/fragnn_train_v2/train.loop"
+        },
+        {
+          "start": "2026-11-23T06:57:32Z",
+          "end": "2026-11-23T09:31:28Z",
+          "source": "outputs/fragnn_train_v2/train_r2.loop"
+        },
+        {
+          "start": "2026-11-23T14:17:46Z",
+          "end": "2026-11-23T14:31:21Z",
+          "source": "#196 issuecomment-7104440530（判定のチェーン 23:17:46〜23:31:21 JST）"
+        }
+      ]
+    },
+    {
+      "issue": 171,
+      "title": "rep 段（不採用）",
+      "start": "2026-11-20T02:52:05Z",
+      "conclusion": "2026-11-20T04:08:16Z",
+      "conclusion_ref": "#171 issuecomment-7030112858",
+      "compute": [
+        {
+          "start": "2026-11-20T03:45:05Z",
+          "end": "2026-11-20T03:58:18Z",
+          "source": "logs/rep_once_driver.log"
+        }
+      ]
+    },
+    {
+      "issue": 150,
+      "title": "lfus 段（不採用）",
+      "start": "2026-11-18T15:10:55Z",
+      "conclusion": "2026-11-18T15:49:58Z",
+      "conclusion_ref": "#150 issuecomment-6983654541",
+      "compute": [
+        {
+          "start": "2026-11-18T15:26:15Z",
+          "end": "2026-11-18T15:48:51Z",
+          "source": "outputs/lfus_run/logs/run_all_driver.log"
+        }
+      ]
+    },
+    {
+      "issue": 140,
+      "title": "cos(σ(z), fp) の採点式（cos140）",
+      "start": "2026-11-17T14:53:47Z",
+      "conclusion": "2026-11-17T15:16:50Z",
+      "conclusion_ref": "#140 issuecomment-6952203071",
+      "compute": [
+        {
+          "start": "2026-11-17T15:04:20Z",
+          "end": "2026-11-17T15:12:52Z",
+          "source": "logs/cos140_run.log（ALL DONE 15:12:52Z）。開始の行が無いので、最初の対照の出力 logs/cos140_ctrl_v3_c1.json の mtime 15:05:01Z から 1 集合の対照の時間（約 40 s、v3_c2 との mtime の差 46 s）を引いた見込み"
+        }
+      ]
+    }
   ],
   "work_breakdown": {
     "_rule": "window の中に作られた Issue（#138〜#218 の 39 件、PR は数えない。`gh issue list --state all --json number,createdAt` で window の中の Issue をすべて拾い、この 39 件と一致することを確かめた）を題名と中身で 3 つに分ける。experiment = 自前の部品・自前の学習モデルの採否を v3 で決める Issue（事前登録の取り下げを含む）。research = 題名が「調査」で始まる Issue。repro_audit = それ以外（再現・作り直し・監査・検証の拡大・方針・手続き）。Issue の数で数える代わりの指標で、かけた時間ではない",
-    "experiment": [140, 150, 171, 191, 196, 218],
-    "research": [138, 144, 148, 154, 156, 160, 169, 174, 178, 184, 187, 193, 203, 206, 216],
-    "repro_audit": [146, 152, 158, 162, 164, 165, 167, 177, 180, 183, 189, 195, 197, 199, 208, 210, 212, 214]
-  }
+    "experiment": [
+      140,
+      150,
+      171,
+      191,
+      196,
+      218
+    ],
+    "research": [
+      138,
+      144,
+      148,
+      154,
+      156,
+      160,
+      169,
+      174,
+      178,
+      184,
+      187,
+      193,
+      203,
+      206,
+      216
+    ],
+    "repro_audit": [
+      146,
+      152,
+      158,
+      162,
+      164,
+      165,
+      167,
+      177,
+      180,
+      183,
+      189,
+      195,
+      197,
+      199,
+      208,
+      210,
+      212,
+      214
+    ]
+  },
+  "_note_excluded": "入れていないもの: #196 手順 4 の fragnn_v2_bench（50 ステップの 1 ステップ速度の比べで、学習の round ではない。数分）。学習ではない採点・数え上げ（headroom・selpred・mass_error など）"
 }
