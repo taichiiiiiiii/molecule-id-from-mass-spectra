@@ -128,3 +128,33 @@ def test_feature_signs_match_prereg():
     assert BF.FEATURES == ("conf_L", "gap_L", "conf_Q", "gap_Q", "d", "lib", "log_nwin_pool", "log_nwin_pc")
     assert BF.SIGNS == dict(conf_L=1, gap_L=1, conf_Q=-1, gap_Q=-1, d=1, lib=1, log_nwin_pool=0, log_nwin_pc=0)
     assert FE.TRAIN_TYPES == ("a", "b", "c", "d") and FE.C_REG == 1.0 and FE.N_BOOT == 2000
+
+
+def test_run_end_to_end_synthetic(monkeypatch):
+    rng = np.random.default_rng(5)
+    sets, tk = {}, {}
+    for k in FE.FOLDS:
+        for t in FE.ALL_TYPES:
+            ms, keys = [], {}
+            for i in range(30):
+                y = int(t in ("a", "b", "d"))
+                mid = f"m{k}{t}{i}"
+                L = [[f"L{mid}_{r}", f"L{mid}_{r}"] for r in range(30)]
+                Q = [[f"Q{mid}_{r}", f"Q{mid}_{r}"] for r in range(30)]
+                m = dict(molecule_id=mid, y=y, conf_L=float(rng.random() + y), gap_L="inf" if i == 0 else float(rng.random()),
+                         conf_Q=None if i == 1 else float(rng.random()), gap_Q=None if i == 1 else float(rng.random()),
+                         d=None if i == 1 else float(rng.normal() + y), lib=float(rng.random()),
+                         log_nwin_pool=float(rng.random()), log_nwin_pc=float(rng.random()), L=L, Q=[] if i == 1 else Q)
+                ms.append(m)
+                keys[mid] = {f"L{mid}_0"} if y else {f"Q{mid}_0"}
+            sets[(k, t)] = dict(molecules=ms)
+            tk[(k, t)] = keys
+    monkeypatch.setattr(FE, "load_all", lambda: sets)
+    monkeypatch.setattr(FE, "rr_lists", lambda s: tk)
+    import mrr25
+    monkeypatch.setattr(mrr25, "to_key", lambda s: s)
+    out = FE.run("r1_and_s6")
+    assert set(out["per_type"]) == set(FE.ALL_TYPES) and all(v["n"] == 120 for v in out["per_type"].values())
+    assert out["decision"]["rule"] == "r1_and_s6" and not out["decision"]["refused"]
+    for rd in out["rounds"].values():
+        assert rd["n_train"] == 360 and rd["w"]["conf_L"] >= 0 and rd["w"]["conf_Q"] <= 0
