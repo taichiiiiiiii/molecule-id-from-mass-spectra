@@ -11,11 +11,11 @@
 ### 1. 集合（新しい分子、1 回だけ作る）
 - fold k = 1〜4 のそれぞれで 4 型を **各 200 分子**（v3 の集合と同じ大きさ。数えた N_bal 449〜492 の範囲内。ここで固定し、結果を見て増減しない）。合計 16 集合・3,200 分子。N_bal を全部使わないのは、PubChem 層の採点の時間が未測定で、評価の和 800（規則の最低 200 の 4 倍）で MDE が §5 の値になるため
 - 引き方（seed S = 20261124、fold k・型 t（a=0, b=1, c=2, d=3）ごとに s_kt = S + 100·k + t）: (a)(b)(c) は候補を sorted にして `np.random.default_rng(s_kt).choice(..., size=200, replace=False)`（`select()`・`select_c2p()` と同じ形）、(d) は候補の群の表から `pool.sample(n=200, random_state=s_kt)`（072ec66 と同じ形）。順番は (a) → (b)（B∖G(選んだ a) から）→ (c)（C∖G(a∪b) から）→ (d)（D∖G(a∪b∪c) から）。1 つの identity_group は 1 つの型にだけ
-- 問い合わせのスペクトルの選び方の rng: (a)(b)(c) の `write_holdout` は `default_rng(s_kt + 1000)`、(d) の `write_enveda` は `default_rng(s_kt)`（072ec66 と同じく引き方と同じ seed）
+- 問い合わせのスペクトルの選び方の rng: (a)(b)(c) の `write_holdout` は `default_rng(s_kt + 1000)`、(d) の `write_enveda` は `default_rng(s_kt)`（072ec66 と同じく引き方と同じ seed）。int の seed 引数は両関数とも s_kt、id_prefix は `f{k}{t}`（id がぶつからないため）。`write_enveda` の要約が fold=0 を固定で書く点は、集合の HOLDOUT.json に fold k を上書きして記録する
 - 作り方は元の型のスクリプトと同じ: (a) `write_holdout(rule=enveda_libs, pool=keep, query=enveda)`、(b) `rule=all, pool=keep, query=prefer_enveda, test_adducts`、(c) `rule=all, pool=remove, query=enveda`（v3_c2 と同じ）、(d) `holdout_expand.write_enveda`（072ec66 と同じ、rule=all・pool=keep）。作った後に #116 の `rebuild_set`、10 種の付加イオンに絞る `_t10`（残り 0 本の分子は除く）。**学習も評価も `_t10` の後の集合で行い、減った分は補充しない・重みも付けない**（型ごとの数は 200 より少しずれうる。ずれた数をそのまま記録する）
 - 除外: v3 の 4 集合・A3a の 3 集合の正解（数えでは fold 1〜4 で 0）。以前のランカー（#29・#32）の学習の集合 `rk_f{k}_*` の構造は除かない（そのランカーは使わない。重なりの数を記録する）
 - 名前 `b8_f{k}_{a,b,c,d}`、置き場所 `data/holdouts/`・`outputs/local_eval/`（クローンの実のディレクトリ）
-- ロジット: `scripts/cv/local_fold0_logits.py --model data/ext/foldsafe/fpnet_fold{k}.pt --out-dir outputs/local_eval/b8_f{k}_{t}/`。fold k の集合は fold k のモデルだけで採点する（他の fold のモデルは使わない）。`pubchem.py` のキャッシュ名は `pubchem_fold0.json` のままだが、集合ごとのディレクトリなので中身は fold k のロジットのもの（キャッシュはロジットが変わっても無効にならないので、実装で集合の `pc_logits.npz` の sha256 をキャッシュの隣に記録し、食い違えば止める）
+- ロジット: `scripts/cv/local_fold0_logits.py --holdout b8_f{k}_{t}_t10 --model data/ext/foldsafe/fpnet_fold{k}.pt --out-dir outputs/local_eval/b8_f{k}_{t}_t10/`（_t10 の後の test.parquet で作る）。fold k の集合は fold k のモデルだけで採点する（他の fold のモデルは使わない）。`pubchem.py` のキャッシュ名は `pubchem_fold0.json` のままだが、集合ごとのディレクトリなので中身は fold k のロジットのもの（キャッシュはロジットが変わっても無効にならないので、実装で集合の `pc_logits.npz` の sha256 をキャッシュの隣に記録し、食い違えば止める）
 - run.py の呼び方: `--holdout b8_f{k}_{t}_t10 --logits-dir outputs/local_eval/b8_f{k}_{t}_t10/ --truth-dir outputs/local_eval/b8_f{k}_{t}_t10/`（`outputs/holdout_eval`・`outputs/holdouts` は元のフォルダへのリンクなので使わない）
 
 ### 2. ラベルと特徴（§3 の 8 個、向きは §3 のまま）
@@ -40,7 +40,7 @@
 ### 5. 評価（fold 1〜4 の交差、1 回だけ）
 - 4 回: fold j（1〜4）を評価、残り 3 fold の 12 集合（各型 600 分子）で当てはめ、fold j の 4 集合に p を出す。評価の分子は、その fold の FPNet にもその回の振り分け器にも見られていない
 - 型ごとに 4 回分を合わせ（_t10 で 1 型あたり約 800 分子）、分子ごとの rr の差（新 − 対照）を分子の bootstrap 2000 回（seed 0、パーセンタイル 95%）で
-- MDE の目安（net_mde.json の sd_delta の中央値。sd = 0 の変種（差が 0 のもの）は除く。除かないと 0.0153・0.0208・0.0159。n = 800、2.8·sd/√n）: (a) 0.0162・(b) 0.0212・(d) 0.0161、(c) は対照が 0 で過去の変種の sd が無い（算出できない）。振り分け器の Δ は過去の変種より広く動くので sd はもっと大きい見込み
+- MDE の目安（net_mde.json の sd_delta の中央値。sd = 0 の変種（差が 0 のもの）は除く。除かないと 0.0153・0.0208・0.0159。n = 800、2.8·sd/√n）: (a) 0.0162（v3_c1 の値）・(b) 0.0212（v3_c2n）・(d) 0.0161（enveda_v1）、近似の対応、(c) は対照が 0 で過去の変種の sd が無い（算出できない）。振り分け器の Δ は過去の変種より広く動くので sd はもっと大きい見込み
 - fold 0 の残り（(a) 10）では 4 型の評価ができない → fold 0 は評価に使わない
 
 ### 6. 採否の規則（#216 §3 のものに一本化、当てはめの前に確定）
