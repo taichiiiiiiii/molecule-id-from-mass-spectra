@@ -1,0 +1,8422 @@
+{
+ "issue": 232,
+ "rdkit": "2026.09.1",
+ "fingerprint": "Morgan r2 2048 bit (bit vector)",
+ "strata": [
+  "<0.5",
+  "0.5-0.8",
+  ">=0.8"
+ ],
+ "n_boot": 2000,
+ "seed": 0,
+ "train_side": {
+  "n_rows": 220443,
+  "n_fp_ok": 220443,
+  "n_unparsed": 0,
+  "n_split_rows": 55367,
+  "n_train_structs": 275810
+ },
+ "files": {
+  "data/ext/v4g/casmi26-v2-pool/train_structs.parquet": "f20aa1cac23af42e430a6633707fda34e48dea97114bdc3e443897f692df3656",
+  "data/ext/foldsafe/split.parquet": "dd62549f81b9540890e0da17a06d0dcd216a2781b2c31687bd333445fe57d45e"
+ },
+ "sets": {
+  "v3_c1u_t10": {
+   "n_molecules": 394,
+   "summary": {
+    "<0.5": {
+     "n": 16,
+     "mrr": 0.9375,
+     "ci95": [
+      0.8438,
+      1.0
+     ],
+     "n_top1": 14,
+     "n_rr0": 0
+    },
+    "0.5-0.8": {
+     "n": 348,
+     "mrr": 0.8897,
+     "ci95": [
+      0.8659,
+      0.9145
+     ],
+     "n_top1": 282,
+     "n_rr0": 3
+    },
+    ">=0.8": {
+     "n": 30,
+     "mrr": 0.8389,
+     "ci95": [
+      0.75,
+      0.9278
+     ],
+     "n_top1": 21,
+     "n_rr0": 0
+    },
+    "all": {
+     "n": 394,
+     "mrr": 0.8878,
+     "ci95": [
+      0.8644,
+      0.9109
+     ]
+    }
+   },
+   "leak_check": {
+    "n_tanimoto_1": 0,
+    "n_inchikey14_in_train": 0,
+    "n_inchikey14_in_train_key": 0
+   },
+   "sim_quantiles": {
+    "0.1": 0.5306,
+    "0.25": 0.5781,
+    "0.5": 0.6321,
+    "0.75": 0.7219,
+    "0.9": 0.7772
+   },
+   "files": {
+    "outputs/local_eval/v3_c1u_t10/truth.csv": "5aec3356eac67c7f1bb8cd8870baca0517b3c14b1623de124c4b03207629d789",
+    "outputs/local_eval/v3_c1u_t10/submission_score+prior+frag.csv": "ebc59d2ce80715e370ad5c29d43c186bdfbbf566ca15f28f3fc7c9010729ea10"
+   },
+   "per_molecule": [
+    {
+     "molecule_id": "m_00000",
+     "max_tanimoto": 0.5965,
+     "rr": 1.0,
+     "nn_inchikey14": "GHSRDFUXGXWZQK"
+    },
+    {
+     "molecule_id": "m_00001",
+     "max_tanimoto": 0.7679,
+     "rr": 1.0,
+     "nn_inchikey14": "VDYPDFLRBYNRHK"
+    },
+    {
+     "molecule_id": "m_00002",
+     "max_tanimoto": 0.6667,
+     "rr": 1.0,
+     "nn_inchikey14": "CRJYMDMOVFKSTR"
+    },
+    {
+     "molecule_id": "m_00003",
+     "max_tanimoto": 0.5873,
+     "rr": 1.0,
+     "nn_inchikey14": "BBOMAJASDSHMON"
+    },
+    {
+     "molecule_id": "m_00004",
+     "max_tanimoto": 0.5962,
+     "rr": 1.0,
+     "nn_inchikey14": "CDEFJLWATTVLRC"
+    },
+    {
+     "molecule_id": "m_00005",
+     "max_tanimoto": 0.5273,
+     "rr": 1.0,
+     "nn_inchikey14": "QTPXAHUFFQZGSY"
+    },
+    {
+     "molecule_id": "m_00006",
+     "max_tanimoto": 0.5806,
+     "rr": 0.5,
+     "nn_inchikey14": "JCIAKLFSUQVJSZ"
+    },
+    {
+     "molecule_id": "m_00007",
+     "max_tanimoto": 0.7931,
+     "rr": 0.25,
+     "nn_inchikey14": "QEWAYGMFKNJTID"
+    },
+    {
+     "molecule_id": "m_00008",
+     "max_tanimoto": 0.7222,
+     "rr": 1.0,
+     "nn_inchikey14": "ROHRZZXJZOSIPB"
+    },
+    {
+     "molecule_id": "m_00009",
+     "max_tanimoto": 0.6,
+     "rr": 1.0,
+     "nn_inchikey14": "ZDUFSDXSMHANIK"
+    },
+    {
+     "molecule_id": "m_00010",
+     "max_tanimoto": 0.625,
+     "rr": 1.0,
+     "nn_inchikey14": "BWVUUYDTBYYHSF"
+    },
+    {
+     "molecule_id": "m_00011",
+     "max_tanimoto": 0.7727,
+     "rr": 0.5,
+     "nn_inchikey14": "HSVCGXKXMAFPSC"
+    },
+    {
+     "molecule_id": "m_00012",
+     "max_tanimoto": 0.5893,
+     "rr": 0.5,
+     "nn_inchikey14": "VSBKFUQFWWXTRY"
+    },
+    {
+     "molecule_id": "m_00013",
+     "max_tanimoto": 0.5417,
+     "rr": 1.0,
+     "nn_inchikey14": "AMGXSEDJRBGBAN"
+    },
+    {
+     "molecule_id": "m_00014",
+     "max_tanimoto": 0.5593,
+     "rr": 1.0,
+     "nn_inchikey14": "XZJJGMZDHFWLKN"
+    },
+    {
+     "molecule_id": "m_00015",
+     "max_tanimoto": 0.6471,
+     "rr": 1.0,
+     "nn_inchikey14": "AKOVIMHPVMWLPK"
+    },
+    {
+     "molecule_id": "m_00017",
+     "max_tanimoto": 0.5942,
+     "rr": 1.0,
+     "nn_inchikey14": "PGIALGWQVFUHKW"
+    },
+    {
+     "molecule_id": "m_00018",
+     "max_tanimoto": 0.6066,
+     "rr": 1.0,
+     "nn_inchikey14": "JGSPZNGLRYQVJW"
+    },
+    {
+     "molecule_id": "m_00019",
+     "max_tanimoto": 0.6724,
+     "rr": 0.5,
+     "nn_inchikey14": "XTONTEMBHJHTRV"
+    },
+    {
+     "molecule_id": "m_00021",
+     "max_tanimoto": 0.7442,
+     "rr": 1.0,
+     "nn_inchikey14": "DYMMXYMRWWYYPK"
+    },
+    {
+     "molecule_id": "m_00022",
+     "max_tanimoto": 0.7358,
+     "rr": 1.0,
+     "nn_inchikey14": "FMTQRPANAFZOGZ"
+    },
+    {
+     "molecule_id": "m_00023",
+     "max_tanimoto": 0.6212,
+     "rr": 1.0,
+     "nn_inchikey14": "MLJKYZHIARQRRA"
+    },
+    {
+     "molecule_id": "m_00024",
+     "max_tanimoto": 0.7333,
+     "rr": 1.0,
+     "nn_inchikey14": "BCJZYVLWVGHKBO"
+    },
+    {
+     "molecule_id": "m_00025",
+     "max_tanimoto": 0.7818,
+     "rr": 0.5,
+     "nn_inchikey14": "ZMBGKGOKGSPTRS"
+    },
+    {
+     "molecule_id": "m_00026",
+     "max_tanimoto": 0.4528,
+     "rr": 1.0,
+     "nn_inchikey14": "OCLSJYLUGULWFP"
+    },
+    {
+     "molecule_id": "m_00027",
+     "max_tanimoto": 0.5,
+     "rr": 1.0,
+     "nn_inchikey14": "UAPQDLQXHNPDEN"
+    },
+    {
+     "molecule_id": "m_00028",
+     "max_tanimoto": 0.6122,
+     "rr": 0.0,
+     "nn_inchikey14": "LLCWCOKDWYZRIS"
+    },
+    {
+     "molecule_id": "m_00029",
+     "max_tanimoto": 0.6333,
+     "rr": 1.0,
+     "nn_inchikey14": "LCQBFICQEFXKLT"
+    },
+    {
+     "molecule_id": "m_00030",
+     "max_tanimoto": 0.6981,
+     "rr": 1.0,
+     "nn_inchikey14": "LJWBAGFBAAPOOR"
+    },
+    {
+     "molecule_id": "m_00031",
+     "max_tanimoto": 0.6964,
+     "rr": 0.5,
+     "nn_inchikey14": "ITJKSALWACHVTQ"
+    },
+    {
+     "molecule_id": "m_00032",
+     "max_tanimoto": 0.7719,
+     "rr": 1.0,
+     "nn_inchikey14": "PLHHILFYADSNBM"
+    },
+    {
+     "molecule_id": "m_00033",
+     "max_tanimoto": 0.5882,
+     "rr": 0.5,
+     "nn_inchikey14": "AUQQBNOYVVZUIH"
+    },
+    {
+     "molecule_id": "m_00034",
+     "max_tanimoto": 0.6981,
+     "rr": 1.0,
+     "nn_inchikey14": "ZOVMXTAKIFVPBA"
+    },
+    {
+     "molecule_id": "m_00035",
+     "max_tanimoto": 0.5536,
+     "rr": 1.0,
+     "nn_inchikey14": "MEMGPVLAEXGXIA"
+    },
+    {
+     "molecule_id": "m_00036",
+     "max_tanimoto": 0.7288,
+     "rr": 1.0,
+     "nn_inchikey14": "UZQVNCSQVUXESS"
+    },
+    {
+     "molecule_id": "m_00037",
+     "max_tanimoto": 0.4561,
+     "rr": 1.0,
+     "nn_inchikey14": "KMNAVEMBJMWMFF"
+    },
+    {
+     "molecule_id": "m_00038",
+     "max_tanimoto": 0.6167,
+     "rr": 1.0,
+     "nn_inchikey14": "WEYHMDCIULIKHS"
+    },
+    {
+     "molecule_id": "m_00039",
+     "max_tanimoto": 0.7447,
+     "rr": 0.5,
+     "nn_inchikey14": "QVTHUXTVEOTWLW"
+    },
+    {
+     "molecule_id": "m_00040",
+     "max_tanimoto": 0.807,
+     "rr": 1.0,
+     "nn_inchikey14": "DZAOOSPYEBFZGC"
+    },
+    {
+     "molecule_id": "m_00041",
+     "max_tanimoto": 0.72,
+     "rr": 1.0,
+     "nn_inchikey14": "ZRVJDYNMWALXQP"
+    },
+    {
+     "molecule_id": "m_00042",
+     "max_tanimoto": 0.76,
+     "rr": 1.0,
+     "nn_inchikey14": "YOPVKBSBINSIGI"
+    },
+    {
+     "molecule_id": "m_00043",
+     "max_tanimoto": 0.5455,
+     "rr": 1.0,
+     "nn_inchikey14": "HSOKMSLMDDMKRI"
+    },
+    {
+     "molecule_id": "m_00044",
+     "max_tanimoto": 0.587,
+     "rr": 1.0,
+     "nn_inchikey14": "TXYDLJGQBRAFBU"
+    },
+    {
+     "molecule_id": "m_00045",
+     "max_tanimoto": 0.6415,
+     "rr": 1.0,
+     "nn_inchikey14": "GAAGCBHBCCOTNF"
+    },
+    {
+     "molecule_id": "m_00046",
+     "max_tanimoto": 0.6458,
+     "rr": 1.0,
+     "nn_inchikey14": "YWHYYHLNNLPEQF"
+    },
+    {
+     "molecule_id": "m_00047",
+     "max_tanimoto": 0.6034,
+     "rr": 0.0,
+     "nn_inchikey14": "VLPBZSSFYYQWFQ"
+    },
+    {
+     "molecule_id": "m_00048",
+     "max_tanimoto": 0.4444,
+     "rr": 0.5,
+     "nn_inchikey14": "YTVTYBSLIFTWBO"
+    },
+    {
+     "molecule_id": "m_00049",
+     "max_tanimoto": 0.6383,
+     "rr": 0.5,
+     "nn_inchikey14": "FHIIZRLJLJFJHA"
+    },
+    {
+     "molecule_id": "m_00050",
+     "max_tanimoto": 0.5085,
+     "rr": 1.0,
+     "nn_inchikey14": "YVHOZGYXUWPFDM"
+    },
+    {
+     "molecule_id": "m_00051",
+     "max_tanimoto": 0.55,
+     "rr": 1.0,
+     "nn_inchikey14": "WWFKFVVBJBLVEG"
+    },
+    {
+     "molecule_id": "m_00052",
+     "max_tanimoto": 0.7636,
+     "rr": 1.0,
+     "nn_inchikey14": "JQKMRNQACVCECX"
+    },
+    {
+     "molecule_id": "m_00053",
+     "max_tanimoto": 0.7708,
+     "rr": 1.0,
+     "nn_inchikey14": "UJIGCEDMETWZPJ"
+    },
+    {
+     "molecule_id": "m_00054",
+     "max_tanimoto": 0.7561,
+     "rr": 1.0,
+     "nn_inchikey14": "QNSWMCHYUYYFKA"
+    },
+    {
+     "molecule_id": "m_00055",
+     "max_tanimoto": 0.5932,
+     "rr": 0.3333333333333333,
+     "nn_inchikey14": "OFSQIVIYNSNTHT"
+    },
+    {
+     "molecule_id": "m_00056",
+     "max_tanimoto": 0.7115,
+     "rr": 1.0,
+     "nn_inchikey14": "HGDQELXALDXMJM"
+    },
+    {
+     "molecule_id": "m_00057",
+     "max_tanimoto": 0.5769,
+     "rr": 0.5,
+     "nn_inchikey14": "PPQAWQVSTDZXSW"
+    },
+    {
+     "molecule_id": "m_00058",
+     "max_tanimoto": 0.7778,
+     "rr": 0.5,
+     "nn_inchikey14": "VABZFPJYAWWBOE"
+    },
+    {
+     "molecule_id": "m_00060",
+     "max_tanimoto": 0.5714,
+     "rr": 1.0,
+     "nn_inchikey14": "QBAMXQMQOIFZNV"
+    },
+    {
+     "molecule_id": "m_00061",
+     "max_tanimoto": 0.5424,
+     "rr": 1.0,
+     "nn_inchikey14": "QNQNHJLNPPIOPH"
+    },
+    {
+     "molecule_id": "m_00062",
+     "max_tanimoto": 0.623,
+     "rr": 1.0,
+     "nn_inchikey14": "ZIAIOQDDNVUGPJ"
+    },
+    {
+     "molecule_id": "m_00063",
+     "max_tanimoto": 0.6935,
+     "rr": 1.0,
+     "nn_inchikey14": "KNRIGPGNOZUUCD"
+    },
+    {
+     "molecule_id": "m_00064",
+     "max_tanimoto": 0.6818,
+     "rr": 1.0,
+     "nn_inchikey14": "ODMGWUAJFYHPRR"
+    },
+    {
+     "molecule_id": "m_00065",
+     "max_tanimoto": 0.6875,
+     "rr": 1.0,
+     "nn_inchikey14": "DYBPYFLUVOANDU"
+    },
+    {
+     "molecule_id": "m_00066",
+     "max_tanimoto": 0.5962,
+     "rr": 1.0,
+     "nn_inchikey14": "KSDRBKIJYAWJND"
+    },
+    {
+     "molecule_id": "m_00067",
+     "max_tanimoto": 0.5645,
+     "rr": 1.0,
+     "nn_inchikey14": "RAQGIAUVRFWGEA"
+    },
+    {
+     "molecule_id": "m_00068",
+     "max_tanimoto": 0.75,
+     "rr": 0.5,
+     "nn_inchikey14": "JDXRDFQHKQVFHT"
+    },
+    {
+     "molecule_id": "m_00069",
+     "max_tanimoto": 0.6491,
+     "rr": 1.0,
+     "nn_inchikey14": "PEFLYSQCMGDGGU"
+    },
+    {
+     "molecule_id": "m_00070",
+     "max_tanimoto": 0.6078,
+     "rr": 0.3333333333333333,
+     "nn_inchikey14": "ITMHXJIZHKAOBA"
+    },
+    {
+     "molecule_id": "m_00071",
+     "max_tanimoto": 0.6327,
+     "rr": 1.0,
+     "nn_inchikey14": "BBDLVMVZNOPWES"
+    },
+    {
+     "molecule_id": "m_00072",
+     "max_tanimoto": 0.6667,
+     "rr": 1.0,
+     "nn_inchikey14": "YLGWZGCORMHGGH"
+    },
+    {
+     "molecule_id": "m_00073",
+     "max_tanimoto": 0.6667,
+     "rr": 1.0,
+     "nn_inchikey14": "JUGJLZPDXGYRBC"
+    },
+    {
+     "molecule_id": "m_00074",
+     "max_tanimoto": 0.8431,
+     "rr": 1.0,
+     "nn_inchikey14": "WKOQJBWTFOLUJJ"
+    },
+    {
+     "molecule_id": "m_00075",
+     "max_tanimoto": 0.5745,
+     "rr": 0.5,
+     "nn_inchikey14": "JBPOEWZXDYGLBM"
+    },
+    {
+     "molecule_id": "m_00076",
+     "max_tanimoto": 0.65,
+     "rr": 0.5,
+     "nn_inchikey14": "ZTSSXNVINZQRNK"
+    },
+    {
+     "molecule_id": "m_00077",
+     "max_tanimoto": 0.5417,
+     "rr": 1.0,
+     "nn_inchikey14": "LDXFZUYEJHZMHS"
+    },
+    {
+     "molecule_id": "m_00078",
+     "max_tanimoto": 0.625,
+     "rr": 1.0,
+     "nn_inchikey14": "MUNOIZOMTMCPKL"
+    },
+    {
+     "molecule_id": "m_00079",
+     "max_tanimoto": 0.6296,
+     "rr": 1.0,
+     "nn_inchikey14": "JONJHCGMRWLKNF"
+    },
+    {
+     "molecule_id": "m_00080",
+     "max_tanimoto": 0.5862,
+     "rr": 1.0,
+     "nn_inchikey14": "QRFJWNJUTJQCGR"
+    },
+    {
+     "molecule_id": "m_00081",
+     "max_tanimoto": 0.5556,
+     "rr": 1.0,
+     "nn_inchikey14": "XWTTYOULQWHHAI"
+    },
+    {
+     "molecule_id": "m_00082",
+     "max_tanimoto": 0.75,
+     "rr": 1.0,
+     "nn_inchikey14": "IEAXGQMTERFIPX"
+    },
+    {
+     "molecule_id": "m_00083",
+     "max_tanimoto": 0.5614,
+     "rr": 0.5,
+     "nn_inchikey14": "BOEXKUDZKCOTDT"
+    },
+    {
+     "molecule_id": "m_00084",
+     "max_tanimoto": 0.5634,
+     "rr": 1.0,
+     "nn_inchikey14": "GXJPDPVOEKVQRS"
+    },
+    {
+     "molecule_id": "m_00085",
+     "max_tanimoto": 0.8276,
+     "rr": 1.0,
+     "nn_inchikey14": "DNEKZPPXHPMOHX"
+    },
+    {
+     "molecule_id": "m_00086",
+     "max_tanimoto": 0.8,
+     "rr": 1.0,
+     "nn_inchikey14": "ZLMKGYFGEKITPX"
+    },
+    {
+     "molecule_id": "m_00087",
+     "max_tanimoto": 0.5909,
+     "rr": 1.0,
+     "nn_inchikey14": "RNJRPQGAIPWQBC"
+    },
+    {
+     "molecule_id": "m_00088",
+     "max_tanimoto": 0.6833,
+     "rr": 1.0,
+     "nn_inchikey14": "UCCXTLILCZDCKU"
+    },
+    {
+     "molecule_id": "m_00089",
+     "max_tanimoto": 0.7736,
+     "rr": 0.3333333333333333,
+     "nn_inchikey14": "AQTBMRCLNMGDGZ"
+    },
+    {
+     "molecule_id": "m_00090",
+     "max_tanimoto": 0.6,
+     "rr": 1.0,
+     "nn_inchikey14": "QAKOKLBFCSRMSR"
+    },
+    {
+     "molecule_id": "m_00091",
+     "max_tanimoto": 0.5077,
+     "rr": 1.0,
+     "nn_inchikey14": "KQBUNEKGGGBEOI"
+    },
+    {
+     "molecule_id": "m_00092",
+     "max_tanimoto": 0.7,
+     "rr": 1.0,
+     "nn_inchikey14": "BYGCPTAQCFCUBB"
+    },
+    {
+     "molecule_id": "m_00093",
+     "max_tanimoto": 0.5273,
+     "rr": 0.3333333333333333,
+     "nn_inchikey14": "XQHADMYKWHPXLK"
+    },
+    {
+     "molecule_id": "m_00094",
+     "max_tanimoto": 0.5306,
+     "rr": 0.5,
+     "nn_inchikey14": "BAWJOEFYDVYTPO"
+    },
+    {
+     "molecule_id": "m_00095",
+     "max_tanimoto": 0.5789,
+     "rr": 1.0,
+     "nn_inchikey14": "OFIAYJYSKCEWOV"
+    },
+    {
+     "molecule_id": "m_00096",
+     "max_tanimoto": 0.7593,
+     "rr": 1.0,
+     "nn_inchikey14": "NMAPFHANLAJFMG"
+    },
+    {
+     "molecule_id": "m_00097",
+     "max_tanimoto": 0.7111,
+     "rr": 1.0,
+     "nn_inchikey14": "GGXNGWJSMSOJJJ"
+    },
+    {
+     "molecule_id": "m_00098",
+     "max_tanimoto": 0.6316,
+     "rr": 1.0,
+     "nn_inchikey14": "YJLLTYWMUPJGRW"
+    },
+    {
+     "molecule_id": "m_00099",
+     "max_tanimoto": 0.8033,
+     "rr": 1.0,
+     "nn_inchikey14": "WZDWLTZTTKWFRT"
+    },
+    {
+     "molecule_id": "m_00100",
+     "max_tanimoto": 0.6154,
+     "rr": 1.0,
+     "nn_inchikey14": "IIDGSCJCWBEKOA"
+    },
+    {
+     "molecule_id": "m_00101",
+     "max_tanimoto": 0.7857,
+     "rr": 0.5,
+     "nn_inchikey14": "ORKZXAVTYYFZKX"
+    },
+    {
+     "molecule_id": "m_00102",
+     "max_tanimoto": 0.6852,
+     "rr": 1.0,
+     "nn_inchikey14": "CMHJWUOQJRYJIW"
+    },
+    {
+     "molecule_id": "m_00103",
+     "max_tanimoto": 0.6182,
+     "rr": 1.0,
+     "nn_inchikey14": "JLGZOVVYUWUKNN"
+    },
+    {
+     "molecule_id": "m_00104",
+     "max_tanimoto": 0.7015,
+     "rr": 1.0,
+     "nn_inchikey14": "OIJTUGDLLFNYLR"
+    },
+    {
+     "molecule_id": "m_00105",
+     "max_tanimoto": 0.88,
+     "rr": 1.0,
+     "nn_inchikey14": "HCTGQBCWKTXMQF"
+    },
+    {
+     "molecule_id": "m_00106",
+     "max_tanimoto": 0.7377,
+     "rr": 1.0,
+     "nn_inchikey14": "DSKBDRDCENPDKJ"
+    },
+    {
+     "molecule_id": "m_00107",
+     "max_tanimoto": 0.5775,
+     "rr": 1.0,
+     "nn_inchikey14": "FIJCQHNHWWWHGV"
+    },
+    {
+     "molecule_id": "m_00108",
+     "max_tanimoto": 0.6415,
+     "rr": 0.5,
+     "nn_inchikey14": "LWWRHPWHHJYZMT"
+    },
+    {
+     "molecule_id": "m_00109",
+     "max_tanimoto": 0.6379,
+     "rr": 1.0,
+     "nn_inchikey14": "MWWGSSXQPHIXJN"
+    },
+    {
+     "molecule_id": "m_00110",
+     "max_tanimoto": 0.7321,
+     "rr": 1.0,
+     "nn_inchikey14": "KWLVIZYQJUQFPR"
+    },
+    {
+     "molecule_id": "m_00111",
+     "max_tanimoto": 0.5781,
+     "rr": 1.0,
+     "nn_inchikey14": "SGEGQWOFPWEIJI"
+    },
+    {
+     "molecule_id": "m_00112",
+     "max_tanimoto": 0.5556,
+     "rr": 1.0,
+     "nn_inchikey14": "YNIVRYGXYGPMPN"
+    },
+    {
+     "molecule_id": "m_00113",
+     "max_tanimoto": 0.5556,
+     "rr": 1.0,
+     "nn_inchikey14": "RSNMGPMNWOSBKS"
+    },
+    {
+     "molecule_id": "m_00114",
+     "max_tanimoto": 0.7037,
+     "rr": 1.0,
+     "nn_inchikey14": "FHGOPBCYBLXHSL"
+    },
+    {
+     "molecule_id": "m_00115",
+     "max_tanimoto": 0.7407,
+     "rr": 1.0,
+     "nn_inchikey14": "JBOCOOHBIJWING"
+    },
+    {
+     "molecule_id": "m_00116",
+     "max_tanimoto": 0.6,
+     "rr": 1.0,
+     "nn_inchikey14": "WAEXYBQYYXSHOS"
+    },
+    {
+     "molecule_id": "m_00117",
+     "max_tanimoto": 0.7632,
+     "rr": 1.0,
+     "nn_inchikey14": "AWVCMLMYGOSLBJ"
+    },
+    {
+     "molecule_id": "m_00118",
+     "max_tanimoto": 0.5667,
+     "rr": 1.0,
+     "nn_inchikey14": "BUGWQRSRCXVFGP"
+    },
+    {
+     "molecule_id": "m_00119",
+     "max_tanimoto": 0.5625,
+     "rr": 1.0,
+     "nn_inchikey14": "VMNLUYJDIVZDKX"
+    },
+    {
+     "molecule_id": "m_00120",
+     "max_tanimoto": 0.7609,
+     "rr": 1.0,
+     "nn_inchikey14": "VKBOVCBKJBGIEH"
+    },
+    {
+     "molecule_id": "m_00121",
+     "max_tanimoto": 0.5484,
+     "rr": 1.0,
+     "nn_inchikey14": "KGGYFTRPQROVPP"
+    },
+    {
+     "molecule_id": "m_00122",
+     "max_tanimoto": 0.4839,
+     "rr": 1.0,
+     "nn_inchikey14": "LQXFSMHHUUDVNL"
+    },
+    {
+     "molecule_id": "m_00123",
+     "max_tanimoto": 0.6061,
+     "rr": 0.2,
+     "nn_inchikey14": "ZYAYAXBYKHBUGR"
+    },
+    {
+     "molecule_id": "m_00124",
+     "max_tanimoto": 0.7463,
+     "rr": 1.0,
+     "nn_inchikey14": "RQGNEYZSDRVEMQ"
+    },
+    {
+     "molecule_id": "m_00125",
+     "max_tanimoto": 0.7,
+     "rr": 1.0,
+     "nn_inchikey14": "KHKTTZSLDUCPQF"
+    },
+    {
+     "molecule_id": "m_00126",
+     "max_tanimoto": 0.54,
+     "rr": 1.0,
+     "nn_inchikey14": "DDCJDZQEBNPQQL"
+    },
+    {
+     "molecule_id": "m_00127",
+     "max_tanimoto": 0.76,
+     "rr": 1.0,
+     "nn_inchikey14": "USVJLJITEIUSIF"
+    },
+    {
+     "molecule_id": "m_00128",
+     "max_tanimoto": 0.6167,
+     "rr": 0.3333333333333333,
+     "nn_inchikey14": "KDNHFUPFAXKXRK"
+    },
+    {
+     "molecule_id": "m_00129",
+     "max_tanimoto": 0.6885,
+     "rr": 1.0,
+     "nn_inchikey14": "WMWMUJUJHPKBEU"
+    },
+    {
+     "molecule_id": "m_00130",
+     "max_tanimoto": 0.6515,
+     "rr": 1.0,
+     "nn_inchikey14": "ACKXZIXSPVYZJQ"
+    },
+    {
+     "molecule_id": "m_00131",
+     "max_tanimoto": 0.4821,
+     "rr": 1.0,
+     "nn_inchikey14": "SJLVRDSNBCKHIZ"
+    },
+    {
+     "molecule_id": "m_00132",
+     "max_tanimoto": 0.5373,
+     "rr": 1.0,
+     "nn_inchikey14": "BASRQXNOUQFNPG"
+    },
+    {
+     "molecule_id": "m_00133",
+     "max_tanimoto": 0.6,
+     "rr": 1.0,
+     "nn_inchikey14": "JIKCHZNANOXSGF"
+    },
+    {
+     "molecule_id": "m_00134",
+     "max_tanimoto": 0.7647,
+     "rr": 1.0,
+     "nn_inchikey14": "OOUBVCHJWKVBRE"
+    },
+    {
+     "molecule_id": "m_00135",
+     "max_tanimoto": 0.5789,
+     "rr": 1.0,
+     "nn_inchikey14": "XEUPWUUQWBJXSK"
+    },
+    {
+     "molecule_id": "m_00136",
+     "max_tanimoto": 0.6349,
+     "rr": 1.0,
+     "nn_inchikey14": "ZPGJWPZDIQXINU"
+    },
+    {
+     "molecule_id": "m_00137",
+     "max_tanimoto": 0.623,
+     "rr": 1.0,
+     "nn_inchikey14": "VWGXDEFOHWDIEM"
+    },
+    {
+     "molecule_id": "m_00138",
+     "max_tanimoto": 0.6207,
+     "rr": 1.0,
+     "nn_inchikey14": "NMTZXYXVPGNFDW"
+    },
+    {
+     "molecule_id": "m_00139",
+     "max_tanimoto": 0.6531,
+     "rr": 1.0,
+     "nn_inchikey14": "CZEDLDFXGOFFEE"
+    },
+    {
+     "molecule_id": "m_00140",
+     "max_tanimoto": 0.5968,
+     "rr": 0.5,
+     "nn_inchikey14": "HYNRXIOSJPADDC"
+    },
+    {
+     "molecule_id": "m_00141",
+     "max_tanimoto": 0.5385,
+     "rr": 1.0,
+     "nn_inchikey14": "IJUSNRRTSFJFRZ"
+    },
+    {
+     "molecule_id": "m_00142",
+     "max_tanimoto": 0.7143,
+     "rr": 1.0,
+     "nn_inchikey14": "BSODCFVQJXRXNN"
+    },
+    {
+     "molecule_id": "m_00143",
+     "max_tanimoto": 0.629,
+     "rr": 1.0,
+     "nn_inchikey14": "HISJCYDDUWXCAE"
+    },
+    {
+     "molecule_id": "m_00144",
+     "max_tanimoto": 0.7049,
+     "rr": 1.0,
+     "nn_inchikey14": "JLQTWZSFLSDMKR"
+    },
+    {
+     "molecule_id": "m_00145",
+     "max_tanimoto": 0.5263,
+     "rr": 0.2,
+     "nn_inchikey14": "AYPCJCDABPXVRJ"
+    },
+    {
+     "molecule_id": "m_00146",
+     "max_tanimoto": 0.7727,
+     "rr": 1.0,
+     "nn_inchikey14": "VMQBAZUCVJOMJC"
+    },
+    {
+     "molecule_id": "m_00147",
+     "max_tanimoto": 0.6512,
+     "rr": 0.5,
+     "nn_inchikey14": "HKYLXLMCKULWRF"
+    },
+    {
+     "molecule_id": "m_00148",
+     "max_tanimoto": 0.8113,
+     "rr": 1.0,
+     "nn_inchikey14": "MBNMOKLHICYOPS"
+    },
+    {
+     "molecule_id": "m_00149",
+     "max_tanimoto": 0.5873,
+     "rr": 1.0,
+     "nn_inchikey14": "AQHADQWHCHNXPA"
+    },
+    {
+     "molecule_id": "m_00150",
+     "max_tanimoto": 0.6863,
+     "rr": 0.5,
+     "nn_inchikey14": "QAQLJFREBKZYBC"
+    },
+    {
+     "molecule_id": "m_00151",
+     "max_tanimoto": 0.5714,
+     "rr": 1.0,
+     "nn_inchikey14": "APVNQMPNJACMBY"
+    },
+    {
+     "molecule_id": "m_00152",
+     "max_tanimoto": 0.8039,
+     "rr": 0.5,
+     "nn_inchikey14": "BNFKUOWYXQYRQE"
+    },
+    {
+     "molecule_id": "m_00153",
+     "max_tanimoto": 0.8039,
+     "rr": 1.0,
+     "nn_inchikey14": "WSMKPFFLSSNCEE"
+    },
+    {
+     "molecule_id": "m_00154",
+     "max_tanimoto": 0.6349,
+     "rr": 1.0,
+     "nn_inchikey14": "XNMNILIJVGHLIG"
+    },
+    {
+     "molecule_id": "m_00155",
+     "max_tanimoto": 0.507,
+     "rr": 1.0,
+     "nn_inchikey14": "ZHRWMMSFWJWKLW"
+    },
+    {
+     "molecule_id": "m_00156",
+     "max_tanimoto": 0.6182,
+     "rr": 0.5,
+     "nn_inchikey14": "ABZIJOYSMVHECL"
+    },
+    {
+     "molecule_id": "m_00157",
+     "max_tanimoto": 0.5926,
+     "rr": 1.0,
+     "nn_inchikey14": "MNFPZFMVVUFEQQ"
+    },
+    {
+     "molecule_id": "m_00158",
+     "max_tanimoto": 0.86,
+     "rr": 0.5,
+     "nn_inchikey14": "QYJRCWHUNNTGTG"
+    },
+    {
+     "molecule_id": "m_00159",
+     "max_tanimoto": 0.7143,
+     "rr": 1.0,
+     "nn_inchikey14": "DWDRBFGYEUUMNZ"
+    },
+    {
+     "molecule_id": "m_00160",
+     "max_tanimoto": 0.7368,
+     "rr": 1.0,
+     "nn_inchikey14": "BAZBSQFYEPSOGY"
+    },
+    {
+     "molecule_id": "m_00161",
+     "max_tanimoto": 0.6071,
+     "rr": 1.0,
+     "nn_inchikey14": "JBDDACAIJHHRTA"
+    },
+    {
+     "molecule_id": "m_00162",
+     "max_tanimoto": 0.6182,
+     "rr": 1.0,
+     "nn_inchikey14": "BUKYRSNOIIOZHX"
+    },
+    {
+     "molecule_id": "m_00163",
+     "max_tanimoto": 0.566,
+     "rr": 1.0,
+     "nn_inchikey14": "KNYHCXRPCBDMQP"
+    },
+    {
+     "molecule_id": "m_00164",
+     "max_tanimoto": 0.7755,
+     "rr": 0.3333333333333333,
+     "nn_inchikey14": "GDTRKDQWQPGTLN"
+    },
+    {
+     "molecule_id": "m_00165",
+     "max_tanimoto": 0.6538,
+     "rr": 1.0,
+     "nn_inchikey14": "FWDRBHODHPSYQJ"
+    },
+    {
+     "molecule_id": "m_00166",
+     "max_tanimoto": 0.5909,
+     "rr": 1.0,
+     "nn_inchikey14": "AVXRYGALERQPPP"
+    },
+    {
+     "molecule_id": "m_00167",
+     "max_tanimoto": 0.5,
+     "rr": 1.0,
+     "nn_inchikey14": "QJRGUZFFMFXPPN"
+    },
+    {
+     "molecule_id": "m_00168",
+     "max_tanimoto": 0.5741,
+     "rr": 1.0,
+     "nn_inchikey14": "DSYNZEJQGROUDH"
+    },
+    {
+     "molecule_id": "m_00169",
+     "max_tanimoto": 0.6727,
+     "rr": 1.0,
+     "nn_inchikey14": "ACKHMMRSVSIAFK"
+    },
+    {
+     "molecule_id": "m_00170",
+     "max_tanimoto": 0.5636,
+     "rr": 1.0,
+     "nn_inchikey14": "RDNMFBTYRGXPFW"
+    },
+    {
+     "molecule_id": "m_00171",
+     "max_tanimoto": 0.78,
+     "rr": 1.0,
+     "nn_inchikey14": "ONLGYMBBMIGZGY"
+    },
+    {
+     "molecule_id": "m_00172",
+     "max_tanimoto": 0.7377,
+     "rr": 1.0,
+     "nn_inchikey14": "FNCIZFVWDBYJEU"
+    },
+    {
+     "molecule_id": "m_00173",
+     "max_tanimoto": 0.7143,
+     "rr": 1.0,
+     "nn_inchikey14": "BRQZCLHIVDTGEV"
+    },
+    {
+     "molecule_id": "m_00174",
+     "max_tanimoto": 0.7885,
+     "rr": 1.0,
+     "nn_inchikey14": "DZWDFPMGNRVSPN"
+    },
+    {
+     "molecule_id": "m_00175",
+     "max_tanimoto": 0.5238,
+     "rr": 1.0,
+     "nn_inchikey14": "XBEDWBUPXLTGRO"
+    },
+    {
+     "molecule_id": "m_00176",
+     "max_tanimoto": 0.5833,
+     "rr": 1.0,
+     "nn_inchikey14": "GYZZBOSQJSCQLV"
+    },
+    {
+     "molecule_id": "m_00177",
+     "max_tanimoto": 0.5532,
+     "rr": 0.5,
+     "nn_inchikey14": "YTUFKZZYOYOVLX"
+    },
+    {
+     "molecule_id": "m_00178",
+     "max_tanimoto": 0.6452,
+     "rr": 1.0,
+     "nn_inchikey14": "ZWXRYNJNQIRNRK"
+    },
+    {
+     "molecule_id": "m_00179",
+     "max_tanimoto": 0.6034,
+     "rr": 1.0,
+     "nn_inchikey14": "LCTBWXWBTZBQSU"
+    },
+    {
+     "molecule_id": "m_00180",
+     "max_tanimoto": 0.775,
+     "rr": 1.0,
+     "nn_inchikey14": "PWPRDDCBAKOHGN"
+    },
+    {
+     "molecule_id": "m_00181",
+     "max_tanimoto": 0.7255,
+     "rr": 1.0,
+     "nn_inchikey14": "VUADAKPHOILQMB"
+    },
+    {
+     "molecule_id": "m_00182",
+     "max_tanimoto": 0.8148,
+     "rr": 1.0,
+     "nn_inchikey14": "RVALYENAMDBQPA"
+    },
+    {
+     "molecule_id": "m_00183",
+     "max_tanimoto": 0.5439,
+     "rr": 0.5,
+     "nn_inchikey14": "BBWFRKHBUQLDNT"
+    },
+    {
+     "molecule_id": "m_00184",
+     "max_tanimoto": 0.7091,
+     "rr": 0.5,
+     "nn_inchikey14": "IAKZXUZLZRFYJN"
+    },
+    {
+     "molecule_id": "m_00185",
+     "max_tanimoto": 0.678,
+     "rr": 1.0,
+     "nn_inchikey14": "NLQCTBDQLBVPKX"
+    },
+    {
+     "molecule_id": "m_00186",
+     "max_tanimoto": 0.6585,
+     "rr": 1.0,
+     "nn_inchikey14": "MUYRLNGLGZZETG"
+    },
+    {
+     "molecule_id": "m_00187",
+     "max_tanimoto": 0.6964,
+     "rr": 0.25,
+     "nn_inchikey14": "YWGBUVRRMAXQEQ"
+    },
+    {
+     "molecule_id": "m_00188",
+     "max_tanimoto": 0.6271,
+     "rr": 1.0,
+     "nn_inchikey14": "BTWLNYURDZQEIT"
+    },
+    {
+     "molecule_id": "m_00189",
+     "max_tanimoto": 0.6379,
+     "rr": 0.5,
+     "nn_inchikey14": "HHZPSVCIQBCGDQ"
+    },
+    {
+     "molecule_id": "m_00190",
+     "max_tanimoto": 0.7347,
+     "rr": 1.0,
+     "nn_inchikey14": "INCUGRSABDNOPY"
+    },
+    {
+     "molecule_id": "m_00191",
+     "max_tanimoto": 0.6111,
+     "rr": 1.0,
+     "nn_inchikey14": "AGHQTHVSDBBLTB"
+    },
+    {
+     "molecule_id": "m_00192",
+     "max_tanimoto": 0.6111,
+     "rr": 1.0,
+     "nn_inchikey14": "FLUKQYZLNUIVAK"
+    },
+    {
+     "molecule_id": "m_00193",
+     "max_tanimoto": 0.6545,
+     "rr": 1.0,
+     "nn_inchikey14": "YIRBMWZNQFJYKZ"
+    },
+    {
+     "molecule_id": "m_00194",
+     "max_tanimoto": 0.5517,
+     "rr": 1.0,
+     "nn_inchikey14": "FAZPRZRSTBLMBH"
+    },
+    {
+     "molecule_id": "m_00195",
+     "max_tanimoto": 0.8136,
+     "rr": 1.0,
+     "nn_inchikey14": "RGWWDMMFSLWWCT"
+    },
+    {
+     "molecule_id": "m_00196",
+     "max_tanimoto": 0.7586,
+     "rr": 0.3333333333333333,
+     "nn_inchikey14": "XEGPKWHTYALNIV"
+    },
+    {
+     "molecule_id": "m_00197",
+     "max_tanimoto": 0.6038,
+     "rr": 1.0,
+     "nn_inchikey14": "UPNJIARSKYTXGF"
+    },
+    {
+     "molecule_id": "m_00198",
+     "max_tanimoto": 0.8605,
+     "rr": 0.5,
+     "nn_inchikey14": "VHRPAFBJTUIDSQ"
+    },
+    {
+     "molecule_id": "m_00199",
+     "max_tanimoto": 0.5385,
+     "rr": 1.0,
+     "nn_inchikey14": "GZUSRGKPQHFJAQ"
+    },
+    {
+     "molecule_id": "mb_00000",
+     "max_tanimoto": 0.8113,
+     "rr": 1.0,
+     "nn_inchikey14": "ISOPUBLSLLMSGJ"
+    },
+    {
+     "molecule_id": "mb_00001",
+     "max_tanimoto": 0.7358,
+     "rr": 1.0,
+     "nn_inchikey14": "DOLUVQMKPDGQQQ"
+    },
+    {
+     "molecule_id": "mb_00002",
+     "max_tanimoto": 0.7037,
+     "rr": 1.0,
+     "nn_inchikey14": "RPMJKUOMVRRXLQ"
+    },
+    {
+     "molecule_id": "mb_00003",
+     "max_tanimoto": 0.6094,
+     "rr": 0.5,
+     "nn_inchikey14": "UWTCVYHSMVNARE"
+    },
+    {
+     "molecule_id": "mb_00004",
+     "max_tanimoto": 0.6,
+     "rr": 1.0,
+     "nn_inchikey14": "AOBZHPDZFLHRKN"
+    },
+    {
+     "molecule_id": "mb_00005",
+     "max_tanimoto": 0.5741,
+     "rr": 1.0,
+     "nn_inchikey14": "YGZJXURYXCWCEP"
+    },
+    {
+     "molecule_id": "mb_00006",
+     "max_tanimoto": 0.6667,
+     "rr": 1.0,
+     "nn_inchikey14": "CITGMZBBBMGLEK"
+    },
+    {
+     "molecule_id": "mb_00007",
+     "max_tanimoto": 0.7097,
+     "rr": 1.0,
+     "nn_inchikey14": "FUVFUZVTOZVKAR"
+    },
+    {
+     "molecule_id": "mb_00008",
+     "max_tanimoto": 0.5088,
+     "rr": 0.5,
+     "nn_inchikey14": "UAECECKLRAAJEQ"
+    },
+    {
+     "molecule_id": "mb_00009",
+     "max_tanimoto": 0.614,
+     "rr": 1.0,
+     "nn_inchikey14": "KJGSEHIKABSPGV"
+    },
+    {
+     "molecule_id": "mb_00010",
+     "max_tanimoto": 0.5185,
+     "rr": 1.0,
+     "nn_inchikey14": "HRDMRGANIKVVCU"
+    },
+    {
+     "molecule_id": "mb_00011",
+     "max_tanimoto": 0.6094,
+     "rr": 1.0,
+     "nn_inchikey14": "PZRWHJUCBVYKRP"
+    },
+    {
+     "molecule_id": "mb_00013",
+     "max_tanimoto": 0.7143,
+     "rr": 1.0,
+     "nn_inchikey14": "BPTQILURVHFLSZ"
+    },
+    {
+     "molecule_id": "mb_00014",
+     "max_tanimoto": 0.7258,
+     "rr": 1.0,
+     "nn_inchikey14": "ZCTNZRHSQQQRJV"
+    },
+    {
+     "molecule_id": "mb_00015",
+     "max_tanimoto": 0.6212,
+     "rr": 1.0,
+     "nn_inchikey14": "WSCWAUSFMXQXPD"
+    },
+    {
+     "molecule_id": "mb_00016",
+     "max_tanimoto": 0.6154,
+     "rr": 1.0,
+     "nn_inchikey14": "FHFSGWKCZGXCFF"
+    },
+    {
+     "molecule_id": "mb_00017",
+     "max_tanimoto": 0.5652,
+     "rr": 1.0,
+     "nn_inchikey14": "KGMXGKIPZPNWST"
+    },
+    {
+     "molecule_id": "mb_00018",
+     "max_tanimoto": 0.7368,
+     "rr": 1.0,
+     "nn_inchikey14": "QFZIBHYBNDEFIH"
+    },
+    {
+     "molecule_id": "mb_00019",
+     "max_tanimoto": 0.629,
+     "rr": 1.0,
+     "nn_inchikey14": "UJVPBTRUHQFNRN"
+    },
+    {
+     "molecule_id": "mb_00020",
+     "max_tanimoto": 0.5532,
+     "rr": 0.25,
+     "nn_inchikey14": "SRAIDDPEFUQXCG"
+    },
+    {
+     "molecule_id": "mb_00021",
+     "max_tanimoto": 0.5797,
+     "rr": 1.0,
+     "nn_inchikey14": "KOEOYDPXUWQTQW"
+    },
+    {
+     "molecule_id": "mb_00022",
+     "max_tanimoto": 0.7091,
+     "rr": 1.0,
+     "nn_inchikey14": "QXACZQJRIPNEGF"
+    },
+    {
+     "molecule_id": "mb_00023",
+     "max_tanimoto": 0.7083,
+     "rr": 1.0,
+     "nn_inchikey14": "JFOFEIXESNZHNM"
+    },
+    {
+     "molecule_id": "mb_00024",
+     "max_tanimoto": 0.6429,
+     "rr": 1.0,
+     "nn_inchikey14": "AHKZHEFEESWJPX"
+    },
+    {
+     "molecule_id": "mb_00025",
+     "max_tanimoto": 0.74,
+     "rr": 1.0,
+     "nn_inchikey14": "IRJLMSFZANXFSE"
+    },
+    {
+     "molecule_id": "mb_00026",
+     "max_tanimoto": 0.6667,
+     "rr": 1.0,
+     "nn_inchikey14": "QCOBBSPZKJHOLQ"
+    },
+    {
+     "molecule_id": "mb_00027",
+     "max_tanimoto": 0.76,
+     "rr": 0.5,
+     "nn_inchikey14": "WXDDYICRBLXQOL"
+    },
+    {
+     "molecule_id": "mb_00028",
+     "max_tanimoto": 0.4915,
+     "rr": 0.5,
+     "nn_inchikey14": "RLXJEQGSEAANIU"
+    },
+    {
+     "molecule_id": "mb_00029",
+     "max_tanimoto": 0.6119,
+     "rr": 1.0,
+     "nn_inchikey14": "PREJCIBOOBIZFO"
+    },
+    {
+     "molecule_id": "mb_00030",
+     "max_tanimoto": 0.5574,
+     "rr": 1.0,
+     "nn_inchikey14": "FCFNTDSVLLFBQQ"
+    },
+    {
+     "molecule_id": "mb_00031",
+     "max_tanimoto": 0.507,
+     "rr": 1.0,
+     "nn_inchikey14": "RDENYULJDKDIBU"
+    },
+    {
+     "molecule_id": "mb_00032",
+     "max_tanimoto": 0.8125,
+     "rr": 0.3333333333333333,
+     "nn_inchikey14": "AWGNJLORKLZRSU"
+    },
+    {
+     "molecule_id": "mb_00033",
+     "max_tanimoto": 0.6333,
+     "rr": 1.0,
+     "nn_inchikey14": "UDEDFZHHNSEUBE"
+    },
+    {
+     "molecule_id": "mb_00034",
+     "max_tanimoto": 0.5893,
+     "rr": 1.0,
+     "nn_inchikey14": "GBJHVKLLDDFUMK"
+    },
+    {
+     "molecule_id": "mb_00035",
+     "max_tanimoto": 0.7593,
+     "rr": 0.5,
+     "nn_inchikey14": "XHJRXBZBGMRKBW"
+    },
+    {
+     "molecule_id": "mb_00036",
+     "max_tanimoto": 0.7,
+     "rr": 1.0,
+     "nn_inchikey14": "AFYVWDRLDVRRRL"
+    },
+    {
+     "molecule_id": "mb_00037",
+     "max_tanimoto": 0.6667,
+     "rr": 1.0,
+     "nn_inchikey14": "QKRDDOVVGZHLKW"
+    },
+    {
+     "molecule_id": "mb_00038",
+     "max_tanimoto": 0.6984,
+     "rr": 1.0,
+     "nn_inchikey14": "VLZKMKSFWFPPMS"
+    },
+    {
+     "molecule_id": "mb_00039",
+     "max_tanimoto": 0.5932,
+     "rr": 1.0,
+     "nn_inchikey14": "WWQJXMQBXQGLRI"
+    },
+    {
+     "molecule_id": "mb_00040",
+     "max_tanimoto": 0.7458,
+     "rr": 1.0,
+     "nn_inchikey14": "JGIJRSRXEXEPQH"
+    },
+    {
+     "molecule_id": "mb_00041",
+     "max_tanimoto": 0.7647,
+     "rr": 0.5,
+     "nn_inchikey14": "RVCUWEVRNPFLDH"
+    },
+    {
+     "molecule_id": "mb_00042",
+     "max_tanimoto": 0.5833,
+     "rr": 1.0,
+     "nn_inchikey14": "PEGDPJLOSOZZBD"
+    },
+    {
+     "molecule_id": "mb_00043",
+     "max_tanimoto": 0.8163,
+     "rr": 1.0,
+     "nn_inchikey14": "OCUJQUSHZKWJOD"
+    },
+    {
+     "molecule_id": "mb_00044",
+     "max_tanimoto": 0.6818,
+     "rr": 1.0,
+     "nn_inchikey14": "FHLGUSMEIHFNEH"
+    },
+    {
+     "molecule_id": "mb_00045",
+     "max_tanimoto": 0.55,
+     "rr": 1.0,
+     "nn_inchikey14": "TXKXHGNSRWDNLY"
+    },
+    {
+     "molecule_id": "mb_00046",
+     "max_tanimoto": 0.7143,
+     "rr": 0.041666666666666664,
+     "nn_inchikey14": "ASPSKADMERXXEP"
+    },
+    {
+     "molecule_id": "mb_00047",
+     "max_tanimoto": 0.4531,
+     "rr": 1.0,
+     "nn_inchikey14": "QANHLHZDIKBRNC"
+    },
+    {
+     "molecule_id": "mb_00048",
+     "max_tanimoto": 0.5965,
+     "rr": 1.0,
+     "nn_inchikey14": "CXTNVPWLYZEVDG"
+    },
+    {
+     "molecule_id": "mb_00049",
+     "max_tanimoto": 0.4348,
+     "rr": 1.0,
+     "nn_inchikey14": "CKKGUILDACBPRM"
+    },
+    {
+     "molecule_id": "mb_00050",
+     "max_tanimoto": 0.7308,
+     "rr": 0.5,
+     "nn_inchikey14": "DAIXUBYKIOIQJD"
+    },
+    {
+     "molecule_id": "mb_00051",
+     "max_tanimoto": 0.6809,
+     "rr": 1.0,
+     "nn_inchikey14": "PMBMZSVFUXEJEO"
+    },
+    {
+     "molecule_id": "mb_00052",
+     "max_tanimoto": 0.7091,
+     "rr": 1.0,
+     "nn_inchikey14": "CKUHUZQKFHEBDT"
+    },
+    {
+     "molecule_id": "mb_00053",
+     "max_tanimoto": 0.4808,
+     "rr": 1.0,
+     "nn_inchikey14": "ZGCSPGFCTPRWHZ"
+    },
+    {
+     "molecule_id": "mb_00054",
+     "max_tanimoto": 0.5273,
+     "rr": 1.0,
+     "nn_inchikey14": "DKCVBBUFTDOYPM"
+    },
+    {
+     "molecule_id": "mb_00055",
+     "max_tanimoto": 0.75,
+     "rr": 1.0,
+     "nn_inchikey14": "OXFPTXXDWKVWAK"
+    },
+    {
+     "molecule_id": "mb_00056",
+     "max_tanimoto": 0.7759,
+     "rr": 0.5,
+     "nn_inchikey14": "JIMJTSCZAAPNEV"
+    },
+    {
+     "molecule_id": "mb_00057",
+     "max_tanimoto": 0.6522,
+     "rr": 0.5,
+     "nn_inchikey14": "HRSONTJVABSEPI"
+    },
+    {
+     "molecule_id": "mb_00058",
+     "max_tanimoto": 0.6308,
+     "rr": 1.0,
+     "nn_inchikey14": "AWPYTXUNNWUERP"
+    },
+    {
+     "molecule_id": "mb_00059",
+     "max_tanimoto": 0.5,
+     "rr": 1.0,
+     "nn_inchikey14": "VKMUSUVECDZJML"
+    },
+    {
+     "molecule_id": "mb_00060",
+     "max_tanimoto": 0.5455,
+     "rr": 1.0,
+     "nn_inchikey14": "DLUVJVKLECEJGV"
+    },
+    {
+     "molecule_id": "mb_00061",
+     "max_tanimoto": 0.7097,
+     "rr": 1.0,
+     "nn_inchikey14": "HFXLXFVGWRIRBI"
+    },
+    {
+     "molecule_id": "mb_00062",
+     "max_tanimoto": 0.6604,
+     "rr": 1.0,
+     "nn_inchikey14": "GNIXVOSHFSGFPD"
+    },
+    {
+     "molecule_id": "mb_00063",
+     "max_tanimoto": 0.6304,
+     "rr": 1.0,
+     "nn_inchikey14": "QSAMXYYSGGMNTJ"
+    },
+    {
+     "molecule_id": "mb_00064",
+     "max_tanimoto": 0.5634,
+     "rr": 1.0,
+     "nn_inchikey14": "TUKRNIVDDFZPFQ"
+    },
+    {
+     "molecule_id": "mb_00065",
+     "max_tanimoto": 0.5789,
+     "rr": 1.0,
+     "nn_inchikey14": "PILPRNXXXWQIFK"
+    },
+    {
+     "molecule_id": "mb_00066",
+     "max_tanimoto": 0.6034,
+     "rr": 1.0,
+     "nn_inchikey14": "YBIZIASFDFEFOW"
+    },
+    {
+     "molecule_id": "mb_00067",
+     "max_tanimoto": 0.7143,
+     "rr": 1.0,
+     "nn_inchikey14": "UMIFAUJKDPEBTR"
+    },
+    {
+     "molecule_id": "mb_00068",
+     "max_tanimoto": 0.6182,
+     "rr": 1.0,
+     "nn_inchikey14": "QLGZWRSOGJWFLW"
+    },
+    {
+     "molecule_id": "mb_00069",
+     "max_tanimoto": 0.6122,
+     "rr": 1.0,
+     "nn_inchikey14": "MYRLJWXWPSYVRD"
+    },
+    {
+     "molecule_id": "mb_00070",
+     "max_tanimoto": 0.5882,
+     "rr": 1.0,
+     "nn_inchikey14": "ZYCUNUXHMOXNMP"
+    },
+    {
+     "molecule_id": "mb_00071",
+     "max_tanimoto": 0.7097,
+     "rr": 0.5,
+     "nn_inchikey14": "ADSKQYZWHWQPIQ"
+    },
+    {
+     "molecule_id": "mb_00072",
+     "max_tanimoto": 0.5797,
+     "rr": 1.0,
+     "nn_inchikey14": "VYZZOCRHBMEYBY"
+    },
+    {
+     "molecule_id": "mb_00073",
+     "max_tanimoto": 0.74,
+     "rr": 1.0,
+     "nn_inchikey14": "LMCIUQQOKVZWRL"
+    },
+    {
+     "molecule_id": "mb_00074",
+     "max_tanimoto": 0.6275,
+     "rr": 1.0,
+     "nn_inchikey14": "PSICFOBMVQZZIW"
+    },
+    {
+     "molecule_id": "mb_00075",
+     "max_tanimoto": 0.5345,
+     "rr": 1.0,
+     "nn_inchikey14": "NYHAFLQYSJVRGR"
+    },
+    {
+     "molecule_id": "mb_00076",
+     "max_tanimoto": 0.4464,
+     "rr": 1.0,
+     "nn_inchikey14": "YHJVKSPXBGIAMM"
+    },
+    {
+     "molecule_id": "mb_00077",
+     "max_tanimoto": 0.7455,
+     "rr": 1.0,
+     "nn_inchikey14": "MXIRTUCRQKGAPH"
+    },
+    {
+     "molecule_id": "mb_00078",
+     "max_tanimoto": 0.7797,
+     "rr": 1.0,
+     "nn_inchikey14": "PCOCSQAHYLKXAN"
+    },
+    {
+     "molecule_id": "mb_00079",
+     "max_tanimoto": 0.5455,
+     "rr": 1.0,
+     "nn_inchikey14": "VGRBFXQYVHRJJI"
+    },
+    {
+     "molecule_id": "mb_00080",
+     "max_tanimoto": 0.6792,
+     "rr": 0.5,
+     "nn_inchikey14": "JNPHGTQWWQREDC"
+    },
+    {
+     "molecule_id": "mb_00081",
+     "max_tanimoto": 0.7209,
+     "rr": 0.5,
+     "nn_inchikey14": "KVEXJYQBPLPLPK"
+    },
+    {
+     "molecule_id": "mb_00082",
+     "max_tanimoto": 0.5172,
+     "rr": 1.0,
+     "nn_inchikey14": "CQPWYPYJTIXZTO"
+    },
+    {
+     "molecule_id": "mb_00083",
+     "max_tanimoto": 0.6296,
+     "rr": 0.5,
+     "nn_inchikey14": "FCRTUFWDCVXIRT"
+    },
+    {
+     "molecule_id": "mb_00084",
+     "max_tanimoto": 0.7619,
+     "rr": 1.0,
+     "nn_inchikey14": "DZGARBRYFPTGNO"
+    },
+    {
+     "molecule_id": "mb_00085",
+     "max_tanimoto": 0.7097,
+     "rr": 1.0,
+     "nn_inchikey14": "UMUPHGIEGJNJRY"
+    },
+    {
+     "molecule_id": "mb_00086",
+     "max_tanimoto": 0.5893,
+     "rr": 1.0,
+     "nn_inchikey14": "OAQXVSXCUPZPLG"
+    },
+    {
+     "molecule_id": "mb_00087",
+     "max_tanimoto": 0.6154,
+     "rr": 1.0,
+     "nn_inchikey14": "VPADUCLTDZLGDR"
+    },
+    {
+     "molecule_id": "mb_00088",
+     "max_tanimoto": 0.6393,
+     "rr": 1.0,
+     "nn_inchikey14": "NCZOPZXZWAUCMY"
+    },
+    {
+     "molecule_id": "mb_00089",
+     "max_tanimoto": 0.5306,
+     "rr": 1.0,
+     "nn_inchikey14": "ONICURNTUNKYCD"
+    },
+    {
+     "molecule_id": "mb_00090",
+     "max_tanimoto": 0.4667,
+     "rr": 1.0,
+     "nn_inchikey14": "GZUYJJAPJHEVSX"
+    },
+    {
+     "molecule_id": "mb_00091",
+     "max_tanimoto": 0.4783,
+     "rr": 1.0,
+     "nn_inchikey14": "LGECTKJDPJOBJJ"
+    },
+    {
+     "molecule_id": "mb_00092",
+     "max_tanimoto": 0.5179,
+     "rr": 1.0,
+     "nn_inchikey14": "AAMCWDRVYVWCKW"
+    },
+    {
+     "molecule_id": "mb_00093",
+     "max_tanimoto": 0.75,
+     "rr": 1.0,
+     "nn_inchikey14": "GDWGUVQVWBSPQK"
+    },
+    {
+     "molecule_id": "mb_00094",
+     "max_tanimoto": 0.5818,
+     "rr": 0.5,
+     "nn_inchikey14": "FMQMHCYDPVDQCL"
+    },
+    {
+     "molecule_id": "mb_00095",
+     "max_tanimoto": 0.5806,
+     "rr": 1.0,
+     "nn_inchikey14": "MFRMBLYRGAEHDS"
+    },
+    {
+     "molecule_id": "mb_00096",
+     "max_tanimoto": 0.5965,
+     "rr": 1.0,
+     "nn_inchikey14": "HVYUWWRJHKBJAS"
+    },
+    {
+     "molecule_id": "mb_00097",
+     "max_tanimoto": 0.6538,
+     "rr": 1.0,
+     "nn_inchikey14": "MEOLVMFHDDYUHV"
+    },
+    {
+     "molecule_id": "mb_00098",
+     "max_tanimoto": 0.566,
+     "rr": 1.0,
+     "nn_inchikey14": "OHXRPXQIWIAOSN"
+    },
+    {
+     "molecule_id": "mb_00099",
+     "max_tanimoto": 0.9302,
+     "rr": 1.0,
+     "nn_inchikey14": "RGPRKFWNYAHKLY"
+    },
+    {
+     "molecule_id": "mb_00100",
+     "max_tanimoto": 0.6271,
+     "rr": 0.0,
+     "nn_inchikey14": "BXRPHPVVMHPARQ"
+    },
+    {
+     "molecule_id": "mb_00101",
+     "max_tanimoto": 0.7179,
+     "rr": 1.0,
+     "nn_inchikey14": "QARIPQNFGYEMHB"
+    },
+    {
+     "molecule_id": "mb_00102",
+     "max_tanimoto": 0.6308,
+     "rr": 1.0,
+     "nn_inchikey14": "BTNCUMKUKDWCDD"
+    },
+    {
+     "molecule_id": "mb_00103",
+     "max_tanimoto": 0.5763,
+     "rr": 1.0,
+     "nn_inchikey14": "KBQRVVKAVUEFRH"
+    },
+    {
+     "molecule_id": "mb_00104",
+     "max_tanimoto": 0.8596,
+     "rr": 1.0,
+     "nn_inchikey14": "VPGAMVPLPDAICZ"
+    },
+    {
+     "molecule_id": "mb_00105",
+     "max_tanimoto": 0.629,
+     "rr": 1.0,
+     "nn_inchikey14": "ZJOIZXOPLYEBOA"
+    },
+    {
+     "molecule_id": "mb_00106",
+     "max_tanimoto": 0.75,
+     "rr": 1.0,
+     "nn_inchikey14": "LVRWMGQTWQWBKV"
+    },
+    {
+     "molecule_id": "mb_00107",
+     "max_tanimoto": 0.6071,
+     "rr": 1.0,
+     "nn_inchikey14": "HGNJWVLGCKUTHH"
+    },
+    {
+     "molecule_id": "mb_00108",
+     "max_tanimoto": 0.4789,
+     "rr": 1.0,
+     "nn_inchikey14": "CRMFZQUREKXWMK"
+    },
+    {
+     "molecule_id": "mb_00109",
+     "max_tanimoto": 0.597,
+     "rr": 1.0,
+     "nn_inchikey14": "DGXHQVRUROCLDZ"
+    },
+    {
+     "molecule_id": "mb_00110",
+     "max_tanimoto": 0.5217,
+     "rr": 1.0,
+     "nn_inchikey14": "LHJKXHUFXRHBBQ"
+    },
+    {
+     "molecule_id": "mb_00111",
+     "max_tanimoto": 0.5763,
+     "rr": 1.0,
+     "nn_inchikey14": "LXZGBOMDIVOFLW"
+    },
+    {
+     "molecule_id": "mb_00112",
+     "max_tanimoto": 0.8596,
+     "rr": 1.0,
+     "nn_inchikey14": "DZTIHQQINVDGIX"
+    },
+    {
+     "molecule_id": "mb_00113",
+     "max_tanimoto": 0.6415,
+     "rr": 0.5,
+     "nn_inchikey14": "RNMVZZATJGJOBK"
+    },
+    {
+     "molecule_id": "mb_00114",
+     "max_tanimoto": 0.6053,
+     "rr": 0.5,
+     "nn_inchikey14": "LUSVQRVZKWYZSU"
+    },
+    {
+     "molecule_id": "mb_00115",
+     "max_tanimoto": 0.4746,
+     "rr": 1.0,
+     "nn_inchikey14": "KBJBPNSTEUNEEP"
+    },
+    {
+     "molecule_id": "mb_00116",
+     "max_tanimoto": 0.5833,
+     "rr": 1.0,
+     "nn_inchikey14": "BAZLYVOEAJBNND"
+    },
+    {
+     "molecule_id": "mb_00117",
+     "max_tanimoto": 0.8148,
+     "rr": 1.0,
+     "nn_inchikey14": "VXJCNELTKXBHFY"
+    },
+    {
+     "molecule_id": "mb_00118",
+     "max_tanimoto": 0.5893,
+     "rr": 1.0,
+     "nn_inchikey14": "UCFCTCJKMRJTNA"
+    },
+    {
+     "molecule_id": "mb_00119",
+     "max_tanimoto": 0.6406,
+     "rr": 1.0,
+     "nn_inchikey14": "HNNYBKGBQYQYTC"
+    },
+    {
+     "molecule_id": "mb_00120",
+     "max_tanimoto": 0.5152,
+     "rr": 1.0,
+     "nn_inchikey14": "GRMWWNNWSLOOLL"
+    },
+    {
+     "molecule_id": "mb_00121",
+     "max_tanimoto": 0.5745,
+     "rr": 1.0,
+     "nn_inchikey14": "NYAFMMCEIRRGQY"
+    },
+    {
+     "molecule_id": "mb_00122",
+     "max_tanimoto": 0.7241,
+     "rr": 0.5,
+     "nn_inchikey14": "OWLWNQUKFCBBPN"
+    },
+    {
+     "molecule_id": "mb_00123",
+     "max_tanimoto": 0.5469,
+     "rr": 1.0,
+     "nn_inchikey14": "UFCHNIZUXPHENB"
+    },
+    {
+     "molecule_id": "mb_00125",
+     "max_tanimoto": 0.5246,
+     "rr": 1.0,
+     "nn_inchikey14": "WRFIHVJMHWTEMQ"
+    },
+    {
+     "molecule_id": "mb_00126",
+     "max_tanimoto": 0.7292,
+     "rr": 1.0,
+     "nn_inchikey14": "QQGHYPSNYWWITA"
+    },
+    {
+     "molecule_id": "mb_00127",
+     "max_tanimoto": 0.6727,
+     "rr": 0.16666666666666666,
+     "nn_inchikey14": "JUSFEWFEYSKZON"
+    },
+    {
+     "molecule_id": "mb_00128",
+     "max_tanimoto": 0.6122,
+     "rr": 0.5,
+     "nn_inchikey14": "RMXLVSXNOZLBCJ"
+    },
+    {
+     "molecule_id": "mb_00129",
+     "max_tanimoto": 0.6964,
+     "rr": 0.5,
+     "nn_inchikey14": "FHCRFUQGHMKNDE"
+    },
+    {
+     "molecule_id": "mb_00130",
+     "max_tanimoto": 0.55,
+     "rr": 1.0,
+     "nn_inchikey14": "CQERVFFAOOUFEQ"
+    },
+    {
+     "molecule_id": "mb_00131",
+     "max_tanimoto": 0.5833,
+     "rr": 1.0,
+     "nn_inchikey14": "KLCNRXMBCJUTGZ"
+    },
+    {
+     "molecule_id": "mb_00132",
+     "max_tanimoto": 0.7925,
+     "rr": 1.0,
+     "nn_inchikey14": "HDGYVPYKOSQRIW"
+    },
+    {
+     "molecule_id": "mb_00133",
+     "max_tanimoto": 0.5077,
+     "rr": 1.0,
+     "nn_inchikey14": "MKJVHCYYKSJCFB"
+    },
+    {
+     "molecule_id": "mb_00134",
+     "max_tanimoto": 0.54,
+     "rr": 1.0,
+     "nn_inchikey14": "KDRQRCNWDVJYQN"
+    },
+    {
+     "molecule_id": "mb_00135",
+     "max_tanimoto": 0.6596,
+     "rr": 1.0,
+     "nn_inchikey14": "SENKYZNGXXLVOH"
+    },
+    {
+     "molecule_id": "mb_00136",
+     "max_tanimoto": 0.5606,
+     "rr": 1.0,
+     "nn_inchikey14": "AICCAABYKXJJEU"
+    },
+    {
+     "molecule_id": "mb_00137",
+     "max_tanimoto": 0.5077,
+     "rr": 1.0,
+     "nn_inchikey14": "PKEOLZMVRIRYDG"
+    },
+    {
+     "molecule_id": "mb_00138",
+     "max_tanimoto": 0.6,
+     "rr": 1.0,
+     "nn_inchikey14": "UBSNUPXAYOGIPX"
+    },
+    {
+     "molecule_id": "mb_00139",
+     "max_tanimoto": 0.5385,
+     "rr": 1.0,
+     "nn_inchikey14": "AOHOSTKVRJWNAF"
+    },
+    {
+     "molecule_id": "mb_00140",
+     "max_tanimoto": 0.7778,
+     "rr": 1.0,
+     "nn_inchikey14": "SXVYAOLQOXWZLQ"
+    },
+    {
+     "molecule_id": "mb_00141",
+     "max_tanimoto": 0.6327,
+     "rr": 1.0,
+     "nn_inchikey14": "PXAYRDXRVKSTGV"
+    },
+    {
+     "molecule_id": "mb_00142",
+     "max_tanimoto": 0.9608,
+     "rr": 0.5,
+     "nn_inchikey14": "JQCLUDJNWOSOLD"
+    },
+    {
+     "molecule_id": "mb_00143",
+     "max_tanimoto": 0.7174,
+     "rr": 1.0,
+     "nn_inchikey14": "FENYOQOGQGAHMN"
+    },
+    {
+     "molecule_id": "mb_00144",
+     "max_tanimoto": 0.6269,
+     "rr": 1.0,
+     "nn_inchikey14": "LWAFJAUWIUJDHP"
+    },
+    {
+     "molecule_id": "mb_00145",
+     "max_tanimoto": 0.875,
+     "rr": 0.5,
+     "nn_inchikey14": "ZBMKYKFQSVXFBH"
+    },
+    {
+     "molecule_id": "mb_00146",
+     "max_tanimoto": 0.8103,
+     "rr": 1.0,
+     "nn_inchikey14": "KXHMDZZLDQZZDY"
+    },
+    {
+     "molecule_id": "mb_00147",
+     "max_tanimoto": 0.6585,
+     "rr": 1.0,
+     "nn_inchikey14": "RTHLCSPHIZXVPC"
+    },
+    {
+     "molecule_id": "mb_00148",
+     "max_tanimoto": 0.566,
+     "rr": 1.0,
+     "nn_inchikey14": "DXLUESGNKVEXNO"
+    },
+    {
+     "molecule_id": "mb_00149",
+     "max_tanimoto": 0.5938,
+     "rr": 1.0,
+     "nn_inchikey14": "IPKCAUGDBVAESQ"
+    },
+    {
+     "molecule_id": "mb_00150",
+     "max_tanimoto": 0.5238,
+     "rr": 1.0,
+     "nn_inchikey14": "HKOFSZBKESDYIC"
+    },
+    {
+     "molecule_id": "mb_00151",
+     "max_tanimoto": 0.6957,
+     "rr": 1.0,
+     "nn_inchikey14": "DGWBOMSOOSBZFG"
+    },
+    {
+     "molecule_id": "mb_00152",
+     "max_tanimoto": 0.8222,
+     "rr": 0.5,
+     "nn_inchikey14": "LWJNSBGEGKXQII"
+    },
+    {
+     "molecule_id": "mb_00153",
+     "max_tanimoto": 0.72,
+     "rr": 1.0,
+     "nn_inchikey14": "VHBAWLJACKXJMB"
+    },
+    {
+     "molecule_id": "mb_00154",
+     "max_tanimoto": 0.5818,
+     "rr": 1.0,
+     "nn_inchikey14": "HMTPCSZWDKBKBP"
+    },
+    {
+     "molecule_id": "mb_00155",
+     "max_tanimoto": 0.6731,
+     "rr": 1.0,
+     "nn_inchikey14": "BMWIKSPLEQRHCW"
+    },
+    {
+     "molecule_id": "mb_00156",
+     "max_tanimoto": 0.6389,
+     "rr": 1.0,
+     "nn_inchikey14": "CSEZGWCBDPNIGS"
+    },
+    {
+     "molecule_id": "mb_00157",
+     "max_tanimoto": 0.566,
+     "rr": 1.0,
+     "nn_inchikey14": "GXAWWBAQYLUZDO"
+    },
+    {
+     "molecule_id": "mb_00158",
+     "max_tanimoto": 0.5254,
+     "rr": 1.0,
+     "nn_inchikey14": "CHVYXNITKPPODK"
+    },
+    {
+     "molecule_id": "mb_00159",
+     "max_tanimoto": 0.5455,
+     "rr": 1.0,
+     "nn_inchikey14": "QXJCLIZMYIHXHO"
+    },
+    {
+     "molecule_id": "mb_00160",
+     "max_tanimoto": 0.661,
+     "rr": 1.0,
+     "nn_inchikey14": "JQWBYYPGCFMAQS"
+    },
+    {
+     "molecule_id": "mb_00161",
+     "max_tanimoto": 0.6852,
+     "rr": 1.0,
+     "nn_inchikey14": "USVNBPCIRYEGOX"
+    },
+    {
+     "molecule_id": "mb_00163",
+     "max_tanimoto": 0.7255,
+     "rr": 1.0,
+     "nn_inchikey14": "XRCVOTPLCWNRAF"
+    },
+    {
+     "molecule_id": "mb_00164",
+     "max_tanimoto": 0.6667,
+     "rr": 1.0,
+     "nn_inchikey14": "ZNMJLQWVKGUDHW"
+    },
+    {
+     "molecule_id": "mb_00165",
+     "max_tanimoto": 0.551,
+     "rr": 1.0,
+     "nn_inchikey14": "GRAWSMPTLQJUIO"
+    },
+    {
+     "molecule_id": "mb_00166",
+     "max_tanimoto": 0.8596,
+     "rr": 1.0,
+     "nn_inchikey14": "DBSHQCNESAOODP"
+    },
+    {
+     "molecule_id": "mb_00167",
+     "max_tanimoto": 0.7288,
+     "rr": 1.0,
+     "nn_inchikey14": "HCKRDUBCUXZYPA"
+    },
+    {
+     "molecule_id": "mb_00168",
+     "max_tanimoto": 0.75,
+     "rr": 1.0,
+     "nn_inchikey14": "IGBUENXVKUCURF"
+    },
+    {
+     "molecule_id": "mb_00169",
+     "max_tanimoto": 0.6739,
+     "rr": 1.0,
+     "nn_inchikey14": "OCLJLIVUZDWDQG"
+    },
+    {
+     "molecule_id": "mb_00170",
+     "max_tanimoto": 0.7018,
+     "rr": 1.0,
+     "nn_inchikey14": "BUGUJIFDEFGUCC"
+    },
+    {
+     "molecule_id": "mb_00171",
+     "max_tanimoto": 0.5385,
+     "rr": 0.25,
+     "nn_inchikey14": "SLZUTIZBYSDDQH"
+    },
+    {
+     "molecule_id": "mb_00172",
+     "max_tanimoto": 0.8148,
+     "rr": 1.0,
+     "nn_inchikey14": "UKHOYXPBGUZMSB"
+    },
+    {
+     "molecule_id": "mb_00173",
+     "max_tanimoto": 0.7708,
+     "rr": 1.0,
+     "nn_inchikey14": "GGVSFDCDIWFRNW"
+    },
+    {
+     "molecule_id": "mb_00174",
+     "max_tanimoto": 0.6667,
+     "rr": 1.0,
+     "nn_inchikey14": "UOXJKBFUUDHWHZ"
+    },
+    {
+     "molecule_id": "mb_00175",
+     "max_tanimoto": 0.7021,
+     "rr": 0.3333333333333333,
+     "nn_inchikey14": "AVSDQTKHRCLZPC"
+    },
+    {
+     "molecule_id": "mb_00176",
+     "max_tanimoto": 0.5469,
+     "rr": 1.0,
+     "nn_inchikey14": "RIZBOKLIWPXCGI"
+    },
+    {
+     "molecule_id": "mb_00177",
+     "max_tanimoto": 0.7308,
+     "rr": 1.0,
+     "nn_inchikey14": "QEDDDWMRFZJTAU"
+    },
+    {
+     "molecule_id": "mb_00178",
+     "max_tanimoto": 0.7619,
+     "rr": 1.0,
+     "nn_inchikey14": "YMVXLYIBQCYCJP"
+    },
+    {
+     "molecule_id": "mb_00179",
+     "max_tanimoto": 0.5385,
+     "rr": 1.0,
+     "nn_inchikey14": "YVEJLPILNNIKNW"
+    },
+    {
+     "molecule_id": "mb_00180",
+     "max_tanimoto": 0.5781,
+     "rr": 1.0,
+     "nn_inchikey14": "PSFWSVYRFBKKHE"
+    },
+    {
+     "molecule_id": "mb_00181",
+     "max_tanimoto": 0.6182,
+     "rr": 1.0,
+     "nn_inchikey14": "AMMPTHJRGHWIRX"
+    },
+    {
+     "molecule_id": "mb_00182",
+     "max_tanimoto": 0.4717,
+     "rr": 1.0,
+     "nn_inchikey14": "SIAQRLFPLIXZRH"
+    },
+    {
+     "molecule_id": "mb_00183",
+     "max_tanimoto": 0.7292,
+     "rr": 1.0,
+     "nn_inchikey14": "GYJRRYRMTSWEDU"
+    },
+    {
+     "molecule_id": "mb_00184",
+     "max_tanimoto": 0.8276,
+     "rr": 1.0,
+     "nn_inchikey14": "HUQUHTAVMMDFBM"
+    },
+    {
+     "molecule_id": "mb_00185",
+     "max_tanimoto": 0.7045,
+     "rr": 1.0,
+     "nn_inchikey14": "FKNYAILOPDWXDF"
+    },
+    {
+     "molecule_id": "mb_00186",
+     "max_tanimoto": 0.6863,
+     "rr": 0.5,
+     "nn_inchikey14": "CJEGNJQVOUZQKK"
+    },
+    {
+     "molecule_id": "mb_00187",
+     "max_tanimoto": 0.4386,
+     "rr": 1.0,
+     "nn_inchikey14": "YAXIEZIWVTWZOW"
+    },
+    {
+     "molecule_id": "mb_00188",
+     "max_tanimoto": 0.7288,
+     "rr": 0.5,
+     "nn_inchikey14": "NZSYTSDMHIRGOM"
+    },
+    {
+     "molecule_id": "mb_00189",
+     "max_tanimoto": 0.6304,
+     "rr": 1.0,
+     "nn_inchikey14": "KMEYLXSEMOKDOH"
+    },
+    {
+     "molecule_id": "mb_00190",
+     "max_tanimoto": 0.68,
+     "rr": 1.0,
+     "nn_inchikey14": "SGSQERKEYNOUOU"
+    },
+    {
+     "molecule_id": "mb_00191",
+     "max_tanimoto": 0.6207,
+     "rr": 0.3333333333333333,
+     "nn_inchikey14": "WZEATPWTPFBBII"
+    },
+    {
+     "molecule_id": "mb_00192",
+     "max_tanimoto": 0.9143,
+     "rr": 1.0,
+     "nn_inchikey14": "ZVFSJAMJPGFMOA"
+    },
+    {
+     "molecule_id": "mb_00193",
+     "max_tanimoto": 0.6182,
+     "rr": 1.0,
+     "nn_inchikey14": "LYLYMMALEYPAEA"
+    },
+    {
+     "molecule_id": "mb_00194",
+     "max_tanimoto": 0.7925,
+     "rr": 1.0,
+     "nn_inchikey14": "IPEPXZPMLKSHQL"
+    },
+    {
+     "molecule_id": "mb_00195",
+     "max_tanimoto": 0.8,
+     "rr": 0.5,
+     "nn_inchikey14": "QMFPUNVYICBDCR"
+    },
+    {
+     "molecule_id": "mb_00196",
+     "max_tanimoto": 0.8182,
+     "rr": 0.3333333333333333,
+     "nn_inchikey14": "BRGJLWNZLDASGB"
+    },
+    {
+     "molecule_id": "mb_00197",
+     "max_tanimoto": 0.5357,
+     "rr": 1.0,
+     "nn_inchikey14": "NYBHHOFYOSIIHX"
+    },
+    {
+     "molecule_id": "mb_00198",
+     "max_tanimoto": 0.6207,
+     "rr": 1.0,
+     "nn_inchikey14": "YEBBHCXCDUAHNG"
+    },
+    {
+     "molecule_id": "mb_00199",
+     "max_tanimoto": 0.625,
+     "rr": 1.0,
+     "nn_inchikey14": "MKXORATVZKOUAI"
+    }
+   ]
+  },
+  "v3_c2_t10": {
+   "n_molecules": 197,
+   "summary": {
+    "<0.5": {
+     "n": 8,
+     "mrr": 0.0,
+     "ci95": [
+      0.0,
+      0.0
+     ],
+     "n_top1": 0,
+     "n_rr0": 8
+    },
+    "0.5-0.8": {
+     "n": 175,
+     "mrr": 0.0,
+     "ci95": [
+      0.0,
+      0.0
+     ],
+     "n_top1": 0,
+     "n_rr0": 175
+    },
+    ">=0.8": {
+     "n": 14,
+     "mrr": 0.0,
+     "ci95": [
+      0.0,
+      0.0
+     ],
+     "n_top1": 0,
+     "n_rr0": 14
+    },
+    "all": {
+     "n": 197,
+     "mrr": 0.0,
+     "ci95": [
+      0.0,
+      0.0
+     ]
+    }
+   },
+   "leak_check": {
+    "n_tanimoto_1": 0,
+    "n_inchikey14_in_train": 0,
+    "n_inchikey14_in_train_key": 0
+   },
+   "sim_quantiles": {
+    "0.1": 0.5221,
+    "0.25": 0.5797,
+    "0.5": 0.6508,
+    "0.75": 0.717,
+    "0.9": 0.7784
+   },
+   "files": {
+    "outputs/local_eval/v3_c2_t10/truth.csv": "99f2bdd68b2af31d3d76b9007666b50069fd48022c567e2d7d9f3f7e1266e83d",
+    "outputs/local_eval/v3_c2_t10/submission_score+prior+frag.csv": "7716fc271dcc1fc01e1a2472ec63308b701f5fca02e79b3d821b4c0b1604411d"
+   },
+   "per_molecule": [
+    {
+     "molecule_id": "m_00000",
+     "max_tanimoto": 0.5926,
+     "rr": 0.0,
+     "nn_inchikey14": "QCKJIDIZCCOAKO"
+    },
+    {
+     "molecule_id": "m_00001",
+     "max_tanimoto": 0.6957,
+     "rr": 0.0,
+     "nn_inchikey14": "FTRIUMZSDSWDQT"
+    },
+    {
+     "molecule_id": "m_00002",
+     "max_tanimoto": 0.6,
+     "rr": 0.0,
+     "nn_inchikey14": "JHEWQTQKAAFWRL"
+    },
+    {
+     "molecule_id": "m_00003",
+     "max_tanimoto": 0.4308,
+     "rr": 0.0,
+     "nn_inchikey14": "AAGXDKZJVYZKJO"
+    },
+    {
+     "molecule_id": "m_00004",
+     "max_tanimoto": 0.6977,
+     "rr": 0.0,
+     "nn_inchikey14": "NHSPEWURNOTYDQ"
+    },
+    {
+     "molecule_id": "m_00005",
+     "max_tanimoto": 0.6029,
+     "rr": 0.0,
+     "nn_inchikey14": "YEYWPQKPCBIBAX"
+    },
+    {
+     "molecule_id": "m_00006",
+     "max_tanimoto": 0.5556,
+     "rr": 0.0,
+     "nn_inchikey14": "CGEACUVSFWOPPX"
+    },
+    {
+     "molecule_id": "m_00007",
+     "max_tanimoto": 0.6949,
+     "rr": 0.0,
+     "nn_inchikey14": "WTDAMMXWCXTACM"
+    },
+    {
+     "molecule_id": "m_00008",
+     "max_tanimoto": 0.6818,
+     "rr": 0.0,
+     "nn_inchikey14": "MTMDWDLNWKFSOW"
+    },
+    {
+     "molecule_id": "m_00009",
+     "max_tanimoto": 0.6809,
+     "rr": 0.0,
+     "nn_inchikey14": "LCQDVHRYXGHCKY"
+    },
+    {
+     "molecule_id": "m_00010",
+     "max_tanimoto": 0.5088,
+     "rr": 0.0,
+     "nn_inchikey14": "DGJSWUKZUQIORK"
+    },
+    {
+     "molecule_id": "m_00011",
+     "max_tanimoto": 0.6087,
+     "rr": 0.0,
+     "nn_inchikey14": "SVMPVVHRTXTKPD"
+    },
+    {
+     "molecule_id": "m_00013",
+     "max_tanimoto": 0.7037,
+     "rr": 0.0,
+     "nn_inchikey14": "UWEOKGPWELCJIR"
+    },
+    {
+     "molecule_id": "m_00014",
+     "max_tanimoto": 0.6491,
+     "rr": 0.0,
+     "nn_inchikey14": "TYCAUQAFEIMJMD"
+    },
+    {
+     "molecule_id": "m_00015",
+     "max_tanimoto": 0.6316,
+     "rr": 0.0,
+     "nn_inchikey14": "MEAMQQDLMABDNB"
+    },
+    {
+     "molecule_id": "m_00016",
+     "max_tanimoto": 0.6981,
+     "rr": 0.0,
+     "nn_inchikey14": "JONOQKLSVNHCJS"
+    },
+    {
+     "molecule_id": "m_00017",
+     "max_tanimoto": 0.6508,
+     "rr": 0.0,
+     "nn_inchikey14": "VEMSRXORGZQMMR"
+    },
+    {
+     "molecule_id": "m_00018",
+     "max_tanimoto": 0.7222,
+     "rr": 0.0,
+     "nn_inchikey14": "MMGBINDWUXKGQT"
+    },
+    {
+     "molecule_id": "m_00019",
+     "max_tanimoto": 0.4923,
+     "rr": 0.0,
+     "nn_inchikey14": "BDHUSWNBNGXDSB"
+    },
+    {
+     "molecule_id": "m_00020",
+     "max_tanimoto": 0.717,
+     "rr": 0.0,
+     "nn_inchikey14": "DUXKKVYYCUJAAX"
+    },
+    {
+     "molecule_id": "m_00021",
+     "max_tanimoto": 0.6852,
+     "rr": 0.0,
+     "nn_inchikey14": "ZQOIQOVSSROCKD"
+    },
+    {
+     "molecule_id": "m_00022",
+     "max_tanimoto": 0.8333,
+     "rr": 0.0,
+     "nn_inchikey14": "RHLMIJQNYULTGB"
+    },
+    {
+     "molecule_id": "m_00023",
+     "max_tanimoto": 0.5932,
+     "rr": 0.0,
+     "nn_inchikey14": "SSNQVAHZMHCOIE"
+    },
+    {
+     "molecule_id": "m_00024",
+     "max_tanimoto": 0.6531,
+     "rr": 0.0,
+     "nn_inchikey14": "DSXVQNKOFRTYDA"
+    },
+    {
+     "molecule_id": "m_00025",
+     "max_tanimoto": 0.6,
+     "rr": 0.0,
+     "nn_inchikey14": "WMHBTIJDJQSFHM"
+    },
+    {
+     "molecule_id": "m_00026",
+     "max_tanimoto": 0.625,
+     "rr": 0.0,
+     "nn_inchikey14": "USNHKMCFFCWFLV"
+    },
+    {
+     "molecule_id": "m_00027",
+     "max_tanimoto": 0.375,
+     "rr": 0.0,
+     "nn_inchikey14": "BIYODOMYSOQYFY"
+    },
+    {
+     "molecule_id": "m_00028",
+     "max_tanimoto": 0.5781,
+     "rr": 0.0,
+     "nn_inchikey14": "FIGMCZSULOZSMH"
+    },
+    {
+     "molecule_id": "m_00029",
+     "max_tanimoto": 0.5185,
+     "rr": 0.0,
+     "nn_inchikey14": "PWBOSBBERTUINF"
+    },
+    {
+     "molecule_id": "m_00030",
+     "max_tanimoto": 0.5472,
+     "rr": 0.0,
+     "nn_inchikey14": "MJXPOIQDPFVSPI"
+    },
+    {
+     "molecule_id": "m_00031",
+     "max_tanimoto": 0.5849,
+     "rr": 0.0,
+     "nn_inchikey14": "WRXJFRJJOOTCOM"
+    },
+    {
+     "molecule_id": "m_00032",
+     "max_tanimoto": 0.5902,
+     "rr": 0.0,
+     "nn_inchikey14": "SRXMDSLWVHHSRG"
+    },
+    {
+     "molecule_id": "m_00033",
+     "max_tanimoto": 0.7414,
+     "rr": 0.0,
+     "nn_inchikey14": "RUCASTPNIMVUDG"
+    },
+    {
+     "molecule_id": "m_00034",
+     "max_tanimoto": 0.5273,
+     "rr": 0.0,
+     "nn_inchikey14": "ZRCLXWWQGXAKGA"
+    },
+    {
+     "molecule_id": "m_00035",
+     "max_tanimoto": 0.5769,
+     "rr": 0.0,
+     "nn_inchikey14": "ZTGKDMDHJQOTGP"
+    },
+    {
+     "molecule_id": "m_00036",
+     "max_tanimoto": 0.5902,
+     "rr": 0.0,
+     "nn_inchikey14": "XDNCDBHMSVHMNA"
+    },
+    {
+     "molecule_id": "m_00037",
+     "max_tanimoto": 0.5254,
+     "rr": 0.0,
+     "nn_inchikey14": "NTIPCIJBLVWLSX"
+    },
+    {
+     "molecule_id": "m_00038",
+     "max_tanimoto": 0.5147,
+     "rr": 0.0,
+     "nn_inchikey14": "CLKHGZKIXYQCFQ"
+    },
+    {
+     "molecule_id": "m_00039",
+     "max_tanimoto": 0.7679,
+     "rr": 0.0,
+     "nn_inchikey14": "PNKXOXWEJGHKHM"
+    },
+    {
+     "molecule_id": "m_00040",
+     "max_tanimoto": 0.8525,
+     "rr": 0.0,
+     "nn_inchikey14": "VGKBLICEDPCQRN"
+    },
+    {
+     "molecule_id": "m_00041",
+     "max_tanimoto": 0.617,
+     "rr": 0.0,
+     "nn_inchikey14": "QGQWMYIJGOKPLC"
+    },
+    {
+     "molecule_id": "m_00042",
+     "max_tanimoto": 0.6792,
+     "rr": 0.0,
+     "nn_inchikey14": "ARZLKEFJEHRNSH"
+    },
+    {
+     "molecule_id": "m_00043",
+     "max_tanimoto": 0.5645,
+     "rr": 0.0,
+     "nn_inchikey14": "PEGDPJLOSOZZBD"
+    },
+    {
+     "molecule_id": "m_00044",
+     "max_tanimoto": 0.6667,
+     "rr": 0.0,
+     "nn_inchikey14": "SWQQOXGPNROKNY"
+    },
+    {
+     "molecule_id": "m_00045",
+     "max_tanimoto": 0.5,
+     "rr": 0.0,
+     "nn_inchikey14": "GQBQSEYBMKVSKV"
+    },
+    {
+     "molecule_id": "m_00046",
+     "max_tanimoto": 0.5818,
+     "rr": 0.0,
+     "nn_inchikey14": "HCPFJHOUJRNYJJ"
+    },
+    {
+     "molecule_id": "m_00047",
+     "max_tanimoto": 0.6458,
+     "rr": 0.0,
+     "nn_inchikey14": "DNUKBEMFYGJNAG"
+    },
+    {
+     "molecule_id": "m_00048",
+     "max_tanimoto": 0.7966,
+     "rr": 0.0,
+     "nn_inchikey14": "SHIBBUHIIYCMEZ"
+    },
+    {
+     "molecule_id": "m_00049",
+     "max_tanimoto": 0.5192,
+     "rr": 0.0,
+     "nn_inchikey14": "MTGBXYYBUMJDTP"
+    },
+    {
+     "molecule_id": "m_00050",
+     "max_tanimoto": 0.5192,
+     "rr": 0.0,
+     "nn_inchikey14": "KYBRYAAZSLRJJZ"
+    },
+    {
+     "molecule_id": "m_00051",
+     "max_tanimoto": 0.5167,
+     "rr": 0.0,
+     "nn_inchikey14": "QVZGZNMJEHAAOT"
+    },
+    {
+     "molecule_id": "m_00052",
+     "max_tanimoto": 0.6441,
+     "rr": 0.0,
+     "nn_inchikey14": "LABBUGZEQPXSGU"
+    },
+    {
+     "molecule_id": "m_00053",
+     "max_tanimoto": 0.7069,
+     "rr": 0.0,
+     "nn_inchikey14": "DJKMBTVZZVNJMH"
+    },
+    {
+     "molecule_id": "m_00054",
+     "max_tanimoto": 0.8679,
+     "rr": 0.0,
+     "nn_inchikey14": "HYHQGILROWBWMI"
+    },
+    {
+     "molecule_id": "m_00055",
+     "max_tanimoto": 0.4035,
+     "rr": 0.0,
+     "nn_inchikey14": "YMLMKJUUSTVVQF"
+    },
+    {
+     "molecule_id": "m_00056",
+     "max_tanimoto": 0.6087,
+     "rr": 0.0,
+     "nn_inchikey14": "NCOHHTMKRYLXLP"
+    },
+    {
+     "molecule_id": "m_00057",
+     "max_tanimoto": 0.72,
+     "rr": 0.0,
+     "nn_inchikey14": "RRMCSPPTFGMAQH"
+    },
+    {
+     "molecule_id": "m_00058",
+     "max_tanimoto": 0.6538,
+     "rr": 0.0,
+     "nn_inchikey14": "OKAUPRRPRNKMQR"
+    },
+    {
+     "molecule_id": "m_00059",
+     "max_tanimoto": 0.6721,
+     "rr": 0.0,
+     "nn_inchikey14": "YRGVUKBWVHTLFQ"
+    },
+    {
+     "molecule_id": "m_00060",
+     "max_tanimoto": 0.75,
+     "rr": 0.0,
+     "nn_inchikey14": "YIJUTPILDQOKMF"
+    },
+    {
+     "molecule_id": "m_00061",
+     "max_tanimoto": 0.7018,
+     "rr": 0.0,
+     "nn_inchikey14": "HYOOREKDTDPASC"
+    },
+    {
+     "molecule_id": "m_00062",
+     "max_tanimoto": 0.5781,
+     "rr": 0.0,
+     "nn_inchikey14": "PJDRZBHAGMFOKI"
+    },
+    {
+     "molecule_id": "m_00063",
+     "max_tanimoto": 0.7188,
+     "rr": 0.0,
+     "nn_inchikey14": "CJWOZYASFGJDNA"
+    },
+    {
+     "molecule_id": "m_00064",
+     "max_tanimoto": 0.5818,
+     "rr": 0.0,
+     "nn_inchikey14": "DRFFSWITFQEQNN"
+    },
+    {
+     "molecule_id": "m_00065",
+     "max_tanimoto": 0.5217,
+     "rr": 0.0,
+     "nn_inchikey14": "GJTFKMGZYAZUTE"
+    },
+    {
+     "molecule_id": "m_00066",
+     "max_tanimoto": 0.6875,
+     "rr": 0.0,
+     "nn_inchikey14": "FNTJTCMYNYUXKK"
+    },
+    {
+     "molecule_id": "m_00067",
+     "max_tanimoto": 0.4923,
+     "rr": 0.0,
+     "nn_inchikey14": "SUDGTFIKYUECPO"
+    },
+    {
+     "molecule_id": "m_00068",
+     "max_tanimoto": 0.54,
+     "rr": 0.0,
+     "nn_inchikey14": "JTHHXIUIUYWUGT"
+    },
+    {
+     "molecule_id": "m_00069",
+     "max_tanimoto": 0.678,
+     "rr": 0.0,
+     "nn_inchikey14": "JPJCALXZNFJHPE"
+    },
+    {
+     "molecule_id": "m_00070",
+     "max_tanimoto": 0.6724,
+     "rr": 0.0,
+     "nn_inchikey14": "KWFSNFDALUILBK"
+    },
+    {
+     "molecule_id": "m_00071",
+     "max_tanimoto": 0.5758,
+     "rr": 0.0,
+     "nn_inchikey14": "YVFYQHOSIDQSNS"
+    },
+    {
+     "molecule_id": "m_00072",
+     "max_tanimoto": 0.8125,
+     "rr": 0.0,
+     "nn_inchikey14": "LTGRXMVFYAECFI"
+    },
+    {
+     "molecule_id": "m_00073",
+     "max_tanimoto": 0.4062,
+     "rr": 0.0,
+     "nn_inchikey14": "LJGQKFHPUBSXDN"
+    },
+    {
+     "molecule_id": "m_00074",
+     "max_tanimoto": 0.65,
+     "rr": 0.0,
+     "nn_inchikey14": "QBMHADHJNWHJBZ"
+    },
+    {
+     "molecule_id": "m_00075",
+     "max_tanimoto": 0.6731,
+     "rr": 0.0,
+     "nn_inchikey14": "DNNOZJTUKJJDRQ"
+    },
+    {
+     "molecule_id": "m_00076",
+     "max_tanimoto": 0.7115,
+     "rr": 0.0,
+     "nn_inchikey14": "NSOKYNGHBXAPLD"
+    },
+    {
+     "molecule_id": "m_00077",
+     "max_tanimoto": 0.7241,
+     "rr": 0.0,
+     "nn_inchikey14": "QCDYGXDSOTVFQT"
+    },
+    {
+     "molecule_id": "m_00078",
+     "max_tanimoto": 0.6471,
+     "rr": 0.0,
+     "nn_inchikey14": "HZYLYVJGIBASSW"
+    },
+    {
+     "molecule_id": "m_00079",
+     "max_tanimoto": 0.5962,
+     "rr": 0.0,
+     "nn_inchikey14": "GQHUYCIWDCEUFA"
+    },
+    {
+     "molecule_id": "m_00080",
+     "max_tanimoto": 0.6364,
+     "rr": 0.0,
+     "nn_inchikey14": "NXFKZQANFXGGHB"
+    },
+    {
+     "molecule_id": "m_00081",
+     "max_tanimoto": 0.8537,
+     "rr": 0.0,
+     "nn_inchikey14": "NGXMMJUEDRSMER"
+    },
+    {
+     "molecule_id": "m_00082",
+     "max_tanimoto": 0.7857,
+     "rr": 0.0,
+     "nn_inchikey14": "HABRJCMJGASYHN"
+    },
+    {
+     "molecule_id": "m_00083",
+     "max_tanimoto": 0.7193,
+     "rr": 0.0,
+     "nn_inchikey14": "CAQURYMQGATNFK"
+    },
+    {
+     "molecule_id": "m_00084",
+     "max_tanimoto": 0.7455,
+     "rr": 0.0,
+     "nn_inchikey14": "KHEYCYKQYXHANS"
+    },
+    {
+     "molecule_id": "m_00085",
+     "max_tanimoto": 0.5968,
+     "rr": 0.0,
+     "nn_inchikey14": "UGXBXMNELFDFTI"
+    },
+    {
+     "molecule_id": "m_00086",
+     "max_tanimoto": 0.5645,
+     "rr": 0.0,
+     "nn_inchikey14": "VLHILJBKUZGORC"
+    },
+    {
+     "molecule_id": "m_00087",
+     "max_tanimoto": 0.6889,
+     "rr": 0.0,
+     "nn_inchikey14": "AUQHBSSPFWYNNS"
+    },
+    {
+     "molecule_id": "m_00089",
+     "max_tanimoto": 0.6,
+     "rr": 0.0,
+     "nn_inchikey14": "PHIMQWVZCDFTRL"
+    },
+    {
+     "molecule_id": "m_00090",
+     "max_tanimoto": 0.6613,
+     "rr": 0.0,
+     "nn_inchikey14": "LJZHLYWXDPVJPS"
+    },
+    {
+     "molecule_id": "m_00091",
+     "max_tanimoto": 0.7358,
+     "rr": 0.0,
+     "nn_inchikey14": "IZKXANQKIIDPIF"
+    },
+    {
+     "molecule_id": "m_00092",
+     "max_tanimoto": 0.8103,
+     "rr": 0.0,
+     "nn_inchikey14": "MCCRBVAJROPXQN"
+    },
+    {
+     "molecule_id": "m_00093",
+     "max_tanimoto": 0.7097,
+     "rr": 0.0,
+     "nn_inchikey14": "VJYFWOJJAUIKQQ"
+    },
+    {
+     "molecule_id": "m_00094",
+     "max_tanimoto": 0.5172,
+     "rr": 0.0,
+     "nn_inchikey14": "MTILHHKBLXIEMO"
+    },
+    {
+     "molecule_id": "m_00095",
+     "max_tanimoto": 0.6604,
+     "rr": 0.0,
+     "nn_inchikey14": "QYHYWLABRSYSTJ"
+    },
+    {
+     "molecule_id": "m_00096",
+     "max_tanimoto": 0.7143,
+     "rr": 0.0,
+     "nn_inchikey14": "SFECERCRKGSSGR"
+    },
+    {
+     "molecule_id": "m_00097",
+     "max_tanimoto": 0.5965,
+     "rr": 0.0,
+     "nn_inchikey14": "QXIUMVUWNFLLPT"
+    },
+    {
+     "molecule_id": "m_00098",
+     "max_tanimoto": 0.623,
+     "rr": 0.0,
+     "nn_inchikey14": "KCIFLAIWFQVOMC"
+    },
+    {
+     "molecule_id": "m_00099",
+     "max_tanimoto": 0.5254,
+     "rr": 0.0,
+     "nn_inchikey14": "QEYXMLMKQBSMFB"
+    },
+    {
+     "molecule_id": "m_00100",
+     "max_tanimoto": 0.5435,
+     "rr": 0.0,
+     "nn_inchikey14": "JBXZYRJNSGSGJE"
+    },
+    {
+     "molecule_id": "m_00101",
+     "max_tanimoto": 0.6615,
+     "rr": 0.0,
+     "nn_inchikey14": "HYNWAQVNQGUWFW"
+    },
+    {
+     "molecule_id": "m_00102",
+     "max_tanimoto": 0.3846,
+     "rr": 0.0,
+     "nn_inchikey14": "CFCGXQDLSPSKPJ"
+    },
+    {
+     "molecule_id": "m_00103",
+     "max_tanimoto": 0.7381,
+     "rr": 0.0,
+     "nn_inchikey14": "GIBKHLHZYBGKSY"
+    },
+    {
+     "molecule_id": "m_00104",
+     "max_tanimoto": 0.5536,
+     "rr": 0.0,
+     "nn_inchikey14": "ABUFXMJSMWOIAG"
+    },
+    {
+     "molecule_id": "m_00105",
+     "max_tanimoto": 0.5593,
+     "rr": 0.0,
+     "nn_inchikey14": "DCJXSLLUNPALPI"
+    },
+    {
+     "molecule_id": "m_00106",
+     "max_tanimoto": 0.5797,
+     "rr": 0.0,
+     "nn_inchikey14": "QYCOLENYVRVOSO"
+    },
+    {
+     "molecule_id": "m_00107",
+     "max_tanimoto": 0.6667,
+     "rr": 0.0,
+     "nn_inchikey14": "VYBGKZXMICVOPA"
+    },
+    {
+     "molecule_id": "m_00108",
+     "max_tanimoto": 0.5577,
+     "rr": 0.0,
+     "nn_inchikey14": "WMYAPCYYMIARGE"
+    },
+    {
+     "molecule_id": "m_00109",
+     "max_tanimoto": 0.5636,
+     "rr": 0.0,
+     "nn_inchikey14": "WPOPEERYSLXYEP"
+    },
+    {
+     "molecule_id": "m_00110",
+     "max_tanimoto": 0.6364,
+     "rr": 0.0,
+     "nn_inchikey14": "HIBQVKRPHNESGT"
+    },
+    {
+     "molecule_id": "m_00111",
+     "max_tanimoto": 0.5636,
+     "rr": 0.0,
+     "nn_inchikey14": "FNKCLQGNJBJBGE"
+    },
+    {
+     "molecule_id": "m_00112",
+     "max_tanimoto": 0.4923,
+     "rr": 0.0,
+     "nn_inchikey14": "HEGKUDISNKXIMH"
+    },
+    {
+     "molecule_id": "m_00113",
+     "max_tanimoto": 0.587,
+     "rr": 0.0,
+     "nn_inchikey14": "YGLCRWWAVXVBPH"
+    },
+    {
+     "molecule_id": "m_00114",
+     "max_tanimoto": 0.6275,
+     "rr": 0.0,
+     "nn_inchikey14": "KNLXQXVFEWMWQH"
+    },
+    {
+     "molecule_id": "m_00115",
+     "max_tanimoto": 0.8,
+     "rr": 0.0,
+     "nn_inchikey14": "JSWKREBCXYBDRX"
+    },
+    {
+     "molecule_id": "m_00116",
+     "max_tanimoto": 0.6557,
+     "rr": 0.0,
+     "nn_inchikey14": "NDPGMVOESQVOOU"
+    },
+    {
+     "molecule_id": "m_00117",
+     "max_tanimoto": 0.7455,
+     "rr": 0.0,
+     "nn_inchikey14": "LBQURXAASGTKCA"
+    },
+    {
+     "molecule_id": "m_00118",
+     "max_tanimoto": 0.6977,
+     "rr": 0.0,
+     "nn_inchikey14": "HCAHWMCXCMEDHO"
+    },
+    {
+     "molecule_id": "m_00119",
+     "max_tanimoto": 0.6296,
+     "rr": 0.0,
+     "nn_inchikey14": "MIRILEZYXMUQQU"
+    },
+    {
+     "molecule_id": "m_00120",
+     "max_tanimoto": 0.7321,
+     "rr": 0.0,
+     "nn_inchikey14": "GKSHZDPRXXRXQI"
+    },
+    {
+     "molecule_id": "m_00121",
+     "max_tanimoto": 0.5686,
+     "rr": 0.0,
+     "nn_inchikey14": "NSOZSRKDRGXHCQ"
+    },
+    {
+     "molecule_id": "m_00122",
+     "max_tanimoto": 0.7727,
+     "rr": 0.0,
+     "nn_inchikey14": "YHYZGROCKMWRES"
+    },
+    {
+     "molecule_id": "m_00123",
+     "max_tanimoto": 0.6923,
+     "rr": 0.0,
+     "nn_inchikey14": "FEGFVGIXQJEDQH"
+    },
+    {
+     "molecule_id": "m_00124",
+     "max_tanimoto": 0.5,
+     "rr": 0.0,
+     "nn_inchikey14": "BBWIQOUFVUIOFI"
+    },
+    {
+     "molecule_id": "m_00125",
+     "max_tanimoto": 0.6552,
+     "rr": 0.0,
+     "nn_inchikey14": "RHXLFOPJAQAZGT"
+    },
+    {
+     "molecule_id": "m_00126",
+     "max_tanimoto": 0.9286,
+     "rr": 0.0,
+     "nn_inchikey14": "GMEWAZYVPQXUSJ"
+    },
+    {
+     "molecule_id": "m_00127",
+     "max_tanimoto": 0.7167,
+     "rr": 0.0,
+     "nn_inchikey14": "GAGLPGNHBAGJAM"
+    },
+    {
+     "molecule_id": "m_00128",
+     "max_tanimoto": 0.6275,
+     "rr": 0.0,
+     "nn_inchikey14": "YPTAISKCVSZRMV"
+    },
+    {
+     "molecule_id": "m_00129",
+     "max_tanimoto": 0.7925,
+     "rr": 0.0,
+     "nn_inchikey14": "UAMAZNBVEUFMPD"
+    },
+    {
+     "molecule_id": "m_00130",
+     "max_tanimoto": 0.5763,
+     "rr": 0.0,
+     "nn_inchikey14": "LCXDCKFHTNRZRE"
+    },
+    {
+     "molecule_id": "m_00131",
+     "max_tanimoto": 0.7593,
+     "rr": 0.0,
+     "nn_inchikey14": "UEIPNMBZFHCQSQ"
+    },
+    {
+     "molecule_id": "m_00132",
+     "max_tanimoto": 0.6863,
+     "rr": 0.0,
+     "nn_inchikey14": "NRVQVQCPXBNTKZ"
+    },
+    {
+     "molecule_id": "m_00133",
+     "max_tanimoto": 0.8,
+     "rr": 0.0,
+     "nn_inchikey14": "ANGDRPBZVOSNBR"
+    },
+    {
+     "molecule_id": "m_00134",
+     "max_tanimoto": 0.6923,
+     "rr": 0.0,
+     "nn_inchikey14": "ANQXXPRCVFVFHP"
+    },
+    {
+     "molecule_id": "m_00135",
+     "max_tanimoto": 0.7073,
+     "rr": 0.0,
+     "nn_inchikey14": "JQOKHIRDSOTSEW"
+    },
+    {
+     "molecule_id": "m_00136",
+     "max_tanimoto": 0.619,
+     "rr": 0.0,
+     "nn_inchikey14": "ANVNGAKCEXZPRV"
+    },
+    {
+     "molecule_id": "m_00137",
+     "max_tanimoto": 0.7544,
+     "rr": 0.0,
+     "nn_inchikey14": "MBKUBRKDDNLOCL"
+    },
+    {
+     "molecule_id": "m_00138",
+     "max_tanimoto": 0.88,
+     "rr": 0.0,
+     "nn_inchikey14": "RWSYGNDFLYHGDJ"
+    },
+    {
+     "molecule_id": "m_00139",
+     "max_tanimoto": 0.7358,
+     "rr": 0.0,
+     "nn_inchikey14": "HJAIAOSUGHHOTO"
+    },
+    {
+     "molecule_id": "m_00140",
+     "max_tanimoto": 0.7273,
+     "rr": 0.0,
+     "nn_inchikey14": "QAZNYEMGHZFHJP"
+    },
+    {
+     "molecule_id": "m_00141",
+     "max_tanimoto": 0.8043,
+     "rr": 0.0,
+     "nn_inchikey14": "CHWGUZGUSDXKED"
+    },
+    {
+     "molecule_id": "m_00142",
+     "max_tanimoto": 0.8103,
+     "rr": 0.0,
+     "nn_inchikey14": "YWNLSLGULNCICL"
+    },
+    {
+     "molecule_id": "m_00143",
+     "max_tanimoto": 0.6379,
+     "rr": 0.0,
+     "nn_inchikey14": "SQKPDAABMLTATL"
+    },
+    {
+     "molecule_id": "m_00144",
+     "max_tanimoto": 0.7018,
+     "rr": 0.0,
+     "nn_inchikey14": "DZQCJDUPHOCJGK"
+    },
+    {
+     "molecule_id": "m_00145",
+     "max_tanimoto": 0.6604,
+     "rr": 0.0,
+     "nn_inchikey14": "ASBFCVSZLORXOM"
+    },
+    {
+     "molecule_id": "m_00146",
+     "max_tanimoto": 0.7917,
+     "rr": 0.0,
+     "nn_inchikey14": "DBNOJXZZWGWGFT"
+    },
+    {
+     "molecule_id": "m_00147",
+     "max_tanimoto": 0.6111,
+     "rr": 0.0,
+     "nn_inchikey14": "LYUMWPQWRYJFNA"
+    },
+    {
+     "molecule_id": "m_00148",
+     "max_tanimoto": 0.5,
+     "rr": 0.0,
+     "nn_inchikey14": "KFVMABTXKYHTTL"
+    },
+    {
+     "molecule_id": "m_00149",
+     "max_tanimoto": 0.7111,
+     "rr": 0.0,
+     "nn_inchikey14": "VUEPINIYKDLUCQ"
+    },
+    {
+     "molecule_id": "m_00150",
+     "max_tanimoto": 0.76,
+     "rr": 0.0,
+     "nn_inchikey14": "DYWYZBIDGIZNOF"
+    },
+    {
+     "molecule_id": "m_00151",
+     "max_tanimoto": 0.7925,
+     "rr": 0.0,
+     "nn_inchikey14": "XFDSSAPMAOKCFW"
+    },
+    {
+     "molecule_id": "m_00152",
+     "max_tanimoto": 0.9592,
+     "rr": 0.0,
+     "nn_inchikey14": "RPSIRNCHQBWONI"
+    },
+    {
+     "molecule_id": "m_00153",
+     "max_tanimoto": 0.54,
+     "rr": 0.0,
+     "nn_inchikey14": "WCNJEDUNFBQOFI"
+    },
+    {
+     "molecule_id": "m_00154",
+     "max_tanimoto": 0.7447,
+     "rr": 0.0,
+     "nn_inchikey14": "GYKJBQFCEPXLNM"
+    },
+    {
+     "molecule_id": "m_00155",
+     "max_tanimoto": 0.7069,
+     "rr": 0.0,
+     "nn_inchikey14": "CMSYRSJDWMHOFB"
+    },
+    {
+     "molecule_id": "m_00156",
+     "max_tanimoto": 0.6406,
+     "rr": 0.0,
+     "nn_inchikey14": "XLIBFTNSJFXGGO"
+    },
+    {
+     "molecule_id": "m_00157",
+     "max_tanimoto": 0.5522,
+     "rr": 0.0,
+     "nn_inchikey14": "QXNZXFWNCSWYHI"
+    },
+    {
+     "molecule_id": "m_00158",
+     "max_tanimoto": 0.6538,
+     "rr": 0.0,
+     "nn_inchikey14": "OXMSVYGLRDPMBH"
+    },
+    {
+     "molecule_id": "m_00159",
+     "max_tanimoto": 0.5455,
+     "rr": 0.0,
+     "nn_inchikey14": "GYONXSLFYHDXAM"
+    },
+    {
+     "molecule_id": "m_00160",
+     "max_tanimoto": 0.5833,
+     "rr": 0.0,
+     "nn_inchikey14": "NQTLYXVHJIUNFI"
+    },
+    {
+     "molecule_id": "m_00161",
+     "max_tanimoto": 0.5254,
+     "rr": 0.0,
+     "nn_inchikey14": "ULJZGEVDKWCCTB"
+    },
+    {
+     "molecule_id": "m_00162",
+     "max_tanimoto": 0.7234,
+     "rr": 0.0,
+     "nn_inchikey14": "ZWDSPKNJVFIQCO"
+    },
+    {
+     "molecule_id": "m_00163",
+     "max_tanimoto": 0.5224,
+     "rr": 0.0,
+     "nn_inchikey14": "HOHURYWHPKHRJS"
+    },
+    {
+     "molecule_id": "m_00164",
+     "max_tanimoto": 0.5952,
+     "rr": 0.0,
+     "nn_inchikey14": "FIGHCKBFNLHAFQ"
+    },
+    {
+     "molecule_id": "m_00165",
+     "max_tanimoto": 0.5357,
+     "rr": 0.0,
+     "nn_inchikey14": "BCRLCUJSLSZSLP"
+    },
+    {
+     "molecule_id": "m_00166",
+     "max_tanimoto": 0.623,
+     "rr": 0.0,
+     "nn_inchikey14": "OATLRIBTGQRIGU"
+    },
+    {
+     "molecule_id": "m_00167",
+     "max_tanimoto": 0.6226,
+     "rr": 0.0,
+     "nn_inchikey14": "ZOJGJXDKOAOVTQ"
+    },
+    {
+     "molecule_id": "m_00168",
+     "max_tanimoto": 0.6111,
+     "rr": 0.0,
+     "nn_inchikey14": "MTNHXCCZBXNMJD"
+    },
+    {
+     "molecule_id": "m_00169",
+     "max_tanimoto": 0.7111,
+     "rr": 0.0,
+     "nn_inchikey14": "AUTFDOWZXDHPID"
+    },
+    {
+     "molecule_id": "m_00170",
+     "max_tanimoto": 0.7059,
+     "rr": 0.0,
+     "nn_inchikey14": "OIYHGJJQXZMKQO"
+    },
+    {
+     "molecule_id": "m_00171",
+     "max_tanimoto": 0.7358,
+     "rr": 0.0,
+     "nn_inchikey14": "YATOZTOCEIMMEW"
+    },
+    {
+     "molecule_id": "m_00172",
+     "max_tanimoto": 0.8269,
+     "rr": 0.0,
+     "nn_inchikey14": "LSVBRGJWFGNTOM"
+    },
+    {
+     "molecule_id": "m_00173",
+     "max_tanimoto": 0.5593,
+     "rr": 0.0,
+     "nn_inchikey14": "CSINKDOZUBBOJO"
+    },
+    {
+     "molecule_id": "m_00174",
+     "max_tanimoto": 0.6897,
+     "rr": 0.0,
+     "nn_inchikey14": "TVZAMHGEVFGTJF"
+    },
+    {
+     "molecule_id": "m_00175",
+     "max_tanimoto": 0.7736,
+     "rr": 0.0,
+     "nn_inchikey14": "MYQSMMZJNKYIQP"
+    },
+    {
+     "molecule_id": "m_00176",
+     "max_tanimoto": 0.6182,
+     "rr": 0.0,
+     "nn_inchikey14": "QJWIVRSTRMVTNT"
+    },
+    {
+     "molecule_id": "m_00177",
+     "max_tanimoto": 0.7377,
+     "rr": 0.0,
+     "nn_inchikey14": "FHDSBEXICXLTFA"
+    },
+    {
+     "molecule_id": "m_00178",
+     "max_tanimoto": 0.6379,
+     "rr": 0.0,
+     "nn_inchikey14": "RXHMDYUYVWBNMQ"
+    },
+    {
+     "molecule_id": "m_00179",
+     "max_tanimoto": 0.7391,
+     "rr": 0.0,
+     "nn_inchikey14": "NOERYLGPYASYMH"
+    },
+    {
+     "molecule_id": "m_00180",
+     "max_tanimoto": 0.6308,
+     "rr": 0.0,
+     "nn_inchikey14": "PYOZVFOQFBFKQP"
+    },
+    {
+     "molecule_id": "m_00181",
+     "max_tanimoto": 0.5932,
+     "rr": 0.0,
+     "nn_inchikey14": "OCCJWPXQRZAEBU"
+    },
+    {
+     "molecule_id": "m_00182",
+     "max_tanimoto": 0.5811,
+     "rr": 0.0,
+     "nn_inchikey14": "CWKLXXYLKVGVLM"
+    },
+    {
+     "molecule_id": "m_00183",
+     "max_tanimoto": 0.6667,
+     "rr": 0.0,
+     "nn_inchikey14": "APDLHSINLMDAIO"
+    },
+    {
+     "molecule_id": "m_00184",
+     "max_tanimoto": 0.725,
+     "rr": 0.0,
+     "nn_inchikey14": "AWFWMTZSPQQBKT"
+    },
+    {
+     "molecule_id": "m_00185",
+     "max_tanimoto": 0.7258,
+     "rr": 0.0,
+     "nn_inchikey14": "AZUYDNWKQLYPKH"
+    },
+    {
+     "molecule_id": "m_00186",
+     "max_tanimoto": 0.6119,
+     "rr": 0.0,
+     "nn_inchikey14": "UPPOGUBFCAFWPH"
+    },
+    {
+     "molecule_id": "m_00187",
+     "max_tanimoto": 0.5741,
+     "rr": 0.0,
+     "nn_inchikey14": "ZJLLJONHNOERAL"
+    },
+    {
+     "molecule_id": "m_00188",
+     "max_tanimoto": 0.6226,
+     "rr": 0.0,
+     "nn_inchikey14": "JBRHFEQRHWWSBW"
+    },
+    {
+     "molecule_id": "m_00189",
+     "max_tanimoto": 0.7647,
+     "rr": 0.0,
+     "nn_inchikey14": "WVVHUOVKDLKRNH"
+    },
+    {
+     "molecule_id": "m_00191",
+     "max_tanimoto": 0.7273,
+     "rr": 0.0,
+     "nn_inchikey14": "RSSIQNCVEFLQPQ"
+    },
+    {
+     "molecule_id": "m_00192",
+     "max_tanimoto": 0.5789,
+     "rr": 0.0,
+     "nn_inchikey14": "AILIQUAHEAGMND"
+    },
+    {
+     "molecule_id": "m_00193",
+     "max_tanimoto": 0.7963,
+     "rr": 0.0,
+     "nn_inchikey14": "LLEGQPULKSJRRA"
+    },
+    {
+     "molecule_id": "m_00194",
+     "max_tanimoto": 0.5167,
+     "rr": 0.0,
+     "nn_inchikey14": "VKWRLZWRLZZIIK"
+    },
+    {
+     "molecule_id": "m_00195",
+     "max_tanimoto": 0.6596,
+     "rr": 0.0,
+     "nn_inchikey14": "XWOJVXMXQLWNEO"
+    },
+    {
+     "molecule_id": "m_00196",
+     "max_tanimoto": 0.6604,
+     "rr": 0.0,
+     "nn_inchikey14": "PBQOZIQUNCXGPT"
+    },
+    {
+     "molecule_id": "m_00197",
+     "max_tanimoto": 0.6604,
+     "rr": 0.0,
+     "nn_inchikey14": "FBYFGWOXJHLYFR"
+    },
+    {
+     "molecule_id": "m_00198",
+     "max_tanimoto": 0.7049,
+     "rr": 0.0,
+     "nn_inchikey14": "MLIAMRRWPPTFHU"
+    },
+    {
+     "molecule_id": "m_00199",
+     "max_tanimoto": 0.6296,
+     "rr": 0.0,
+     "nn_inchikey14": "LODFOOKAMHSPDG"
+    }
+   ]
+  },
+  "enveda_v1u_t10": {
+   "n_molecules": 373,
+   "summary": {
+    "<0.5": {
+     "n": 20,
+     "mrr": 0.7607,
+     "ci95": [
+      0.599,
+      0.8963
+     ],
+     "n_top1": 13,
+     "n_rr0": 0
+    },
+    "0.5-0.8": {
+     "n": 316,
+     "mrr": 0.8645,
+     "ci95": [
+      0.8355,
+      0.8909
+     ],
+     "n_top1": 243,
+     "n_rr0": 1
+    },
+    ">=0.8": {
+     "n": 37,
+     "mrr": 0.7869,
+     "ci95": [
+      0.6928,
+      0.8725
+     ],
+     "n_top1": 23,
+     "n_rr0": 0
+    },
+    "all": {
+     "n": 373,
+     "mrr": 0.8513,
+     "ci95": [
+      0.8232,
+      0.8777
+     ]
+    }
+   },
+   "leak_check": {
+    "n_tanimoto_1": 0,
+    "n_inchikey14_in_train": 0,
+    "n_inchikey14_in_train_key": 0
+   },
+   "sim_quantiles": {
+    "0.1": 0.5325,
+    "0.25": 0.5797,
+    "0.5": 0.6458,
+    "0.75": 0.7213,
+    "0.9": 0.796
+   },
+   "files": {
+    "outputs/local_eval/enveda_v1u_t10/truth.csv": "5da732d895ecf5675c0aa060b2cc43b1d4b968c6eb3f2e95277ec320e5e99fc6",
+    "outputs/local_eval/enveda_v1u_t10/submission_score+prior+frag.csv": "cc20052905b710c9970cc8ec6ea1252b60211eac908aed28c4c33ceda7b855cd"
+   },
+   "per_molecule": [
+    {
+     "molecule_id": "m_00828b",
+     "max_tanimoto": 0.8276,
+     "rr": 1.0,
+     "nn_inchikey14": "VXSDODFATLZERE"
+    },
+    {
+     "molecule_id": "m_00ffa2",
+     "max_tanimoto": 0.6889,
+     "rr": 0.5,
+     "nn_inchikey14": "PYRZULDURBIGEY"
+    },
+    {
+     "molecule_id": "m_021a48",
+     "max_tanimoto": 0.7692,
+     "rr": 1.0,
+     "nn_inchikey14": "VVEURSMFVMFNDZ"
+    },
+    {
+     "molecule_id": "m_03643a",
+     "max_tanimoto": 0.6444,
+     "rr": 1.0,
+     "nn_inchikey14": "DVRJXOUAZDPBSW"
+    },
+    {
+     "molecule_id": "m_047d36",
+     "max_tanimoto": 0.561,
+     "rr": 1.0,
+     "nn_inchikey14": "VVNFJUZHKZRLSN"
+    },
+    {
+     "molecule_id": "m_06d499",
+     "max_tanimoto": 0.6458,
+     "rr": 0.5,
+     "nn_inchikey14": "SMOVZXGACWAVJE"
+    },
+    {
+     "molecule_id": "m_0a63a6",
+     "max_tanimoto": 0.5667,
+     "rr": 1.0,
+     "nn_inchikey14": "AILOSVSSSGKQCD"
+    },
+    {
+     "molecule_id": "m_0ab88d",
+     "max_tanimoto": 0.5686,
+     "rr": 0.5,
+     "nn_inchikey14": "SAEIKABHCPJHAH"
+    },
+    {
+     "molecule_id": "m_0d433c",
+     "max_tanimoto": 0.5893,
+     "rr": 0.3333333333333333,
+     "nn_inchikey14": "IFGUKOSAMOTVCS"
+    },
+    {
+     "molecule_id": "m_0f14af",
+     "max_tanimoto": 0.6613,
+     "rr": 1.0,
+     "nn_inchikey14": "DTELERQYNOPSMS"
+    },
+    {
+     "molecule_id": "m_0f5b61",
+     "max_tanimoto": 0.7119,
+     "rr": 1.0,
+     "nn_inchikey14": "RCLFOUKQDUVTAG"
+    },
+    {
+     "molecule_id": "m_1113e8",
+     "max_tanimoto": 0.6607,
+     "rr": 1.0,
+     "nn_inchikey14": "OZDVFOIUUCCJEQ"
+    },
+    {
+     "molecule_id": "m_128db5",
+     "max_tanimoto": 0.5538,
+     "rr": 1.0,
+     "nn_inchikey14": "YPOBLSXILBXSBS"
+    },
+    {
+     "molecule_id": "m_16ffb1",
+     "max_tanimoto": 0.64,
+     "rr": 0.3333333333333333,
+     "nn_inchikey14": "RSBUPUAQQUDYFG"
+    },
+    {
+     "molecule_id": "m_17624b",
+     "max_tanimoto": 0.6207,
+     "rr": 1.0,
+     "nn_inchikey14": "ZNYDKZLCWCVOGQ"
+    },
+    {
+     "molecule_id": "m_185101",
+     "max_tanimoto": 0.6038,
+     "rr": 1.0,
+     "nn_inchikey14": "TWSFDFSYCBDQRL"
+    },
+    {
+     "molecule_id": "m_18d2f2",
+     "max_tanimoto": 0.7167,
+     "rr": 0.25,
+     "nn_inchikey14": "UBACZSLCZDLJPO"
+    },
+    {
+     "molecule_id": "m_19c1d9",
+     "max_tanimoto": 0.7414,
+     "rr": 1.0,
+     "nn_inchikey14": "AGGPXACUSNBHEM"
+    },
+    {
+     "molecule_id": "m_19e770",
+     "max_tanimoto": 0.7544,
+     "rr": 1.0,
+     "nn_inchikey14": "WWLIYMHMNPPJLL"
+    },
+    {
+     "molecule_id": "m_1becaf",
+     "max_tanimoto": 0.7,
+     "rr": 1.0,
+     "nn_inchikey14": "NHUSDXZNTHEUMV"
+    },
+    {
+     "molecule_id": "m_1c5a43",
+     "max_tanimoto": 0.6615,
+     "rr": 1.0,
+     "nn_inchikey14": "KUHNXFBBEYWBMI"
+    },
+    {
+     "molecule_id": "m_1ee399",
+     "max_tanimoto": 0.6622,
+     "rr": 1.0,
+     "nn_inchikey14": "RGAWREJUFMHXNT"
+    },
+    {
+     "molecule_id": "m_1ff708",
+     "max_tanimoto": 0.6667,
+     "rr": 1.0,
+     "nn_inchikey14": "CDGMEZOWZOTGRX"
+    },
+    {
+     "molecule_id": "m_22318b",
+     "max_tanimoto": 0.5797,
+     "rr": 1.0,
+     "nn_inchikey14": "GIAGHPQCHZENTD"
+    },
+    {
+     "molecule_id": "m_23003f",
+     "max_tanimoto": 0.7826,
+     "rr": 1.0,
+     "nn_inchikey14": "VBMOFIMGVQLFMY"
+    },
+    {
+     "molecule_id": "m_24bb03",
+     "max_tanimoto": 0.6129,
+     "rr": 1.0,
+     "nn_inchikey14": "IDWLWYRFNWMXKI"
+    },
+    {
+     "molecule_id": "m_24c335",
+     "max_tanimoto": 0.7414,
+     "rr": 1.0,
+     "nn_inchikey14": "FLMJNPXFJIMWHL"
+    },
+    {
+     "molecule_id": "m_25c30e",
+     "max_tanimoto": 0.5745,
+     "rr": 1.0,
+     "nn_inchikey14": "IFIDBGOEIPJQOL"
+    },
+    {
+     "molecule_id": "m_26a1d4",
+     "max_tanimoto": 0.614,
+     "rr": 0.5,
+     "nn_inchikey14": "UOHIGTWCZHBASF"
+    },
+    {
+     "molecule_id": "m_290f08",
+     "max_tanimoto": 0.6,
+     "rr": 1.0,
+     "nn_inchikey14": "ILQFSQDUPANNQU"
+    },
+    {
+     "molecule_id": "m_296100",
+     "max_tanimoto": 0.72,
+     "rr": 1.0,
+     "nn_inchikey14": "JTKGIKSJTQESSV"
+    },
+    {
+     "molecule_id": "m_2c1c19",
+     "max_tanimoto": 0.7045,
+     "rr": 1.0,
+     "nn_inchikey14": "RNGUYWPKVRTVFQ"
+    },
+    {
+     "molecule_id": "m_31c8e0",
+     "max_tanimoto": 0.5926,
+     "rr": 1.0,
+     "nn_inchikey14": "NMNHJXRVLMDDNN"
+    },
+    {
+     "molecule_id": "m_32804c",
+     "max_tanimoto": 0.614,
+     "rr": 1.0,
+     "nn_inchikey14": "KFHPEJFDKVFJLP"
+    },
+    {
+     "molecule_id": "m_32b66a",
+     "max_tanimoto": 0.6735,
+     "rr": 0.5,
+     "nn_inchikey14": "ASHDYQDXPRCYTH"
+    },
+    {
+     "molecule_id": "m_3430c0",
+     "max_tanimoto": 0.7037,
+     "rr": 1.0,
+     "nn_inchikey14": "MXWPVIMIOASQOL"
+    },
+    {
+     "molecule_id": "m_345929",
+     "max_tanimoto": 0.6667,
+     "rr": 1.0,
+     "nn_inchikey14": "XLRPJWMJLZNSFL"
+    },
+    {
+     "molecule_id": "m_3574c6",
+     "max_tanimoto": 0.6552,
+     "rr": 1.0,
+     "nn_inchikey14": "VHNUIJNUAUYNIB"
+    },
+    {
+     "molecule_id": "m_364610",
+     "max_tanimoto": 0.614,
+     "rr": 1.0,
+     "nn_inchikey14": "LUKGMRKLODOAGQ"
+    },
+    {
+     "molecule_id": "m_38a948",
+     "max_tanimoto": 0.7273,
+     "rr": 1.0,
+     "nn_inchikey14": "ZVFVFJVXBIHENA"
+    },
+    {
+     "molecule_id": "m_3acc8f",
+     "max_tanimoto": 0.6875,
+     "rr": 1.0,
+     "nn_inchikey14": "PNQMVXRTQBGKID"
+    },
+    {
+     "molecule_id": "m_3bf2aa",
+     "max_tanimoto": 0.4815,
+     "rr": 1.0,
+     "nn_inchikey14": "GQNKOIBCZVEVOS"
+    },
+    {
+     "molecule_id": "m_3c7c50",
+     "max_tanimoto": 0.7115,
+     "rr": 0.5,
+     "nn_inchikey14": "NSOKYNGHBXAPLD"
+    },
+    {
+     "molecule_id": "m_3e6f89",
+     "max_tanimoto": 0.5306,
+     "rr": 1.0,
+     "nn_inchikey14": "URLNGJUOGPUANW"
+    },
+    {
+     "molecule_id": "m_434353",
+     "max_tanimoto": 0.6515,
+     "rr": 1.0,
+     "nn_inchikey14": "MEQBFUXBWCUBNI"
+    },
+    {
+     "molecule_id": "m_43c5dc",
+     "max_tanimoto": 0.7045,
+     "rr": 1.0,
+     "nn_inchikey14": "FMPGTUHDWWOROU"
+    },
+    {
+     "molecule_id": "m_44c344",
+     "max_tanimoto": 0.6,
+     "rr": 1.0,
+     "nn_inchikey14": "DXVGDKXFBVHCCE"
+    },
+    {
+     "molecule_id": "m_477718",
+     "max_tanimoto": 0.7143,
+     "rr": 0.5,
+     "nn_inchikey14": "CAFXMOMXYOYKAV"
+    },
+    {
+     "molecule_id": "m_486970",
+     "max_tanimoto": 0.7969,
+     "rr": 1.0,
+     "nn_inchikey14": "MRSYMZIGFNFHFI"
+    },
+    {
+     "molecule_id": "m_495ef0",
+     "max_tanimoto": 0.623,
+     "rr": 1.0,
+     "nn_inchikey14": "MUGPGWSIVJANSJ"
+    },
+    {
+     "molecule_id": "m_4ab0ba",
+     "max_tanimoto": 0.7308,
+     "rr": 1.0,
+     "nn_inchikey14": "KXCKSIZWEKAPLE"
+    },
+    {
+     "molecule_id": "m_4ad764",
+     "max_tanimoto": 0.6154,
+     "rr": 0.3333333333333333,
+     "nn_inchikey14": "YEOGDOZHWWJJSF"
+    },
+    {
+     "molecule_id": "m_4b1bd6",
+     "max_tanimoto": 0.7321,
+     "rr": 1.0,
+     "nn_inchikey14": "RDUPZNRPJVJGRZ"
+    },
+    {
+     "molecule_id": "m_4c110b",
+     "max_tanimoto": 0.8824,
+     "rr": 0.5,
+     "nn_inchikey14": "BDQCANXSRUBULJ"
+    },
+    {
+     "molecule_id": "m_4ca20e",
+     "max_tanimoto": 0.66,
+     "rr": 1.0,
+     "nn_inchikey14": "PCHXAHMSNTZJIQ"
+    },
+    {
+     "molecule_id": "m_4ef31f",
+     "max_tanimoto": 0.5882,
+     "rr": 1.0,
+     "nn_inchikey14": "MRWAVKUEPYSQDO"
+    },
+    {
+     "molecule_id": "m_4fa400",
+     "max_tanimoto": 0.5902,
+     "rr": 1.0,
+     "nn_inchikey14": "HPFCNOOTMVAUSP"
+    },
+    {
+     "molecule_id": "m_512481",
+     "max_tanimoto": 0.6984,
+     "rr": 1.0,
+     "nn_inchikey14": "HAHHIAAVCXCTDI"
+    },
+    {
+     "molecule_id": "m_51f2ce",
+     "max_tanimoto": 0.6981,
+     "rr": 0.5,
+     "nn_inchikey14": "ARVKCIKXWBOVEF"
+    },
+    {
+     "molecule_id": "m_5236ce",
+     "max_tanimoto": 0.6866,
+     "rr": 1.0,
+     "nn_inchikey14": "UIXJYCVLYLWVGT"
+    },
+    {
+     "molecule_id": "m_53bd4c",
+     "max_tanimoto": 0.7292,
+     "rr": 1.0,
+     "nn_inchikey14": "JIEBLVBSJVSFPN"
+    },
+    {
+     "molecule_id": "m_541963",
+     "max_tanimoto": 0.8462,
+     "rr": 1.0,
+     "nn_inchikey14": "ZFFSQTRUFRSOOA"
+    },
+    {
+     "molecule_id": "m_5b16da",
+     "max_tanimoto": 0.766,
+     "rr": 0.25,
+     "nn_inchikey14": "YVMRGMUPFWZLLT"
+    },
+    {
+     "molecule_id": "m_5d2076",
+     "max_tanimoto": 0.6552,
+     "rr": 1.0,
+     "nn_inchikey14": "ZTYSIZCPBGSZDO"
+    },
+    {
+     "molecule_id": "m_5dbb1e",
+     "max_tanimoto": 0.6,
+     "rr": 0.5,
+     "nn_inchikey14": "QAVLUTNKUYAERK"
+    },
+    {
+     "molecule_id": "m_5e2041",
+     "max_tanimoto": 0.4561,
+     "rr": 0.5,
+     "nn_inchikey14": "MLCVGKAYJMTKHM"
+    },
+    {
+     "molecule_id": "m_5f72ef",
+     "max_tanimoto": 0.6735,
+     "rr": 1.0,
+     "nn_inchikey14": "JBRYEMDTMMAYOR"
+    },
+    {
+     "molecule_id": "m_5f99a0",
+     "max_tanimoto": 0.8333,
+     "rr": 0.3333333333333333,
+     "nn_inchikey14": "OTAXRYZPISONGD"
+    },
+    {
+     "molecule_id": "m_600675",
+     "max_tanimoto": 0.5455,
+     "rr": 1.0,
+     "nn_inchikey14": "PFTHPPSRDVHWBW"
+    },
+    {
+     "molecule_id": "m_6240f4",
+     "max_tanimoto": 0.5614,
+     "rr": 1.0,
+     "nn_inchikey14": "LVOCECMAXBXJTH"
+    },
+    {
+     "molecule_id": "m_68bd00",
+     "max_tanimoto": 0.5614,
+     "rr": 0.1111111111111111,
+     "nn_inchikey14": "ACBXUVXQQZMWHJ"
+    },
+    {
+     "molecule_id": "m_6a3905",
+     "max_tanimoto": 0.7273,
+     "rr": 1.0,
+     "nn_inchikey14": "BEEYRSUGGKUTHF"
+    },
+    {
+     "molecule_id": "m_6a5e03",
+     "max_tanimoto": 0.5556,
+     "rr": 1.0,
+     "nn_inchikey14": "CWDBMVKRMZHYJD"
+    },
+    {
+     "molecule_id": "m_6b959b",
+     "max_tanimoto": 0.5179,
+     "rr": 1.0,
+     "nn_inchikey14": "XHYSHBRZAYMRMT"
+    },
+    {
+     "molecule_id": "m_6d62b0",
+     "max_tanimoto": 0.5893,
+     "rr": 1.0,
+     "nn_inchikey14": "LJEBKIZXCJZLMZ"
+    },
+    {
+     "molecule_id": "m_7083d2",
+     "max_tanimoto": 0.5231,
+     "rr": 1.0,
+     "nn_inchikey14": "WSPCGICCAUZJFN"
+    },
+    {
+     "molecule_id": "m_74ccdd",
+     "max_tanimoto": 0.6607,
+     "rr": 0.0,
+     "nn_inchikey14": "YJYIOZRNFDZOBP"
+    },
+    {
+     "molecule_id": "m_760002",
+     "max_tanimoto": 0.6066,
+     "rr": 1.0,
+     "nn_inchikey14": "NFUSCGNYXGOYHF"
+    },
+    {
+     "molecule_id": "m_7925b7",
+     "max_tanimoto": 0.6512,
+     "rr": 1.0,
+     "nn_inchikey14": "LPRYLHBNRWIDSY"
+    },
+    {
+     "molecule_id": "m_79c3ae",
+     "max_tanimoto": 0.5439,
+     "rr": 1.0,
+     "nn_inchikey14": "NTKWDTBIKJJERY"
+    },
+    {
+     "molecule_id": "m_7aba68",
+     "max_tanimoto": 0.6226,
+     "rr": 1.0,
+     "nn_inchikey14": "RXQLPTGLXKOPGP"
+    },
+    {
+     "molecule_id": "m_7b3a31",
+     "max_tanimoto": 0.6429,
+     "rr": 1.0,
+     "nn_inchikey14": "JMVVEDIWJCKBOF"
+    },
+    {
+     "molecule_id": "m_7d3df5",
+     "max_tanimoto": 0.6418,
+     "rr": 1.0,
+     "nn_inchikey14": "BUVNXWWUDGYKBQ"
+    },
+    {
+     "molecule_id": "m_7deb10",
+     "max_tanimoto": 0.9286,
+     "rr": 1.0,
+     "nn_inchikey14": "YXYWUCZUDGXZOS"
+    },
+    {
+     "molecule_id": "m_7e7b39",
+     "max_tanimoto": 0.6842,
+     "rr": 0.5,
+     "nn_inchikey14": "KUNDIDAJSFIHPT"
+    },
+    {
+     "molecule_id": "m_7f8fea",
+     "max_tanimoto": 0.5574,
+     "rr": 1.0,
+     "nn_inchikey14": "QKPKADMOGMWWFU"
+    },
+    {
+     "molecule_id": "m_8010f8",
+     "max_tanimoto": 0.8571,
+     "rr": 1.0,
+     "nn_inchikey14": "DYNJZRWJQCGVHC"
+    },
+    {
+     "molecule_id": "m_80be37",
+     "max_tanimoto": 0.6557,
+     "rr": 1.0,
+     "nn_inchikey14": "DCDIZAYHVKSMRT"
+    },
+    {
+     "molecule_id": "m_81899d",
+     "max_tanimoto": 0.7869,
+     "rr": 1.0,
+     "nn_inchikey14": "NCTDJMSIWXCPQU"
+    },
+    {
+     "molecule_id": "m_826501",
+     "max_tanimoto": 0.6393,
+     "rr": 1.0,
+     "nn_inchikey14": "ITIHOWYQUMHNOA"
+    },
+    {
+     "molecule_id": "m_841ad9",
+     "max_tanimoto": 0.6,
+     "rr": 1.0,
+     "nn_inchikey14": "ODQKMOQHOCJCSL"
+    },
+    {
+     "molecule_id": "m_86b4c1",
+     "max_tanimoto": 0.8,
+     "rr": 1.0,
+     "nn_inchikey14": "KXGKSIYAUVZROD"
+    },
+    {
+     "molecule_id": "m_88e42c",
+     "max_tanimoto": 0.6727,
+     "rr": 1.0,
+     "nn_inchikey14": "XKMYGHPFQFFLRX"
+    },
+    {
+     "molecule_id": "m_899bb1",
+     "max_tanimoto": 0.6364,
+     "rr": 0.3333333333333333,
+     "nn_inchikey14": "WERILQFJDMEDSW"
+    },
+    {
+     "molecule_id": "m_8dd80e",
+     "max_tanimoto": 0.5972,
+     "rr": 1.0,
+     "nn_inchikey14": "DHUGJOXIULNJPV"
+    },
+    {
+     "molecule_id": "m_8e4e37",
+     "max_tanimoto": 0.8333,
+     "rr": 0.2,
+     "nn_inchikey14": "PSWOAYYGGZDWFU"
+    },
+    {
+     "molecule_id": "m_8e8569",
+     "max_tanimoto": 0.5357,
+     "rr": 0.5,
+     "nn_inchikey14": "XPZZGUBORCTCMZ"
+    },
+    {
+     "molecule_id": "m_8eac19",
+     "max_tanimoto": 0.4694,
+     "rr": 1.0,
+     "nn_inchikey14": "UROICFYRESNDCE"
+    },
+    {
+     "molecule_id": "m_8f2021",
+     "max_tanimoto": 0.6444,
+     "rr": 1.0,
+     "nn_inchikey14": "GCWUSGQGNIDEMV"
+    },
+    {
+     "molecule_id": "m_908c8f",
+     "max_tanimoto": 0.4868,
+     "rr": 1.0,
+     "nn_inchikey14": "ZVWWXAKQWQACRV"
+    },
+    {
+     "molecule_id": "m_923512",
+     "max_tanimoto": 0.6346,
+     "rr": 1.0,
+     "nn_inchikey14": "PHFFVXYDXJINRY"
+    },
+    {
+     "molecule_id": "m_942432",
+     "max_tanimoto": 0.5965,
+     "rr": 1.0,
+     "nn_inchikey14": "HIGIUQABKZBOEN"
+    },
+    {
+     "molecule_id": "m_9788c1",
+     "max_tanimoto": 0.6557,
+     "rr": 1.0,
+     "nn_inchikey14": "MHMMKCGWZFDACR"
+    },
+    {
+     "molecule_id": "m_99fb25",
+     "max_tanimoto": 0.7273,
+     "rr": 0.3333333333333333,
+     "nn_inchikey14": "YZMXIKVSZZDDBQ"
+    },
+    {
+     "molecule_id": "m_9e01de",
+     "max_tanimoto": 0.493,
+     "rr": 1.0,
+     "nn_inchikey14": "FOYKMPXCOQNADT"
+    },
+    {
+     "molecule_id": "m_9f8bba",
+     "max_tanimoto": 0.6981,
+     "rr": 1.0,
+     "nn_inchikey14": "QKHUXDBZUJKKKS"
+    },
+    {
+     "molecule_id": "m_a020ca",
+     "max_tanimoto": 0.7872,
+     "rr": 1.0,
+     "nn_inchikey14": "LJJJKDUOOXSFCN"
+    },
+    {
+     "molecule_id": "m_a0b7cf",
+     "max_tanimoto": 0.5294,
+     "rr": 0.5,
+     "nn_inchikey14": "KARAXZTZBDIJGY"
+    },
+    {
+     "molecule_id": "m_a226cc",
+     "max_tanimoto": 0.7091,
+     "rr": 1.0,
+     "nn_inchikey14": "OYPLFDWKKXTZFF"
+    },
+    {
+     "molecule_id": "m_a301c1",
+     "max_tanimoto": 0.4667,
+     "rr": 1.0,
+     "nn_inchikey14": "JIXQOGRRBIUGLT"
+    },
+    {
+     "molecule_id": "m_a312c9",
+     "max_tanimoto": 0.76,
+     "rr": 1.0,
+     "nn_inchikey14": "YIGFTAZZWFQHAH"
+    },
+    {
+     "molecule_id": "m_a33a7a",
+     "max_tanimoto": 0.5902,
+     "rr": 1.0,
+     "nn_inchikey14": "SDRQPSZMGWIXIW"
+    },
+    {
+     "molecule_id": "m_a49390",
+     "max_tanimoto": 0.8519,
+     "rr": 1.0,
+     "nn_inchikey14": "BSEJYGGNHHCZIC"
+    },
+    {
+     "molecule_id": "m_a4b2b7",
+     "max_tanimoto": 0.5538,
+     "rr": 1.0,
+     "nn_inchikey14": "WSHZIWVASHFGHT"
+    },
+    {
+     "molecule_id": "m_a9810e",
+     "max_tanimoto": 0.6792,
+     "rr": 1.0,
+     "nn_inchikey14": "BCQQWTPZVVKWPK"
+    },
+    {
+     "molecule_id": "m_a98155",
+     "max_tanimoto": 0.5238,
+     "rr": 1.0,
+     "nn_inchikey14": "AUAVIWVCIJPHRB"
+    },
+    {
+     "molecule_id": "m_aa6cdc",
+     "max_tanimoto": 0.7636,
+     "rr": 1.0,
+     "nn_inchikey14": "CPZJDQRQRQTKDO"
+    },
+    {
+     "molecule_id": "m_ac11bd",
+     "max_tanimoto": 0.6462,
+     "rr": 1.0,
+     "nn_inchikey14": "ZDOPPZDUCGCLDQ"
+    },
+    {
+     "molecule_id": "m_ac8b09",
+     "max_tanimoto": 0.5962,
+     "rr": 1.0,
+     "nn_inchikey14": "CJMZVQDMEVZMGV"
+    },
+    {
+     "molecule_id": "m_acbd83",
+     "max_tanimoto": 0.5821,
+     "rr": 1.0,
+     "nn_inchikey14": "LYXAIYKOAJMXEM"
+    },
+    {
+     "molecule_id": "m_ad7a4b",
+     "max_tanimoto": 0.7143,
+     "rr": 1.0,
+     "nn_inchikey14": "DWDRBFGYEUUMNZ"
+    },
+    {
+     "molecule_id": "m_adbc24",
+     "max_tanimoto": 0.5873,
+     "rr": 1.0,
+     "nn_inchikey14": "BJQHMVCQFDAHPV"
+    },
+    {
+     "molecule_id": "m_b0a1e1",
+     "max_tanimoto": 0.6491,
+     "rr": 1.0,
+     "nn_inchikey14": "QYMREFYGFFHSPW"
+    },
+    {
+     "molecule_id": "m_b1164d",
+     "max_tanimoto": 0.5345,
+     "rr": 1.0,
+     "nn_inchikey14": "DTHHTBWOVDCHSA"
+    },
+    {
+     "molecule_id": "m_b57c22",
+     "max_tanimoto": 0.623,
+     "rr": 1.0,
+     "nn_inchikey14": "XTRBFPWISKTMDI"
+    },
+    {
+     "molecule_id": "m_b5c2d4",
+     "max_tanimoto": 0.5741,
+     "rr": 1.0,
+     "nn_inchikey14": "FKLNHULKLPRZCZ"
+    },
+    {
+     "molecule_id": "m_b6879f",
+     "max_tanimoto": 0.5686,
+     "rr": 1.0,
+     "nn_inchikey14": "ZTGICVDWHZTGQW"
+    },
+    {
+     "molecule_id": "m_b6ff93",
+     "max_tanimoto": 0.6441,
+     "rr": 1.0,
+     "nn_inchikey14": "MJPDRGARGQODHX"
+    },
+    {
+     "molecule_id": "m_b75c0d",
+     "max_tanimoto": 0.5273,
+     "rr": 1.0,
+     "nn_inchikey14": "KVOJTIALCCKFSV"
+    },
+    {
+     "molecule_id": "m_b8ae13",
+     "max_tanimoto": 0.629,
+     "rr": 0.5,
+     "nn_inchikey14": "BMALHDFFSSGVSQ"
+    },
+    {
+     "molecule_id": "m_b94b2b",
+     "max_tanimoto": 0.8148,
+     "rr": 1.0,
+     "nn_inchikey14": "SHKZITVOLNSSLG"
+    },
+    {
+     "molecule_id": "m_b97705",
+     "max_tanimoto": 0.5902,
+     "rr": 1.0,
+     "nn_inchikey14": "OUFUCAFSRSBEQG"
+    },
+    {
+     "molecule_id": "m_bbc0eb",
+     "max_tanimoto": 0.7049,
+     "rr": 0.09090909090909091,
+     "nn_inchikey14": "POELIZHLWBDEPY"
+    },
+    {
+     "molecule_id": "m_bcffad",
+     "max_tanimoto": 0.6667,
+     "rr": 1.0,
+     "nn_inchikey14": "OCCAHDKUKXBVHI"
+    },
+    {
+     "molecule_id": "m_bd2446",
+     "max_tanimoto": 0.6727,
+     "rr": 0.5,
+     "nn_inchikey14": "YBRQJMMVYIGZSK"
+    },
+    {
+     "molecule_id": "m_bdb662",
+     "max_tanimoto": 0.6308,
+     "rr": 1.0,
+     "nn_inchikey14": "QOPRRHUASWUUAC"
+    },
+    {
+     "molecule_id": "m_be4be4",
+     "max_tanimoto": 0.5439,
+     "rr": 1.0,
+     "nn_inchikey14": "TYBCMTWTBJQMFV"
+    },
+    {
+     "molecule_id": "m_c03821",
+     "max_tanimoto": 0.6415,
+     "rr": 1.0,
+     "nn_inchikey14": "UBKIDXACHIWMLX"
+    },
+    {
+     "molecule_id": "m_c1531f",
+     "max_tanimoto": 0.6042,
+     "rr": 1.0,
+     "nn_inchikey14": "KIUTXLJWMJEJAJ"
+    },
+    {
+     "molecule_id": "m_c163a5",
+     "max_tanimoto": 0.6471,
+     "rr": 1.0,
+     "nn_inchikey14": "GBILPDVTGONWSH"
+    },
+    {
+     "molecule_id": "m_c26737",
+     "max_tanimoto": 0.5263,
+     "rr": 0.5,
+     "nn_inchikey14": "CZFSKQLUOYVCJF"
+    },
+    {
+     "molecule_id": "m_c32a12",
+     "max_tanimoto": 0.8039,
+     "rr": 1.0,
+     "nn_inchikey14": "GODTUOTXAXZOAR"
+    },
+    {
+     "molecule_id": "m_c387e0",
+     "max_tanimoto": 0.75,
+     "rr": 1.0,
+     "nn_inchikey14": "CNRLPYNEJDGZDL"
+    },
+    {
+     "molecule_id": "m_c3dd33",
+     "max_tanimoto": 0.5,
+     "rr": 1.0,
+     "nn_inchikey14": "ZKCVWJBEWBKDCT"
+    },
+    {
+     "molecule_id": "m_c5268d",
+     "max_tanimoto": 0.6282,
+     "rr": 0.5,
+     "nn_inchikey14": "KRVUVXDCDSTTNN"
+    },
+    {
+     "molecule_id": "m_c634ce",
+     "max_tanimoto": 0.6471,
+     "rr": 0.14285714285714285,
+     "nn_inchikey14": "MQRQUAKBTDKDRL"
+    },
+    {
+     "molecule_id": "m_c64804",
+     "max_tanimoto": 0.4688,
+     "rr": 1.0,
+     "nn_inchikey14": "XWOFWOGXQLEYJK"
+    },
+    {
+     "molecule_id": "m_c70a64",
+     "max_tanimoto": 0.5797,
+     "rr": 1.0,
+     "nn_inchikey14": "OKNZFFFUFHZGBV"
+    },
+    {
+     "molecule_id": "m_c79a0c",
+     "max_tanimoto": 0.8,
+     "rr": 1.0,
+     "nn_inchikey14": "QEURKKJPVRSFHG"
+    },
+    {
+     "molecule_id": "m_c8c159",
+     "max_tanimoto": 0.8448,
+     "rr": 1.0,
+     "nn_inchikey14": "BRCFGGNVXCVQLQ"
+    },
+    {
+     "molecule_id": "m_c8d54f",
+     "max_tanimoto": 0.6341,
+     "rr": 1.0,
+     "nn_inchikey14": "DVYXHQHPJUSQEK"
+    },
+    {
+     "molecule_id": "m_c9d7e8",
+     "max_tanimoto": 0.6667,
+     "rr": 1.0,
+     "nn_inchikey14": "IUQMVWPRMLCFBP"
+    },
+    {
+     "molecule_id": "m_cbdfe1",
+     "max_tanimoto": 0.5,
+     "rr": 1.0,
+     "nn_inchikey14": "LFTPMQBBFFYSPS"
+    },
+    {
+     "molecule_id": "m_ce82fe",
+     "max_tanimoto": 0.7778,
+     "rr": 1.0,
+     "nn_inchikey14": "QOUSDENYSHPWCZ"
+    },
+    {
+     "molecule_id": "m_d228b4",
+     "max_tanimoto": 0.8537,
+     "rr": 0.3333333333333333,
+     "nn_inchikey14": "YPADQRGOGVXFPL"
+    },
+    {
+     "molecule_id": "m_d72b9c",
+     "max_tanimoto": 0.7778,
+     "rr": 1.0,
+     "nn_inchikey14": "DJGSWPNWBBMRAA"
+    },
+    {
+     "molecule_id": "m_d7ec9c",
+     "max_tanimoto": 0.7018,
+     "rr": 0.5,
+     "nn_inchikey14": "MOHRIDOCNBEXLL"
+    },
+    {
+     "molecule_id": "m_d9dddb",
+     "max_tanimoto": 0.6727,
+     "rr": 1.0,
+     "nn_inchikey14": "GMQKXZJHCYCMJE"
+    },
+    {
+     "molecule_id": "m_dae25f",
+     "max_tanimoto": 0.5968,
+     "rr": 1.0,
+     "nn_inchikey14": "LLITXOGOANRKGD"
+    },
+    {
+     "molecule_id": "m_db7ad9",
+     "max_tanimoto": 0.6296,
+     "rr": 1.0,
+     "nn_inchikey14": "VBGDMWDQMBOIGR"
+    },
+    {
+     "molecule_id": "m_df4c56",
+     "max_tanimoto": 0.7377,
+     "rr": 0.5,
+     "nn_inchikey14": "IBIFWZUWWBXUJF"
+    },
+    {
+     "molecule_id": "m_e076ba",
+     "max_tanimoto": 0.5349,
+     "rr": 1.0,
+     "nn_inchikey14": "CWJJZIYICLSIAO"
+    },
+    {
+     "molecule_id": "m_e0a28e",
+     "max_tanimoto": 0.6491,
+     "rr": 1.0,
+     "nn_inchikey14": "UDWMYOBULHVNFH"
+    },
+    {
+     "molecule_id": "m_e10d10",
+     "max_tanimoto": 0.6613,
+     "rr": 1.0,
+     "nn_inchikey14": "LJZHLYWXDPVJPS"
+    },
+    {
+     "molecule_id": "m_e22da6",
+     "max_tanimoto": 0.6087,
+     "rr": 0.2,
+     "nn_inchikey14": "DLXIDRPOUBEOQZ"
+    },
+    {
+     "molecule_id": "m_e32529",
+     "max_tanimoto": 0.6923,
+     "rr": 0.5,
+     "nn_inchikey14": "VUMWGTRTXIVEQE"
+    },
+    {
+     "molecule_id": "m_e5d8ce",
+     "max_tanimoto": 0.6458,
+     "rr": 1.0,
+     "nn_inchikey14": "OVPWVWKIVNFYFE"
+    },
+    {
+     "molecule_id": "m_e6c2b4",
+     "max_tanimoto": 0.8,
+     "rr": 1.0,
+     "nn_inchikey14": "GMYQDWAALVYNNO"
+    },
+    {
+     "molecule_id": "m_e94212",
+     "max_tanimoto": 0.7778,
+     "rr": 1.0,
+     "nn_inchikey14": "ZFKKKBIEWDWSMD"
+    },
+    {
+     "molecule_id": "m_ea674f",
+     "max_tanimoto": 0.6333,
+     "rr": 1.0,
+     "nn_inchikey14": "DZMREDKJIKGRSZ"
+    },
+    {
+     "molecule_id": "m_eb88d4",
+     "max_tanimoto": 0.8095,
+     "rr": 1.0,
+     "nn_inchikey14": "WCLSPODVZWJWSN"
+    },
+    {
+     "molecule_id": "m_ed9a6c",
+     "max_tanimoto": 0.6852,
+     "rr": 1.0,
+     "nn_inchikey14": "YRZNSYVOHHKRQR"
+    },
+    {
+     "molecule_id": "m_edea22",
+     "max_tanimoto": 0.75,
+     "rr": 1.0,
+     "nn_inchikey14": "VRNSUEXKAKOPIN"
+    },
+    {
+     "molecule_id": "m_ef9669",
+     "max_tanimoto": 0.5741,
+     "rr": 1.0,
+     "nn_inchikey14": "NPBWQXQNIKSMCD"
+    },
+    {
+     "molecule_id": "m_efebe7",
+     "max_tanimoto": 0.463,
+     "rr": 1.0,
+     "nn_inchikey14": "PQOQDNZHCLMPCG"
+    },
+    {
+     "molecule_id": "m_f1215f",
+     "max_tanimoto": 0.625,
+     "rr": 1.0,
+     "nn_inchikey14": "GCMCDYYHWXAOFI"
+    },
+    {
+     "molecule_id": "m_f39ef5",
+     "max_tanimoto": 0.5345,
+     "rr": 1.0,
+     "nn_inchikey14": "CDLBCNAUPJUDOO"
+    },
+    {
+     "molecule_id": "m_f6e7f4",
+     "max_tanimoto": 0.6774,
+     "rr": 1.0,
+     "nn_inchikey14": "UOULPQOYIZODTC"
+    },
+    {
+     "molecule_id": "m_f760c9",
+     "max_tanimoto": 0.7273,
+     "rr": 1.0,
+     "nn_inchikey14": "BGSXPROVHIFVOI"
+    },
+    {
+     "molecule_id": "m_f7d7b7",
+     "max_tanimoto": 0.5455,
+     "rr": 0.5,
+     "nn_inchikey14": "WMQZKLAFRBXRMH"
+    },
+    {
+     "molecule_id": "m_f9a953",
+     "max_tanimoto": 0.5778,
+     "rr": 1.0,
+     "nn_inchikey14": "ARDYECYBETXQFD"
+    },
+    {
+     "molecule_id": "m_fbb84f",
+     "max_tanimoto": 0.6346,
+     "rr": 1.0,
+     "nn_inchikey14": "PLTYEAULUNAOKW"
+    },
+    {
+     "molecule_id": "m_fd42d5",
+     "max_tanimoto": 0.8571,
+     "rr": 1.0,
+     "nn_inchikey14": "FUEXOBANFPWLKY"
+    },
+    {
+     "molecule_id": "m_fd4d94",
+     "max_tanimoto": 0.5556,
+     "rr": 1.0,
+     "nn_inchikey14": "MRIJJPLUICJVQU"
+    },
+    {
+     "molecule_id": "m_fd5c9d",
+     "max_tanimoto": 0.6607,
+     "rr": 0.3333333333333333,
+     "nn_inchikey14": "UFMLUQLMUNUVLU"
+    },
+    {
+     "molecule_id": "m_fe8994",
+     "max_tanimoto": 0.8077,
+     "rr": 1.0,
+     "nn_inchikey14": "LFBRBBLUJRHMDM"
+    },
+    {
+     "molecule_id": "mb_01d163",
+     "max_tanimoto": 0.5893,
+     "rr": 1.0,
+     "nn_inchikey14": "JHOUSAAFDGYLFD"
+    },
+    {
+     "molecule_id": "mb_0300c2",
+     "max_tanimoto": 0.7736,
+     "rr": 1.0,
+     "nn_inchikey14": "ZGEABSMXZZRZND"
+    },
+    {
+     "molecule_id": "mb_03aa6d",
+     "max_tanimoto": 0.5614,
+     "rr": 1.0,
+     "nn_inchikey14": "IWUHUBKAEZLQFH"
+    },
+    {
+     "molecule_id": "mb_04d13d",
+     "max_tanimoto": 0.6296,
+     "rr": 1.0,
+     "nn_inchikey14": "ZQHKPRZINOFOMX"
+    },
+    {
+     "molecule_id": "mb_059e47",
+     "max_tanimoto": 0.4576,
+     "rr": 0.04,
+     "nn_inchikey14": "DCMWXMDKMWSVBW"
+    },
+    {
+     "molecule_id": "mb_081c75",
+     "max_tanimoto": 0.5303,
+     "rr": 1.0,
+     "nn_inchikey14": "KSOGLZQNKWUSLW"
+    },
+    {
+     "molecule_id": "mb_0c1a9d",
+     "max_tanimoto": 0.625,
+     "rr": 1.0,
+     "nn_inchikey14": "ZJPIJMMGWAZMFG"
+    },
+    {
+     "molecule_id": "mb_0c8dee",
+     "max_tanimoto": 0.6271,
+     "rr": 1.0,
+     "nn_inchikey14": "ZAPUFKQUSFRIOZ"
+    },
+    {
+     "molecule_id": "mb_0d6b7d",
+     "max_tanimoto": 0.5962,
+     "rr": 1.0,
+     "nn_inchikey14": "BYAPUQWCAAQJQN"
+    },
+    {
+     "molecule_id": "mb_0d944a",
+     "max_tanimoto": 0.5714,
+     "rr": 1.0,
+     "nn_inchikey14": "KMSIFUJYWIMGBQ"
+    },
+    {
+     "molecule_id": "mb_0f3db2",
+     "max_tanimoto": 0.5439,
+     "rr": 1.0,
+     "nn_inchikey14": "KVHHMGZAIIQUQH"
+    },
+    {
+     "molecule_id": "mb_10142c",
+     "max_tanimoto": 0.7368,
+     "rr": 0.5,
+     "nn_inchikey14": "LOABOJVUVJETNZ"
+    },
+    {
+     "molecule_id": "mb_10fedc",
+     "max_tanimoto": 0.6562,
+     "rr": 0.5,
+     "nn_inchikey14": "CKORJBZJJIOVDD"
+    },
+    {
+     "molecule_id": "mb_112fbf",
+     "max_tanimoto": 0.625,
+     "rr": 1.0,
+     "nn_inchikey14": "GIMLLFDCRKELTK"
+    },
+    {
+     "molecule_id": "mb_118bcd",
+     "max_tanimoto": 0.7805,
+     "rr": 1.0,
+     "nn_inchikey14": "SBKQXSZRTSNXIK"
+    },
+    {
+     "molecule_id": "mb_14293b",
+     "max_tanimoto": 0.5152,
+     "rr": 1.0,
+     "nn_inchikey14": "VTHYYOFAKFLHJH"
+    },
+    {
+     "molecule_id": "mb_14d210",
+     "max_tanimoto": 0.7222,
+     "rr": 0.3333333333333333,
+     "nn_inchikey14": "JPZHMBCFJQCPPD"
+    },
+    {
+     "molecule_id": "mb_15c005",
+     "max_tanimoto": 0.8036,
+     "rr": 0.5,
+     "nn_inchikey14": "QKJAGYWNFQGYIK"
+    },
+    {
+     "molecule_id": "mb_183d4e",
+     "max_tanimoto": 0.5522,
+     "rr": 1.0,
+     "nn_inchikey14": "JOGNGOIKWDUSHE"
+    },
+    {
+     "molecule_id": "mb_1a4f37",
+     "max_tanimoto": 0.8,
+     "rr": 0.5,
+     "nn_inchikey14": "QFFATKZKMOKSKC"
+    },
+    {
+     "molecule_id": "mb_1d0f28",
+     "max_tanimoto": 0.5745,
+     "rr": 1.0,
+     "nn_inchikey14": "AEXWTPJOQWLAFH"
+    },
+    {
+     "molecule_id": "mb_1dcfe7",
+     "max_tanimoto": 0.5938,
+     "rr": 1.0,
+     "nn_inchikey14": "ZTUYDTFNPXIJRF"
+    },
+    {
+     "molecule_id": "mb_1f498d",
+     "max_tanimoto": 0.6567,
+     "rr": 0.5,
+     "nn_inchikey14": "CXMDQSUXTVCPPD"
+    },
+    {
+     "molecule_id": "mb_1fdfd8",
+     "max_tanimoto": 0.5455,
+     "rr": 1.0,
+     "nn_inchikey14": "XINUXXIRXFWMKP"
+    },
+    {
+     "molecule_id": "mb_1fe271",
+     "max_tanimoto": 0.6538,
+     "rr": 1.0,
+     "nn_inchikey14": "YKHLHEDAUQMHDB"
+    },
+    {
+     "molecule_id": "mb_20c583",
+     "max_tanimoto": 0.75,
+     "rr": 1.0,
+     "nn_inchikey14": "WOIBZBNEAJTEMQ"
+    },
+    {
+     "molecule_id": "mb_21cd1f",
+     "max_tanimoto": 0.7778,
+     "rr": 1.0,
+     "nn_inchikey14": "LHUUVDXJEIFBKG"
+    },
+    {
+     "molecule_id": "mb_220074",
+     "max_tanimoto": 0.5893,
+     "rr": 1.0,
+     "nn_inchikey14": "LOGHSLAIDIJLSH"
+    },
+    {
+     "molecule_id": "mb_2393ee",
+     "max_tanimoto": 0.6667,
+     "rr": 1.0,
+     "nn_inchikey14": "WIZZBSZBEPFXIM"
+    },
+    {
+     "molecule_id": "mb_23a45c",
+     "max_tanimoto": 0.7111,
+     "rr": 0.5,
+     "nn_inchikey14": "TVNRHDAARMUZHF"
+    },
+    {
+     "molecule_id": "mb_295055",
+     "max_tanimoto": 0.7241,
+     "rr": 1.0,
+     "nn_inchikey14": "DFCOEURKSDZGCW"
+    },
+    {
+     "molecule_id": "mb_2c67e6",
+     "max_tanimoto": 0.6786,
+     "rr": 0.5,
+     "nn_inchikey14": "WNKPFSIAPSISMU"
+    },
+    {
+     "molecule_id": "mb_2e0b5c",
+     "max_tanimoto": 0.6786,
+     "rr": 1.0,
+     "nn_inchikey14": "VXPKUXYHWVIBLA"
+    },
+    {
+     "molecule_id": "mb_2f427c",
+     "max_tanimoto": 0.6383,
+     "rr": 1.0,
+     "nn_inchikey14": "OLHLCTDNVMKIBG"
+    },
+    {
+     "molecule_id": "mb_31c00c",
+     "max_tanimoto": 0.5536,
+     "rr": 1.0,
+     "nn_inchikey14": "BZNOFSYDXGEJNM"
+    },
+    {
+     "molecule_id": "mb_36edfc",
+     "max_tanimoto": 0.5818,
+     "rr": 1.0,
+     "nn_inchikey14": "PSAJNQYWEDJSQI"
+    },
+    {
+     "molecule_id": "mb_3bb700",
+     "max_tanimoto": 0.6333,
+     "rr": 1.0,
+     "nn_inchikey14": "RDVNGPVFUWWAGJ"
+    },
+    {
+     "molecule_id": "mb_3dda75",
+     "max_tanimoto": 0.7045,
+     "rr": 1.0,
+     "nn_inchikey14": "HVKUXPSQNMZYFU"
+    },
+    {
+     "molecule_id": "mb_426fc4",
+     "max_tanimoto": 0.6458,
+     "rr": 1.0,
+     "nn_inchikey14": "LQMGRZIJGGVDEG"
+    },
+    {
+     "molecule_id": "mb_445906",
+     "max_tanimoto": 0.8214,
+     "rr": 1.0,
+     "nn_inchikey14": "KFPDALRINVSZEZ"
+    },
+    {
+     "molecule_id": "mb_4472a5",
+     "max_tanimoto": 0.8182,
+     "rr": 1.0,
+     "nn_inchikey14": "LANMYNYNGKQELQ"
+    },
+    {
+     "molecule_id": "mb_470ce8",
+     "max_tanimoto": 0.7213,
+     "rr": 0.5,
+     "nn_inchikey14": "WDXIEHKUYDPWJU"
+    },
+    {
+     "molecule_id": "mb_4871f0",
+     "max_tanimoto": 0.9167,
+     "rr": 1.0,
+     "nn_inchikey14": "DNGAMPDKDHXAGA"
+    },
+    {
+     "molecule_id": "mb_4ac0bb",
+     "max_tanimoto": 0.6429,
+     "rr": 1.0,
+     "nn_inchikey14": "QRAKFAYQDUEQLR"
+    },
+    {
+     "molecule_id": "mb_4ae3b0",
+     "max_tanimoto": 0.6119,
+     "rr": 0.5,
+     "nn_inchikey14": "YOZBKGRSMWBDLG"
+    },
+    {
+     "molecule_id": "mb_4c3ea2",
+     "max_tanimoto": 0.8298,
+     "rr": 1.0,
+     "nn_inchikey14": "FAAHHJYIIWGWJU"
+    },
+    {
+     "molecule_id": "mb_4c6677",
+     "max_tanimoto": 0.7627,
+     "rr": 1.0,
+     "nn_inchikey14": "KXYOVIUXFJVQAM"
+    },
+    {
+     "molecule_id": "mb_4dac75",
+     "max_tanimoto": 0.7719,
+     "rr": 1.0,
+     "nn_inchikey14": "LEPUPPCSXDSUDC"
+    },
+    {
+     "molecule_id": "mb_4f00a4",
+     "max_tanimoto": 0.72,
+     "rr": 1.0,
+     "nn_inchikey14": "VDUKGLVNXWARCG"
+    },
+    {
+     "molecule_id": "mb_4f01f5",
+     "max_tanimoto": 0.7736,
+     "rr": 1.0,
+     "nn_inchikey14": "AJILRHIERLEUGF"
+    },
+    {
+     "molecule_id": "mb_4f83b8",
+     "max_tanimoto": 0.6842,
+     "rr": 1.0,
+     "nn_inchikey14": "HASOHODHGPKTFF"
+    },
+    {
+     "molecule_id": "mb_51fada",
+     "max_tanimoto": 0.6604,
+     "rr": 0.5,
+     "nn_inchikey14": "PEUCBAHVFZTAGV"
+    },
+    {
+     "molecule_id": "mb_544dd5",
+     "max_tanimoto": 0.6863,
+     "rr": 1.0,
+     "nn_inchikey14": "ZSBAVWVGJYWUFO"
+    },
+    {
+     "molecule_id": "mb_54810e",
+     "max_tanimoto": 0.6852,
+     "rr": 1.0,
+     "nn_inchikey14": "DVHRNRQZPXJLSZ"
+    },
+    {
+     "molecule_id": "mb_550433",
+     "max_tanimoto": 0.5763,
+     "rr": 1.0,
+     "nn_inchikey14": "MPQQFTXJHOQIMH"
+    },
+    {
+     "molecule_id": "mb_55a1bf",
+     "max_tanimoto": 0.4833,
+     "rr": 0.25,
+     "nn_inchikey14": "OLPRCADFEHPWDP"
+    },
+    {
+     "molecule_id": "mb_58500c",
+     "max_tanimoto": 0.7308,
+     "rr": 1.0,
+     "nn_inchikey14": "MGOFJOCORTYHPZ"
+    },
+    {
+     "molecule_id": "mb_59a6cf",
+     "max_tanimoto": 0.5469,
+     "rr": 1.0,
+     "nn_inchikey14": "BPVNOZJIYGNZQJ"
+    },
+    {
+     "molecule_id": "mb_59c335",
+     "max_tanimoto": 0.5345,
+     "rr": 1.0,
+     "nn_inchikey14": "UIZDJKNPFSSUNT"
+    },
+    {
+     "molecule_id": "mb_5a76d7",
+     "max_tanimoto": 0.5091,
+     "rr": 1.0,
+     "nn_inchikey14": "IKEWWIQIOTUXCI"
+    },
+    {
+     "molecule_id": "mb_5aa0a0",
+     "max_tanimoto": 0.5636,
+     "rr": 0.5,
+     "nn_inchikey14": "AGFCMZIZSJTEJV"
+    },
+    {
+     "molecule_id": "mb_5b34d4",
+     "max_tanimoto": 0.614,
+     "rr": 1.0,
+     "nn_inchikey14": "RKEJIBGNSMBFAA"
+    },
+    {
+     "molecule_id": "mb_5b69b5",
+     "max_tanimoto": 0.6863,
+     "rr": 0.3333333333333333,
+     "nn_inchikey14": "FNQVHFICYKVVMU"
+    },
+    {
+     "molecule_id": "mb_5b85f6",
+     "max_tanimoto": 0.5263,
+     "rr": 1.0,
+     "nn_inchikey14": "FBCMDWIKLNTPFT"
+    },
+    {
+     "molecule_id": "mb_5d3832",
+     "max_tanimoto": 0.7647,
+     "rr": 0.5,
+     "nn_inchikey14": "RAHZHRVQOAENCO"
+    },
+    {
+     "molecule_id": "mb_5d7fbc",
+     "max_tanimoto": 0.8298,
+     "rr": 0.25,
+     "nn_inchikey14": "YOBQJEJERBPNJT"
+    },
+    {
+     "molecule_id": "mb_5ea398",
+     "max_tanimoto": 0.4909,
+     "rr": 0.5,
+     "nn_inchikey14": "ZUUOKPXFXPWJNS"
+    },
+    {
+     "molecule_id": "mb_5f11db",
+     "max_tanimoto": 0.6667,
+     "rr": 1.0,
+     "nn_inchikey14": "VWCZSYWRDSZXAH"
+    },
+    {
+     "molecule_id": "mb_5fcfda",
+     "max_tanimoto": 0.5323,
+     "rr": 1.0,
+     "nn_inchikey14": "PABGSMLVXHMKBD"
+    },
+    {
+     "molecule_id": "mb_60aad4",
+     "max_tanimoto": 0.8302,
+     "rr": 0.5,
+     "nn_inchikey14": "TUGDTCSARWTFDX"
+    },
+    {
+     "molecule_id": "mb_634750",
+     "max_tanimoto": 0.7925,
+     "rr": 0.5,
+     "nn_inchikey14": "RMMONUSGSLVDRK"
+    },
+    {
+     "molecule_id": "mb_638ec6",
+     "max_tanimoto": 0.7692,
+     "rr": 1.0,
+     "nn_inchikey14": "HTFGMSNGAAOSNY"
+    },
+    {
+     "molecule_id": "mb_63f7f6",
+     "max_tanimoto": 0.7561,
+     "rr": 1.0,
+     "nn_inchikey14": "LXYXUJUUASKNLC"
+    },
+    {
+     "molecule_id": "mb_67b640",
+     "max_tanimoto": 0.8679,
+     "rr": 0.5,
+     "nn_inchikey14": "QYBHOPGVARNHBB"
+    },
+    {
+     "molecule_id": "mb_67c52b",
+     "max_tanimoto": 0.6,
+     "rr": 1.0,
+     "nn_inchikey14": "NJWNXPNZIKOOEN"
+    },
+    {
+     "molecule_id": "mb_6a50ac",
+     "max_tanimoto": 0.7321,
+     "rr": 1.0,
+     "nn_inchikey14": "QCPXBEXVJDFWMU"
+    },
+    {
+     "molecule_id": "mb_6a8d0a",
+     "max_tanimoto": 0.6596,
+     "rr": 1.0,
+     "nn_inchikey14": "LTVJXLNNXMWFSJ"
+    },
+    {
+     "molecule_id": "mb_6b2f5d",
+     "max_tanimoto": 0.5714,
+     "rr": 1.0,
+     "nn_inchikey14": "YTCMWJWGNOFYCO"
+    },
+    {
+     "molecule_id": "mb_6be5d2",
+     "max_tanimoto": 0.6833,
+     "rr": 1.0,
+     "nn_inchikey14": "NOLWDSMTTLJQOE"
+    },
+    {
+     "molecule_id": "mb_6cd03b",
+     "max_tanimoto": 0.5645,
+     "rr": 0.5,
+     "nn_inchikey14": "XZWVIGBVCKMWOC"
+    },
+    {
+     "molecule_id": "mb_6d1d0b",
+     "max_tanimoto": 0.4783,
+     "rr": 1.0,
+     "nn_inchikey14": "DDYLHPLCGDKVFH"
+    },
+    {
+     "molecule_id": "mb_6dc0b7",
+     "max_tanimoto": 0.5833,
+     "rr": 1.0,
+     "nn_inchikey14": "YLKJSVWHSWKTKE"
+    },
+    {
+     "molecule_id": "mb_6f67e8",
+     "max_tanimoto": 0.6061,
+     "rr": 1.0,
+     "nn_inchikey14": "MCBYRHLOKSVIOC"
+    },
+    {
+     "molecule_id": "mb_70e01c",
+     "max_tanimoto": 0.6364,
+     "rr": 0.5,
+     "nn_inchikey14": "DKEWJELXIYRVQS"
+    },
+    {
+     "molecule_id": "mb_71ce83",
+     "max_tanimoto": 0.6909,
+     "rr": 1.0,
+     "nn_inchikey14": "FMEISDFEUKGUOJ"
+    },
+    {
+     "molecule_id": "mb_76a19b",
+     "max_tanimoto": 0.5968,
+     "rr": 1.0,
+     "nn_inchikey14": "AMFVIOWXHHNVKX"
+    },
+    {
+     "molecule_id": "mb_777f6c",
+     "max_tanimoto": 0.5593,
+     "rr": 1.0,
+     "nn_inchikey14": "BWISHRWCVOQSKW"
+    },
+    {
+     "molecule_id": "mb_7823b9",
+     "max_tanimoto": 0.74,
+     "rr": 0.5,
+     "nn_inchikey14": "MEZQUQHVGOHZOR"
+    },
+    {
+     "molecule_id": "mb_7874af",
+     "max_tanimoto": 0.8537,
+     "rr": 0.5,
+     "nn_inchikey14": "HTIGZXRCUZQQPU"
+    },
+    {
+     "molecule_id": "mb_7c5f82",
+     "max_tanimoto": 0.4909,
+     "rr": 1.0,
+     "nn_inchikey14": "BQRFNPNUZUQREN"
+    },
+    {
+     "molecule_id": "mb_7f1a75",
+     "max_tanimoto": 0.7167,
+     "rr": 1.0,
+     "nn_inchikey14": "RBFHJMMSLOQXQF"
+    },
+    {
+     "molecule_id": "mb_7fc39c",
+     "max_tanimoto": 0.7547,
+     "rr": 0.05555555555555555,
+     "nn_inchikey14": "BJRURHVVJUHPDV"
+    },
+    {
+     "molecule_id": "mb_807f85",
+     "max_tanimoto": 0.4909,
+     "rr": 1.0,
+     "nn_inchikey14": "YMCPXJKRXCPGIC"
+    },
+    {
+     "molecule_id": "mb_811cf8",
+     "max_tanimoto": 0.8302,
+     "rr": 0.5,
+     "nn_inchikey14": "SFOHKHWBHRWMAO"
+    },
+    {
+     "molecule_id": "mb_81e4be",
+     "max_tanimoto": 0.6897,
+     "rr": 1.0,
+     "nn_inchikey14": "FTPTZYRUKPKJLZ"
+    },
+    {
+     "molecule_id": "mb_829c15",
+     "max_tanimoto": 0.6615,
+     "rr": 1.0,
+     "nn_inchikey14": "BQFZBVHXEVCJPD"
+    },
+    {
+     "molecule_id": "mb_83ac97",
+     "max_tanimoto": 0.5574,
+     "rr": 1.0,
+     "nn_inchikey14": "CSLGFYRAPMYPIT"
+    },
+    {
+     "molecule_id": "mb_874e5f",
+     "max_tanimoto": 0.459,
+     "rr": 0.09090909090909091,
+     "nn_inchikey14": "ZFVWFRGQENQWOA"
+    },
+    {
+     "molecule_id": "mb_876d66",
+     "max_tanimoto": 0.6296,
+     "rr": 1.0,
+     "nn_inchikey14": "CQYZGSCLOZVSIO"
+    },
+    {
+     "molecule_id": "mb_884680",
+     "max_tanimoto": 0.5484,
+     "rr": 1.0,
+     "nn_inchikey14": "GSRYCGORJHMIRL"
+    },
+    {
+     "molecule_id": "mb_8927f7",
+     "max_tanimoto": 0.5862,
+     "rr": 1.0,
+     "nn_inchikey14": "RGHDPCXQRKLSQP"
+    },
+    {
+     "molecule_id": "mb_8a27cf",
+     "max_tanimoto": 0.5556,
+     "rr": 1.0,
+     "nn_inchikey14": "AFYQQMCPYJPKGX"
+    },
+    {
+     "molecule_id": "mb_8b088d",
+     "max_tanimoto": 0.8154,
+     "rr": 0.5,
+     "nn_inchikey14": "DDZIFVCLUCJBLA"
+    },
+    {
+     "molecule_id": "mb_8cc0f7",
+     "max_tanimoto": 0.463,
+     "rr": 0.5,
+     "nn_inchikey14": "ABDASJOANRXTKN"
+    },
+    {
+     "molecule_id": "mb_8e7dd4",
+     "max_tanimoto": 0.6458,
+     "rr": 1.0,
+     "nn_inchikey14": "OMYDHKMMEZCREN"
+    },
+    {
+     "molecule_id": "mb_8e9fb6",
+     "max_tanimoto": 0.537,
+     "rr": 1.0,
+     "nn_inchikey14": "LZRZFUKUHMSOBN"
+    },
+    {
+     "molecule_id": "mb_8f81bd",
+     "max_tanimoto": 0.6667,
+     "rr": 1.0,
+     "nn_inchikey14": "ICQIFASWGGFKKE"
+    },
+    {
+     "molecule_id": "mb_902054",
+     "max_tanimoto": 0.717,
+     "rr": 0.5,
+     "nn_inchikey14": "KKUFJTRQOTVVET"
+    },
+    {
+     "molecule_id": "mb_91492e",
+     "max_tanimoto": 0.5522,
+     "rr": 0.14285714285714285,
+     "nn_inchikey14": "MRKPULZQQVYUTH"
+    },
+    {
+     "molecule_id": "mb_92ab89",
+     "max_tanimoto": 0.7679,
+     "rr": 1.0,
+     "nn_inchikey14": "OUYPOZBFRULUCW"
+    },
+    {
+     "molecule_id": "mb_936f7e",
+     "max_tanimoto": 0.5614,
+     "rr": 1.0,
+     "nn_inchikey14": "LCEZQGCLVFGKNJ"
+    },
+    {
+     "molecule_id": "mb_950328",
+     "max_tanimoto": 0.7451,
+     "rr": 0.3333333333333333,
+     "nn_inchikey14": "SDBOQEPARJDDIY"
+    },
+    {
+     "molecule_id": "mb_960d75",
+     "max_tanimoto": 0.6415,
+     "rr": 1.0,
+     "nn_inchikey14": "SYUZALFZKLFQBX"
+    },
+    {
+     "molecule_id": "mb_97d832",
+     "max_tanimoto": 0.4561,
+     "rr": 0.3333333333333333,
+     "nn_inchikey14": "UZLRSMICHGNGLA"
+    },
+    {
+     "molecule_id": "mb_984a0f",
+     "max_tanimoto": 0.6154,
+     "rr": 1.0,
+     "nn_inchikey14": "NVLIZWVYNMZEON"
+    },
+    {
+     "molecule_id": "mb_993b63",
+     "max_tanimoto": 0.5349,
+     "rr": 0.5,
+     "nn_inchikey14": "YHNOBCUFJJRVOP"
+    },
+    {
+     "molecule_id": "mb_9b0c2c",
+     "max_tanimoto": 0.8103,
+     "rr": 0.5,
+     "nn_inchikey14": "KWCSPCSLMCUSDF"
+    },
+    {
+     "molecule_id": "mb_9b9273",
+     "max_tanimoto": 0.85,
+     "rr": 1.0,
+     "nn_inchikey14": "GTJRKDNAXFJBEF"
+    },
+    {
+     "molecule_id": "mb_9c5c86",
+     "max_tanimoto": 0.54,
+     "rr": 1.0,
+     "nn_inchikey14": "JZGRFDFOBURLFH"
+    },
+    {
+     "molecule_id": "mb_9e71e9",
+     "max_tanimoto": 0.6296,
+     "rr": 0.5,
+     "nn_inchikey14": "RERGLGOYGFENRB"
+    },
+    {
+     "molecule_id": "mb_9f0dc2",
+     "max_tanimoto": 0.5345,
+     "rr": 1.0,
+     "nn_inchikey14": "YKAOWMNTBPBWQD"
+    },
+    {
+     "molecule_id": "mb_a03567",
+     "max_tanimoto": 0.7797,
+     "rr": 0.3333333333333333,
+     "nn_inchikey14": "HSNJBYFEXOXYSJ"
+    },
+    {
+     "molecule_id": "mb_a1ae36",
+     "max_tanimoto": 0.6923,
+     "rr": 1.0,
+     "nn_inchikey14": "NSVTZCXPLBFYEI"
+    },
+    {
+     "molecule_id": "mb_a3e85a",
+     "max_tanimoto": 0.5667,
+     "rr": 0.3333333333333333,
+     "nn_inchikey14": "RNZKPEWNGJWQNH"
+    },
+    {
+     "molecule_id": "mb_a41a8c",
+     "max_tanimoto": 0.6333,
+     "rr": 1.0,
+     "nn_inchikey14": "DONNRWFJKAXFKG"
+    },
+    {
+     "molecule_id": "mb_a8332f",
+     "max_tanimoto": 0.7636,
+     "rr": 1.0,
+     "nn_inchikey14": "GHLCCZCCOGYHQB"
+    },
+    {
+     "molecule_id": "mb_a87a73",
+     "max_tanimoto": 0.6222,
+     "rr": 1.0,
+     "nn_inchikey14": "RBLAPOMCQIFXCT"
+    },
+    {
+     "molecule_id": "mb_aa9b0b",
+     "max_tanimoto": 0.4909,
+     "rr": 1.0,
+     "nn_inchikey14": "AGPFASOGQBAJEI"
+    },
+    {
+     "molecule_id": "mb_ac70ed",
+     "max_tanimoto": 0.6066,
+     "rr": 1.0,
+     "nn_inchikey14": "MSNKBZYXXJBBDR"
+    },
+    {
+     "molecule_id": "mb_ad4ad6",
+     "max_tanimoto": 0.8077,
+     "rr": 1.0,
+     "nn_inchikey14": "LTUSVKQEJQNYET"
+    },
+    {
+     "molecule_id": "mb_ae5ed5",
+     "max_tanimoto": 0.5333,
+     "rr": 0.5,
+     "nn_inchikey14": "BGOMWBUOUBRHSJ"
+    },
+    {
+     "molecule_id": "mb_ae6afc",
+     "max_tanimoto": 0.7018,
+     "rr": 1.0,
+     "nn_inchikey14": "UAYYMLCQEGQUAM"
+    },
+    {
+     "molecule_id": "mb_b222d5",
+     "max_tanimoto": 0.7759,
+     "rr": 1.0,
+     "nn_inchikey14": "HECGZXVCJYPNNZ"
+    },
+    {
+     "molecule_id": "mb_b32807",
+     "max_tanimoto": 0.5161,
+     "rr": 0.3333333333333333,
+     "nn_inchikey14": "QGZQMPREWBVNCS"
+    },
+    {
+     "molecule_id": "mb_b4220b",
+     "max_tanimoto": 0.5965,
+     "rr": 1.0,
+     "nn_inchikey14": "UWPVCRCVQCPTCT"
+    },
+    {
+     "molecule_id": "mb_b462b8",
+     "max_tanimoto": 0.6842,
+     "rr": 1.0,
+     "nn_inchikey14": "VDQGTAMGWLMECZ"
+    },
+    {
+     "molecule_id": "mb_b92d41",
+     "max_tanimoto": 0.5085,
+     "rr": 1.0,
+     "nn_inchikey14": "CGQKNSDPKBRZEF"
+    },
+    {
+     "molecule_id": "mb_bdb48b",
+     "max_tanimoto": 0.5484,
+     "rr": 1.0,
+     "nn_inchikey14": "YUCDOKZTQNQRKR"
+    },
+    {
+     "molecule_id": "mb_bfb256",
+     "max_tanimoto": 0.6275,
+     "rr": 0.5,
+     "nn_inchikey14": "GQGRDUNBOTXAPK"
+    },
+    {
+     "molecule_id": "mb_c2382a",
+     "max_tanimoto": 0.8571,
+     "rr": 0.5,
+     "nn_inchikey14": "QOECDZWAULCNGG"
+    },
+    {
+     "molecule_id": "mb_c26fa9",
+     "max_tanimoto": 0.6,
+     "rr": 1.0,
+     "nn_inchikey14": "WOCFWBJJTQVKQA"
+    },
+    {
+     "molecule_id": "mb_c7d34d",
+     "max_tanimoto": 0.6935,
+     "rr": 1.0,
+     "nn_inchikey14": "YSMYOULYJYCBFD"
+    },
+    {
+     "molecule_id": "mb_c804cc",
+     "max_tanimoto": 0.614,
+     "rr": 1.0,
+     "nn_inchikey14": "MMKFEOCZCMIFIU"
+    },
+    {
+     "molecule_id": "mb_c9d42a",
+     "max_tanimoto": 0.92,
+     "rr": 1.0,
+     "nn_inchikey14": "JNDCEXOIICLCEC"
+    },
+    {
+     "molecule_id": "mb_ca5a20",
+     "max_tanimoto": 0.6731,
+     "rr": 0.5,
+     "nn_inchikey14": "SZIJOVJBQXQXIL"
+    },
+    {
+     "molecule_id": "mb_cc0089",
+     "max_tanimoto": 0.75,
+     "rr": 1.0,
+     "nn_inchikey14": "IUSHBBLYRJLXKK"
+    },
+    {
+     "molecule_id": "mb_cc19a8",
+     "max_tanimoto": 0.6275,
+     "rr": 1.0,
+     "nn_inchikey14": "DVRIKPGGILHOMT"
+    },
+    {
+     "molecule_id": "mb_d02278",
+     "max_tanimoto": 0.5417,
+     "rr": 1.0,
+     "nn_inchikey14": "FFDUKLSDIIEDCF"
+    },
+    {
+     "molecule_id": "mb_d2ce64",
+     "max_tanimoto": 0.5536,
+     "rr": 0.5,
+     "nn_inchikey14": "FJJONFQPVMQSIZ"
+    },
+    {
+     "molecule_id": "mb_d31314",
+     "max_tanimoto": 0.6078,
+     "rr": 1.0,
+     "nn_inchikey14": "RWGNUNCKLDXHKG"
+    },
+    {
+     "molecule_id": "mb_d3601b",
+     "max_tanimoto": 0.6452,
+     "rr": 1.0,
+     "nn_inchikey14": "KEFCUVKPMPJAIY"
+    },
+    {
+     "molecule_id": "mb_d5ade9",
+     "max_tanimoto": 0.4906,
+     "rr": 1.0,
+     "nn_inchikey14": "JNAGZUUOHGPENA"
+    },
+    {
+     "molecule_id": "mb_d8e26a",
+     "max_tanimoto": 0.5312,
+     "rr": 0.3333333333333333,
+     "nn_inchikey14": "FESAKTVWQATMBH"
+    },
+    {
+     "molecule_id": "mb_d98fd0",
+     "max_tanimoto": 0.6719,
+     "rr": 1.0,
+     "nn_inchikey14": "CTQQTDAXVQZTDW"
+    },
+    {
+     "molecule_id": "mb_da873a",
+     "max_tanimoto": 0.8431,
+     "rr": 1.0,
+     "nn_inchikey14": "HOIBZCPDMKCZRM"
+    },
+    {
+     "molecule_id": "mb_dd58bc",
+     "max_tanimoto": 0.6557,
+     "rr": 0.25,
+     "nn_inchikey14": "UGULMJGZANJKHK"
+    },
+    {
+     "molecule_id": "mb_ded500",
+     "max_tanimoto": 0.5926,
+     "rr": 1.0,
+     "nn_inchikey14": "BPBAUBBGJPDRBW"
+    },
+    {
+     "molecule_id": "mb_e033dc",
+     "max_tanimoto": 0.7,
+     "rr": 1.0,
+     "nn_inchikey14": "JRHOIZFPJFAPSE"
+    },
+    {
+     "molecule_id": "mb_e0a4d8",
+     "max_tanimoto": 0.3846,
+     "rr": 1.0,
+     "nn_inchikey14": "YXKTVDFXDRQTKV"
+    },
+    {
+     "molecule_id": "mb_e172c2",
+     "max_tanimoto": 0.6818,
+     "rr": 1.0,
+     "nn_inchikey14": "GRNDKAWUOJMNKD"
+    },
+    {
+     "molecule_id": "mb_e1b579",
+     "max_tanimoto": 0.7727,
+     "rr": 1.0,
+     "nn_inchikey14": "INRSVXDFIZQCEM"
+    },
+    {
+     "molecule_id": "mb_e236da",
+     "max_tanimoto": 0.7174,
+     "rr": 1.0,
+     "nn_inchikey14": "SMJHQOYMUCHLRD"
+    },
+    {
+     "molecule_id": "mb_e286f8",
+     "max_tanimoto": 0.8125,
+     "rr": 1.0,
+     "nn_inchikey14": "WDWPLVAOIKEOAJ"
+    },
+    {
+     "molecule_id": "mb_e291a1",
+     "max_tanimoto": 0.5424,
+     "rr": 0.5,
+     "nn_inchikey14": "BOMIAADEVZHXBN"
+    },
+    {
+     "molecule_id": "mb_e587ee",
+     "max_tanimoto": 0.6226,
+     "rr": 1.0,
+     "nn_inchikey14": "ORRULZPJUPTTSU"
+    },
+    {
+     "molecule_id": "mb_e61e9c",
+     "max_tanimoto": 0.5965,
+     "rr": 0.5,
+     "nn_inchikey14": "HMFQZZJQTMALIE"
+    },
+    {
+     "molecule_id": "mb_e76896",
+     "max_tanimoto": 0.6667,
+     "rr": 1.0,
+     "nn_inchikey14": "ZXLYDHYKYZKVNJ"
+    },
+    {
+     "molecule_id": "mb_ea67ca",
+     "max_tanimoto": 0.5085,
+     "rr": 0.5,
+     "nn_inchikey14": "WTKUGFLACXJFTN"
+    },
+    {
+     "molecule_id": "mb_eda85f",
+     "max_tanimoto": 0.6212,
+     "rr": 1.0,
+     "nn_inchikey14": "HTQYYCRQNSQAER"
+    },
+    {
+     "molecule_id": "mb_edc433",
+     "max_tanimoto": 0.7241,
+     "rr": 1.0,
+     "nn_inchikey14": "NABIVNGEABECFE"
+    },
+    {
+     "molecule_id": "mb_edf0cd",
+     "max_tanimoto": 0.6066,
+     "rr": 0.5,
+     "nn_inchikey14": "FGWSGKLLMLJFJA"
+    },
+    {
+     "molecule_id": "mb_eeb86b",
+     "max_tanimoto": 0.6406,
+     "rr": 1.0,
+     "nn_inchikey14": "MGOJBRNTJFJVGQ"
+    },
+    {
+     "molecule_id": "mb_ef01fa",
+     "max_tanimoto": 0.75,
+     "rr": 1.0,
+     "nn_inchikey14": "BXNFQJVQZFVNBP"
+    },
+    {
+     "molecule_id": "mb_ef6616",
+     "max_tanimoto": 0.6,
+     "rr": 0.5,
+     "nn_inchikey14": "YYGVOKRYUHDSCC"
+    },
+    {
+     "molecule_id": "mb_f0ce28",
+     "max_tanimoto": 0.54,
+     "rr": 1.0,
+     "nn_inchikey14": "GBTUJGAKRCFQJG"
+    },
+    {
+     "molecule_id": "mb_f2b984",
+     "max_tanimoto": 0.7333,
+     "rr": 1.0,
+     "nn_inchikey14": "MQOJEPNRKNZREP"
+    },
+    {
+     "molecule_id": "mb_f45d8a",
+     "max_tanimoto": 0.7143,
+     "rr": 0.3333333333333333,
+     "nn_inchikey14": "VJAGXFJUPGCLRS"
+    },
+    {
+     "molecule_id": "mb_f6099d",
+     "max_tanimoto": 0.5455,
+     "rr": 1.0,
+     "nn_inchikey14": "YLGVOSUDLSOGBS"
+    },
+    {
+     "molecule_id": "mb_f79530",
+     "max_tanimoto": 0.5932,
+     "rr": 0.2,
+     "nn_inchikey14": "CYWGRWQFBMDKEM"
+    },
+    {
+     "molecule_id": "mb_f9c53c",
+     "max_tanimoto": 0.6346,
+     "rr": 1.0,
+     "nn_inchikey14": "HQOAOLMAVYHIPM"
+    },
+    {
+     "molecule_id": "mb_fa515e",
+     "max_tanimoto": 0.7119,
+     "rr": 1.0,
+     "nn_inchikey14": "HEFVGIVHSDUOHE"
+    },
+    {
+     "molecule_id": "mb_fa615a",
+     "max_tanimoto": 0.7907,
+     "rr": 0.3333333333333333,
+     "nn_inchikey14": "CYHRLKWAGMVBCL"
+    },
+    {
+     "molecule_id": "mb_fbb78e",
+     "max_tanimoto": 0.7797,
+     "rr": 1.0,
+     "nn_inchikey14": "WJUVDYIVZQUENQ"
+    },
+    {
+     "molecule_id": "mb_fc708a",
+     "max_tanimoto": 0.5625,
+     "rr": 1.0,
+     "nn_inchikey14": "JORKZTPOQCRYDG"
+    },
+    {
+     "molecule_id": "mb_fd819d",
+     "max_tanimoto": 0.6981,
+     "rr": 1.0,
+     "nn_inchikey14": "MRAIBMVKIQTKON"
+    },
+    {
+     "molecule_id": "mb_fd88ee",
+     "max_tanimoto": 0.7917,
+     "rr": 1.0,
+     "nn_inchikey14": "NQCKAZPPQGBZRY"
+    },
+    {
+     "molecule_id": "mb_ff933a",
+     "max_tanimoto": 0.7308,
+     "rr": 0.5,
+     "nn_inchikey14": "FDQFYVFJUZUAQS"
+    }
+   ]
+  },
+  "v3_c2nu_t10": {
+   "n_molecules": 394,
+   "summary": {
+    "<0.5": {
+     "n": 40,
+     "mrr": 0.5645,
+     "ci95": [
+      0.4362,
+      0.6978
+     ],
+     "n_top1": 18,
+     "n_rr0": 10
+    },
+    "0.5-0.8": {
+     "n": 217,
+     "mrr": 0.6167,
+     "ci95": [
+      0.564,
+      0.669
+     ],
+     "n_top1": 106,
+     "n_rr0": 19
+    },
+    ">=0.8": {
+     "n": 137,
+     "mrr": 0.6865,
+     "ci95": [
+      0.6204,
+      0.7483
+     ],
+     "n_top1": 77,
+     "n_rr0": 11
+    },
+    "all": {
+     "n": 394,
+     "mrr": 0.6357,
+     "ci95": [
+      0.5967,
+      0.6744
+     ]
+    }
+   },
+   "leak_check": {
+    "n_tanimoto_1": 49,
+    "n_inchikey14_in_train": 0,
+    "n_inchikey14_in_train_key": 0
+   },
+   "sim_quantiles": {
+    "0.1": 0.4959,
+    "0.25": 0.6039,
+    "0.5": 0.7294,
+    "0.75": 0.8374,
+    "0.9": 1.0
+   },
+   "files": {
+    "outputs/local_eval/v3_c2nu_t10/truth.csv": "8fdb00687e57d82c2863ebc80c6b74e00ec93bf47d229d10aeef0892bf55be69",
+    "outputs/local_eval/v3_c2nu_t10/submission_score+prior+frag.csv": "acfaade80b152a41841a374aaab47e84ae86f142bbd3629f332c9904a81a1c93"
+   },
+   "per_molecule": [
+    {
+     "molecule_id": "m_00000",
+     "max_tanimoto": 0.88,
+     "rr": 1.0,
+     "nn_inchikey14": "QYYUAHHHRFEEOO"
+    },
+    {
+     "molecule_id": "m_00001",
+     "max_tanimoto": 0.8696,
+     "rr": 0.3333333333333333,
+     "nn_inchikey14": "DJAWTLHBPPQMPV"
+    },
+    {
+     "molecule_id": "m_00002",
+     "max_tanimoto": 0.68,
+     "rr": 1.0,
+     "nn_inchikey14": "DPBMWJXWUINLQT"
+    },
+    {
+     "molecule_id": "m_00003",
+     "max_tanimoto": 1.0,
+     "rr": 1.0,
+     "nn_inchikey14": "FMPAQWQNEUZLDD"
+    },
+    {
+     "molecule_id": "m_00004",
+     "max_tanimoto": 0.716,
+     "rr": 1.0,
+     "nn_inchikey14": "WBCMGDNFDRNGGZ"
+    },
+    {
+     "molecule_id": "m_00005",
+     "max_tanimoto": 0.85,
+     "rr": 1.0,
+     "nn_inchikey14": "VNDHBRBARIICNH"
+    },
+    {
+     "molecule_id": "m_00006",
+     "max_tanimoto": 1.0,
+     "rr": 1.0,
+     "nn_inchikey14": "DXVLAUMXGHQKAV"
+    },
+    {
+     "molecule_id": "m_00007",
+     "max_tanimoto": 0.7667,
+     "rr": 0.2,
+     "nn_inchikey14": "QEEBRPGZBVVINN"
+    },
+    {
+     "molecule_id": "m_00008",
+     "max_tanimoto": 0.6164,
+     "rr": 0.125,
+     "nn_inchikey14": "YJBVHJIKNLBFDX"
+    },
+    {
+     "molecule_id": "m_00009",
+     "max_tanimoto": 0.8361,
+     "rr": 1.0,
+     "nn_inchikey14": "PMVFYHVSZOZDAN"
+    },
+    {
+     "molecule_id": "m_00010",
+     "max_tanimoto": 1.0,
+     "rr": 0.5,
+     "nn_inchikey14": "SYZULGQSZXBFNC"
+    },
+    {
+     "molecule_id": "m_00011",
+     "max_tanimoto": 0.6364,
+     "rr": 1.0,
+     "nn_inchikey14": "QYRZTUUZIFTJSN"
+    },
+    {
+     "molecule_id": "m_00012",
+     "max_tanimoto": 0.5676,
+     "rr": 0.5,
+     "nn_inchikey14": "LLLPDUXGHXIXIW"
+    },
+    {
+     "molecule_id": "m_00013",
+     "max_tanimoto": 0.75,
+     "rr": 0.5,
+     "nn_inchikey14": "QLWPXZGDNPSROH"
+    },
+    {
+     "molecule_id": "m_00014",
+     "max_tanimoto": 0.7895,
+     "rr": 0.0,
+     "nn_inchikey14": "TURHNAJJDDIVGC"
+    },
+    {
+     "molecule_id": "m_00015",
+     "max_tanimoto": 0.5882,
+     "rr": 1.0,
+     "nn_inchikey14": "VPAYQWRBBOGGPY"
+    },
+    {
+     "molecule_id": "m_00016",
+     "max_tanimoto": 0.8679,
+     "rr": 1.0,
+     "nn_inchikey14": "BRFKTXCAUCYQBT"
+    },
+    {
+     "molecule_id": "m_00017",
+     "max_tanimoto": 0.451,
+     "rr": 1.0,
+     "nn_inchikey14": "FLPMPWDSYOPNEJ"
+    },
+    {
+     "molecule_id": "m_00018",
+     "max_tanimoto": 0.75,
+     "rr": 0.5,
+     "nn_inchikey14": "AERBNCYCJBRYDG"
+    },
+    {
+     "molecule_id": "m_00019",
+     "max_tanimoto": 0.6667,
+     "rr": 0.14285714285714285,
+     "nn_inchikey14": "CISFAPDYRQPRCZ"
+    },
+    {
+     "molecule_id": "m_00020",
+     "max_tanimoto": 0.831,
+     "rr": 1.0,
+     "nn_inchikey14": "PFFHOOZDXSMZIP"
+    },
+    {
+     "molecule_id": "m_00021",
+     "max_tanimoto": 0.5714,
+     "rr": 0.0,
+     "nn_inchikey14": "OXFPYCSNYOFUCH"
+    },
+    {
+     "molecule_id": "m_00022",
+     "max_tanimoto": 0.9294,
+     "rr": 0.5,
+     "nn_inchikey14": "SZVZHAIFWPRDNE"
+    },
+    {
+     "molecule_id": "m_00023",
+     "max_tanimoto": 0.8556,
+     "rr": 1.0,
+     "nn_inchikey14": "LUZRJRNZXALNLM"
+    },
+    {
+     "molecule_id": "m_00024",
+     "max_tanimoto": 0.6912,
+     "rr": 0.0,
+     "nn_inchikey14": "HROMYAWHLUOUPY"
+    },
+    {
+     "molecule_id": "m_00025",
+     "max_tanimoto": 0.7586,
+     "rr": 1.0,
+     "nn_inchikey14": "HEFNNWSXXWATRW"
+    },
+    {
+     "molecule_id": "m_00026",
+     "max_tanimoto": 0.8182,
+     "rr": 0.5,
+     "nn_inchikey14": "LMTBHHZPNWMKCJ"
+    },
+    {
+     "molecule_id": "m_00027",
+     "max_tanimoto": 0.8769,
+     "rr": 0.5,
+     "nn_inchikey14": "KXEMQEGRZWUKJS"
+    },
+    {
+     "molecule_id": "m_00028",
+     "max_tanimoto": 0.3113,
+     "rr": 1.0,
+     "nn_inchikey14": "PGCZNTNNZCKKFG"
+    },
+    {
+     "molecule_id": "m_00029",
+     "max_tanimoto": 0.6111,
+     "rr": 0.25,
+     "nn_inchikey14": "LCUILCDHTJZGOQ"
+    },
+    {
+     "molecule_id": "m_00030",
+     "max_tanimoto": 0.6389,
+     "rr": 1.0,
+     "nn_inchikey14": "GNOGSFBXBWBTIG"
+    },
+    {
+     "molecule_id": "m_00031",
+     "max_tanimoto": 0.434,
+     "rr": 1.0,
+     "nn_inchikey14": "KBTPWRQEZFBWEL"
+    },
+    {
+     "molecule_id": "m_00032",
+     "max_tanimoto": 0.5269,
+     "rr": 1.0,
+     "nn_inchikey14": "CKZNKYSWWCSICZ"
+    },
+    {
+     "molecule_id": "m_00033",
+     "max_tanimoto": 1.0,
+     "rr": 1.0,
+     "nn_inchikey14": "DKZOQKYOEKTNQN"
+    },
+    {
+     "molecule_id": "m_00034",
+     "max_tanimoto": 0.7111,
+     "rr": 1.0,
+     "nn_inchikey14": "GDBQQVLCIARPGH"
+    },
+    {
+     "molecule_id": "m_00035",
+     "max_tanimoto": 1.0,
+     "rr": 0.14285714285714285,
+     "nn_inchikey14": "CZOSTDZGCCEZTJ"
+    },
+    {
+     "molecule_id": "m_00036",
+     "max_tanimoto": 1.0,
+     "rr": 1.0,
+     "nn_inchikey14": "ABENPAILMZUZDF"
+    },
+    {
+     "molecule_id": "m_00037",
+     "max_tanimoto": 0.4531,
+     "rr": 1.0,
+     "nn_inchikey14": "RTOSGFHRWWYITC"
+    },
+    {
+     "molecule_id": "m_00038",
+     "max_tanimoto": 0.7619,
+     "rr": 1.0,
+     "nn_inchikey14": "WWSNSDWQADMAJB"
+    },
+    {
+     "molecule_id": "m_00039",
+     "max_tanimoto": 0.4091,
+     "rr": 0.5,
+     "nn_inchikey14": "KTASKRCJBXZGMH"
+    },
+    {
+     "molecule_id": "m_00040",
+     "max_tanimoto": 0.5156,
+     "rr": 1.0,
+     "nn_inchikey14": "ZZKONWHLKJFZJD"
+    },
+    {
+     "molecule_id": "m_00041",
+     "max_tanimoto": 0.9744,
+     "rr": 0.0,
+     "nn_inchikey14": "MXXWOMGUGJBKIW"
+    },
+    {
+     "molecule_id": "m_00042",
+     "max_tanimoto": 0.8085,
+     "rr": 1.0,
+     "nn_inchikey14": "JROXMYGUCMIQQD"
+    },
+    {
+     "molecule_id": "m_00043",
+     "max_tanimoto": 0.68,
+     "rr": 1.0,
+     "nn_inchikey14": "YAUGXEUJUJPFQU"
+    },
+    {
+     "molecule_id": "m_00044",
+     "max_tanimoto": 0.4706,
+     "rr": 1.0,
+     "nn_inchikey14": "VMESWQXRGYWECL"
+    },
+    {
+     "molecule_id": "m_00045",
+     "max_tanimoto": 0.7292,
+     "rr": 0.25,
+     "nn_inchikey14": "CFJLERBDXYGARW"
+    },
+    {
+     "molecule_id": "m_00046",
+     "max_tanimoto": 0.6377,
+     "rr": 0.5,
+     "nn_inchikey14": "XJIILRFVONGQOG"
+    },
+    {
+     "molecule_id": "m_00047",
+     "max_tanimoto": 0.6744,
+     "rr": 0.5,
+     "nn_inchikey14": "ZQBQAMXKTHNSQM"
+    },
+    {
+     "molecule_id": "m_00048",
+     "max_tanimoto": 0.8088,
+     "rr": 0.5,
+     "nn_inchikey14": "NHPPCDZCRMDZNC"
+    },
+    {
+     "molecule_id": "m_00049",
+     "max_tanimoto": 0.6038,
+     "rr": 1.0,
+     "nn_inchikey14": "AKNQMEBLVAMSNZ"
+    },
+    {
+     "molecule_id": "m_00050",
+     "max_tanimoto": 0.4524,
+     "rr": 0.5,
+     "nn_inchikey14": "OGXNFSOEIVPPSG"
+    },
+    {
+     "molecule_id": "m_00051",
+     "max_tanimoto": 0.5952,
+     "rr": 1.0,
+     "nn_inchikey14": "IGTIFZWSTOWXGX"
+    },
+    {
+     "molecule_id": "m_00052",
+     "max_tanimoto": 0.5682,
+     "rr": 0.0,
+     "nn_inchikey14": "ABRBXXZGNUOPQF"
+    },
+    {
+     "molecule_id": "m_00053",
+     "max_tanimoto": 0.8511,
+     "rr": 1.0,
+     "nn_inchikey14": "DVICWXUADSCSLL"
+    },
+    {
+     "molecule_id": "m_00054",
+     "max_tanimoto": 1.0,
+     "rr": 1.0,
+     "nn_inchikey14": "JMJWRYVVRMQVAK"
+    },
+    {
+     "molecule_id": "m_00055",
+     "max_tanimoto": 0.625,
+     "rr": 1.0,
+     "nn_inchikey14": "DGZPYJBDYGAEBE"
+    },
+    {
+     "molecule_id": "m_00056",
+     "max_tanimoto": 0.4853,
+     "rr": 0.0,
+     "nn_inchikey14": "LJKNDIQVTNIZLP"
+    },
+    {
+     "molecule_id": "m_00057",
+     "max_tanimoto": 0.8286,
+     "rr": 1.0,
+     "nn_inchikey14": "ISJSHQTWOHGCMM"
+    },
+    {
+     "molecule_id": "m_00058",
+     "max_tanimoto": 0.7556,
+     "rr": 0.1,
+     "nn_inchikey14": "AZFYHRHUTXBGJS"
+    },
+    {
+     "molecule_id": "m_00059",
+     "max_tanimoto": 0.4286,
+     "rr": 0.0,
+     "nn_inchikey14": "JASONGFGOLHLGB"
+    },
+    {
+     "molecule_id": "m_00060",
+     "max_tanimoto": 0.6552,
+     "rr": 0.5,
+     "nn_inchikey14": "MGFCUMGVVWKLOT"
+    },
+    {
+     "molecule_id": "m_00061",
+     "max_tanimoto": 0.7576,
+     "rr": 1.0,
+     "nn_inchikey14": "NSCGCTPLPUDDHL"
+    },
+    {
+     "molecule_id": "m_00062",
+     "max_tanimoto": 0.7547,
+     "rr": 1.0,
+     "nn_inchikey14": "ZPSJPRVORZWSKK"
+    },
+    {
+     "molecule_id": "m_00063",
+     "max_tanimoto": 1.0,
+     "rr": 0.5,
+     "nn_inchikey14": "BWKILASWCLJPBO"
+    },
+    {
+     "molecule_id": "m_00064",
+     "max_tanimoto": 0.8293,
+     "rr": 1.0,
+     "nn_inchikey14": "MKCQCEAMNSHUSD"
+    },
+    {
+     "molecule_id": "m_00065",
+     "max_tanimoto": 0.7872,
+     "rr": 1.0,
+     "nn_inchikey14": "WPBCXLCJWLNDPV"
+    },
+    {
+     "molecule_id": "m_00066",
+     "max_tanimoto": 0.5362,
+     "rr": 0.0,
+     "nn_inchikey14": "ZICGJBPBLVXOBM"
+    },
+    {
+     "molecule_id": "m_00067",
+     "max_tanimoto": 0.8088,
+     "rr": 0.5,
+     "nn_inchikey14": "JWAYRMRIYVGFTG"
+    },
+    {
+     "molecule_id": "m_00068",
+     "max_tanimoto": 0.7273,
+     "rr": 0.5,
+     "nn_inchikey14": "ZWULOVMIJRITDI"
+    },
+    {
+     "molecule_id": "m_00069",
+     "max_tanimoto": 0.9565,
+     "rr": 1.0,
+     "nn_inchikey14": "IKGQCCPKYXSKJK"
+    },
+    {
+     "molecule_id": "m_00070",
+     "max_tanimoto": 0.878,
+     "rr": 1.0,
+     "nn_inchikey14": "GAWIIZNUKGOBMI"
+    },
+    {
+     "molecule_id": "m_00071",
+     "max_tanimoto": 0.6574,
+     "rr": 1.0,
+     "nn_inchikey14": "LULQRLKBANNSOX"
+    },
+    {
+     "molecule_id": "m_00072",
+     "max_tanimoto": 0.9483,
+     "rr": 1.0,
+     "nn_inchikey14": "FZVOBDJBRIEKPS"
+    },
+    {
+     "molecule_id": "m_00073",
+     "max_tanimoto": 0.6552,
+     "rr": 0.0,
+     "nn_inchikey14": "ZSTPNQLNQBRLQF"
+    },
+    {
+     "molecule_id": "m_00074",
+     "max_tanimoto": 0.7857,
+     "rr": 0.125,
+     "nn_inchikey14": "LGJLRIJXTPDFNB"
+    },
+    {
+     "molecule_id": "m_00075",
+     "max_tanimoto": 0.6207,
+     "rr": 0.0,
+     "nn_inchikey14": "GSAINKDJWMWPIU"
+    },
+    {
+     "molecule_id": "m_00076",
+     "max_tanimoto": 0.4783,
+     "rr": 0.5,
+     "nn_inchikey14": "FQPSZMQVMNFOIK"
+    },
+    {
+     "molecule_id": "m_00077",
+     "max_tanimoto": 1.0,
+     "rr": 1.0,
+     "nn_inchikey14": "RZRNAYUHWVFMIP"
+    },
+    {
+     "molecule_id": "m_00078",
+     "max_tanimoto": 0.6905,
+     "rr": 0.5,
+     "nn_inchikey14": "PJSFRIWCGOHTNF"
+    },
+    {
+     "molecule_id": "m_00079",
+     "max_tanimoto": 0.8974,
+     "rr": 0.25,
+     "nn_inchikey14": "MQSZRBPYXNEFHF"
+    },
+    {
+     "molecule_id": "m_00080",
+     "max_tanimoto": 1.0,
+     "rr": 0.0,
+     "nn_inchikey14": "ABENPAILMZUZDF"
+    },
+    {
+     "molecule_id": "m_00081",
+     "max_tanimoto": 0.8442,
+     "rr": 0.0,
+     "nn_inchikey14": "NAIKIJSSBJHCBL"
+    },
+    {
+     "molecule_id": "m_00082",
+     "max_tanimoto": 0.8085,
+     "rr": 0.2,
+     "nn_inchikey14": "RTJABBAYSOTIDD"
+    },
+    {
+     "molecule_id": "m_00083",
+     "max_tanimoto": 0.3393,
+     "rr": 0.0,
+     "nn_inchikey14": "DBKIEMOKQWYZOA"
+    },
+    {
+     "molecule_id": "m_00084",
+     "max_tanimoto": 0.44,
+     "rr": 0.0,
+     "nn_inchikey14": "HRWLTBUENCFLGG"
+    },
+    {
+     "molecule_id": "m_00085",
+     "max_tanimoto": 0.6632,
+     "rr": 0.2,
+     "nn_inchikey14": "FMUJDQBVAXXOSZ"
+    },
+    {
+     "molecule_id": "m_00086",
+     "max_tanimoto": 0.575,
+     "rr": 0.25,
+     "nn_inchikey14": "QEIITRXHOIHGMT"
+    },
+    {
+     "molecule_id": "m_00087",
+     "max_tanimoto": 0.8372,
+     "rr": 0.0,
+     "nn_inchikey14": "WEPBGSIAWZTEJR"
+    },
+    {
+     "molecule_id": "m_00088",
+     "max_tanimoto": 0.5161,
+     "rr": 0.25,
+     "nn_inchikey14": "OXDBJKLQCGAPQX"
+    },
+    {
+     "molecule_id": "m_00089",
+     "max_tanimoto": 0.6905,
+     "rr": 1.0,
+     "nn_inchikey14": "XNHKMZHWRNMFCU"
+    },
+    {
+     "molecule_id": "m_00090",
+     "max_tanimoto": 0.7358,
+     "rr": 0.1111111111111111,
+     "nn_inchikey14": "ORNBQBCIOKFOEO"
+    },
+    {
+     "molecule_id": "m_00091",
+     "max_tanimoto": 0.7391,
+     "rr": 0.3333333333333333,
+     "nn_inchikey14": "UCHOEDRDLQLUBU"
+    },
+    {
+     "molecule_id": "m_00092",
+     "max_tanimoto": 1.0,
+     "rr": 1.0,
+     "nn_inchikey14": "ASTMILMCZBKZPV"
+    },
+    {
+     "molecule_id": "m_00093",
+     "max_tanimoto": 0.6224,
+     "rr": 0.5,
+     "nn_inchikey14": "QMSHPPRVWMLFFL"
+    },
+    {
+     "molecule_id": "m_00094",
+     "max_tanimoto": 0.3864,
+     "rr": 0.3333333333333333,
+     "nn_inchikey14": "PRGQOPPDPVELEG"
+    },
+    {
+     "molecule_id": "m_00095",
+     "max_tanimoto": 0.5106,
+     "rr": 1.0,
+     "nn_inchikey14": "BWWVAEOLVKTZFQ"
+    },
+    {
+     "molecule_id": "m_00096",
+     "max_tanimoto": 0.717,
+     "rr": 1.0,
+     "nn_inchikey14": "WFPIAZLQTJBIFN"
+    },
+    {
+     "molecule_id": "m_00097",
+     "max_tanimoto": 0.5455,
+     "rr": 0.3333333333333333,
+     "nn_inchikey14": "ARYSAKCPIBLSDO"
+    },
+    {
+     "molecule_id": "m_00098",
+     "max_tanimoto": 0.8333,
+     "rr": 1.0,
+     "nn_inchikey14": "HMSYAPGFKGSXAJ"
+    },
+    {
+     "molecule_id": "m_00099",
+     "max_tanimoto": 0.7838,
+     "rr": 1.0,
+     "nn_inchikey14": "PBOUVYGPDSARIS"
+    },
+    {
+     "molecule_id": "m_00100",
+     "max_tanimoto": 0.6042,
+     "rr": 1.0,
+     "nn_inchikey14": "JDTUGRDKAOPKRI"
+    },
+    {
+     "molecule_id": "m_00101",
+     "max_tanimoto": 0.6667,
+     "rr": 1.0,
+     "nn_inchikey14": "NKANXQFJJICGDU"
+    },
+    {
+     "molecule_id": "m_00102",
+     "max_tanimoto": 0.8205,
+     "rr": 0.0,
+     "nn_inchikey14": "OWGUBYRKZATRIT"
+    },
+    {
+     "molecule_id": "m_00103",
+     "max_tanimoto": 0.6875,
+     "rr": 1.0,
+     "nn_inchikey14": "DMULVCHRPCFFGV"
+    },
+    {
+     "molecule_id": "m_00104",
+     "max_tanimoto": 1.0,
+     "rr": 0.25,
+     "nn_inchikey14": "AHKGDMREJYJJCK"
+    },
+    {
+     "molecule_id": "m_00105",
+     "max_tanimoto": 1.0,
+     "rr": 1.0,
+     "nn_inchikey14": "JYVLOGILHBWLAE"
+    },
+    {
+     "molecule_id": "m_00106",
+     "max_tanimoto": 0.8308,
+     "rr": 1.0,
+     "nn_inchikey14": "GVRDYBOOMKTYKH"
+    },
+    {
+     "molecule_id": "m_00107",
+     "max_tanimoto": 0.3333,
+     "rr": 0.2,
+     "nn_inchikey14": "NBMBQDMXBCIEMX"
+    },
+    {
+     "molecule_id": "m_00108",
+     "max_tanimoto": 0.6712,
+     "rr": 1.0,
+     "nn_inchikey14": "ZKUKMWMSYCIYRD"
+    },
+    {
+     "molecule_id": "m_00109",
+     "max_tanimoto": 0.3373,
+     "rr": 0.5,
+     "nn_inchikey14": "PEEZYHPGCLYQJN"
+    },
+    {
+     "molecule_id": "m_00110",
+     "max_tanimoto": 0.898,
+     "rr": 0.5,
+     "nn_inchikey14": "RYKNDFQXVHJVGZ"
+    },
+    {
+     "molecule_id": "m_00111",
+     "max_tanimoto": 0.8158,
+     "rr": 1.0,
+     "nn_inchikey14": "HLIGTICNBKYEOH"
+    },
+    {
+     "molecule_id": "m_00112",
+     "max_tanimoto": 0.4286,
+     "rr": 1.0,
+     "nn_inchikey14": "UEEMYRZFADLKHE"
+    },
+    {
+     "molecule_id": "m_00113",
+     "max_tanimoto": 1.0,
+     "rr": 0.3333333333333333,
+     "nn_inchikey14": "BNOQPFWRMHCRRN"
+    },
+    {
+     "molecule_id": "m_00114",
+     "max_tanimoto": 0.4412,
+     "rr": 1.0,
+     "nn_inchikey14": "OURKCVDFEHGZHC"
+    },
+    {
+     "molecule_id": "m_00115",
+     "max_tanimoto": 0.7895,
+     "rr": 1.0,
+     "nn_inchikey14": "GRQAKVFPDMDUIF"
+    },
+    {
+     "molecule_id": "m_00116",
+     "max_tanimoto": 0.8205,
+     "rr": 0.3333333333333333,
+     "nn_inchikey14": "HLIGTICNBKYEOH"
+    },
+    {
+     "molecule_id": "m_00117",
+     "max_tanimoto": 0.6562,
+     "rr": 1.0,
+     "nn_inchikey14": "ZENOXNGFMSCLLL"
+    },
+    {
+     "molecule_id": "m_00118",
+     "max_tanimoto": 0.7222,
+     "rr": 1.0,
+     "nn_inchikey14": "SHXWCVYOXRDMCX"
+    },
+    {
+     "molecule_id": "m_00119",
+     "max_tanimoto": 0.7907,
+     "rr": 1.0,
+     "nn_inchikey14": "JEKJKMJDASOZRW"
+    },
+    {
+     "molecule_id": "m_00120",
+     "max_tanimoto": 0.6552,
+     "rr": 0.5,
+     "nn_inchikey14": "DZHKQJWGPHSYDR"
+    },
+    {
+     "molecule_id": "m_00121",
+     "max_tanimoto": 0.7391,
+     "rr": 1.0,
+     "nn_inchikey14": "ZVMKPMYSSLDZJO"
+    },
+    {
+     "molecule_id": "m_00122",
+     "max_tanimoto": 1.0,
+     "rr": 1.0,
+     "nn_inchikey14": "TZWZKDULKILUPV"
+    },
+    {
+     "molecule_id": "m_00123",
+     "max_tanimoto": 0.7273,
+     "rr": 0.14285714285714285,
+     "nn_inchikey14": "JZDLAUSYEAFGDD"
+    },
+    {
+     "molecule_id": "m_00124",
+     "max_tanimoto": 0.7097,
+     "rr": 0.125,
+     "nn_inchikey14": "VJVXQSFKTVUEFY"
+    },
+    {
+     "molecule_id": "m_00125",
+     "max_tanimoto": 0.7733,
+     "rr": 1.0,
+     "nn_inchikey14": "DFXWNJDFYDFQCW"
+    },
+    {
+     "molecule_id": "m_00126",
+     "max_tanimoto": 0.5429,
+     "rr": 0.14285714285714285,
+     "nn_inchikey14": "YAPQBXQYLJRXSA"
+    },
+    {
+     "molecule_id": "m_00127",
+     "max_tanimoto": 0.8333,
+     "rr": 0.14285714285714285,
+     "nn_inchikey14": "IXKMCWHVMLFWQY"
+    },
+    {
+     "molecule_id": "m_00128",
+     "max_tanimoto": 0.5714,
+     "rr": 0.08333333333333333,
+     "nn_inchikey14": "IBJRJSQUSVUUDO"
+    },
+    {
+     "molecule_id": "m_00129",
+     "max_tanimoto": 0.6774,
+     "rr": 0.05263157894736842,
+     "nn_inchikey14": "VSJGJMKGNMDJCI"
+    },
+    {
+     "molecule_id": "m_00130",
+     "max_tanimoto": 0.8163,
+     "rr": 1.0,
+     "nn_inchikey14": "JOHZPMXAZQZXHR"
+    },
+    {
+     "molecule_id": "m_00131",
+     "max_tanimoto": 0.9048,
+     "rr": 0.0,
+     "nn_inchikey14": "UVZBUUTTYHTDRR"
+    },
+    {
+     "molecule_id": "m_00132",
+     "max_tanimoto": 0.974,
+     "rr": 1.0,
+     "nn_inchikey14": "MZSMZYBORPEUEF"
+    },
+    {
+     "molecule_id": "m_00133",
+     "max_tanimoto": 0.8,
+     "rr": 1.0,
+     "nn_inchikey14": "STYFAKVWGOAWSV"
+    },
+    {
+     "molecule_id": "m_00134",
+     "max_tanimoto": 0.8095,
+     "rr": 1.0,
+     "nn_inchikey14": "XQSRBHJKYQWLRM"
+    },
+    {
+     "molecule_id": "m_00135",
+     "max_tanimoto": 0.7869,
+     "rr": 1.0,
+     "nn_inchikey14": "GGHRVVISWFYZNR"
+    },
+    {
+     "molecule_id": "m_00136",
+     "max_tanimoto": 0.6538,
+     "rr": 0.3333333333333333,
+     "nn_inchikey14": "PIMZUZSSNYHVCU"
+    },
+    {
+     "molecule_id": "m_00137",
+     "max_tanimoto": 0.5294,
+     "rr": 0.5,
+     "nn_inchikey14": "LPYXWGMUVRGUOY"
+    },
+    {
+     "molecule_id": "m_00138",
+     "max_tanimoto": 0.7619,
+     "rr": 1.0,
+     "nn_inchikey14": "YCTBLMQFTMPXBD"
+    },
+    {
+     "molecule_id": "m_00139",
+     "max_tanimoto": 0.8627,
+     "rr": 1.0,
+     "nn_inchikey14": "KYXFGKLZVUDIIX"
+    },
+    {
+     "molecule_id": "m_00140",
+     "max_tanimoto": 0.7097,
+     "rr": 1.0,
+     "nn_inchikey14": "VTKHRLZMWODHJA"
+    },
+    {
+     "molecule_id": "m_00141",
+     "max_tanimoto": 0.6981,
+     "rr": 1.0,
+     "nn_inchikey14": "IGWDEVSBEKYORK"
+    },
+    {
+     "molecule_id": "m_00142",
+     "max_tanimoto": 0.3514,
+     "rr": 1.0,
+     "nn_inchikey14": "JOAHCWIICCHHOU"
+    },
+    {
+     "molecule_id": "m_00143",
+     "max_tanimoto": 1.0,
+     "rr": 0.5,
+     "nn_inchikey14": "AAFPBUWBKCMUOC"
+    },
+    {
+     "molecule_id": "m_00144",
+     "max_tanimoto": 0.7593,
+     "rr": 1.0,
+     "nn_inchikey14": "FSPQCTGGIANIJZ"
+    },
+    {
+     "molecule_id": "m_00145",
+     "max_tanimoto": 1.0,
+     "rr": 1.0,
+     "nn_inchikey14": "JLGLQAWTXXGVEM"
+    },
+    {
+     "molecule_id": "m_00146",
+     "max_tanimoto": 0.7111,
+     "rr": 0.3333333333333333,
+     "nn_inchikey14": "BJPSSVHNEGMBDQ"
+    },
+    {
+     "molecule_id": "m_00147",
+     "max_tanimoto": 0.5625,
+     "rr": 1.0,
+     "nn_inchikey14": "OVSKIKFHRZPJSS"
+    },
+    {
+     "molecule_id": "m_00148",
+     "max_tanimoto": 0.7143,
+     "rr": 0.14285714285714285,
+     "nn_inchikey14": "FMMWHPNWAFZXNH"
+    },
+    {
+     "molecule_id": "m_00149",
+     "max_tanimoto": 0.7391,
+     "rr": 1.0,
+     "nn_inchikey14": "SCMSYZJDIQPSDI"
+    },
+    {
+     "molecule_id": "m_00150",
+     "max_tanimoto": 0.6429,
+     "rr": 1.0,
+     "nn_inchikey14": "MEHUJCGAYMDLEL"
+    },
+    {
+     "molecule_id": "m_00151",
+     "max_tanimoto": 0.8889,
+     "rr": 1.0,
+     "nn_inchikey14": "FOMYLMGOSTVYEE"
+    },
+    {
+     "molecule_id": "m_00152",
+     "max_tanimoto": 0.7812,
+     "rr": 1.0,
+     "nn_inchikey14": "RIVVNGIVVYEIRS"
+    },
+    {
+     "molecule_id": "m_00153",
+     "max_tanimoto": 1.0,
+     "rr": 1.0,
+     "nn_inchikey14": "PUNOCEUUYUXUGR"
+    },
+    {
+     "molecule_id": "m_00154",
+     "max_tanimoto": 0.9481,
+     "rr": 1.0,
+     "nn_inchikey14": "CMYBONFRMPHHAP"
+    },
+    {
+     "molecule_id": "m_00155",
+     "max_tanimoto": 0.5818,
+     "rr": 1.0,
+     "nn_inchikey14": "JEYGFOXAUFSKBR"
+    },
+    {
+     "molecule_id": "m_00156",
+     "max_tanimoto": 0.3548,
+     "rr": 0.5,
+     "nn_inchikey14": "FGQWMCQIKVIDSI"
+    },
+    {
+     "molecule_id": "m_00157",
+     "max_tanimoto": 0.7347,
+     "rr": 0.5,
+     "nn_inchikey14": "IVFRBVSPAOYOOK"
+    },
+    {
+     "molecule_id": "m_00158",
+     "max_tanimoto": 0.569,
+     "rr": 0.047619047619047616,
+     "nn_inchikey14": "IUVZTUKGYOYDHT"
+    },
+    {
+     "molecule_id": "m_00159",
+     "max_tanimoto": 0.4483,
+     "rr": 0.0,
+     "nn_inchikey14": "MJVAVZPDRWSRRC"
+    },
+    {
+     "molecule_id": "m_00160",
+     "max_tanimoto": 0.7528,
+     "rr": 1.0,
+     "nn_inchikey14": "DXJGGEVMIZJZLN"
+    },
+    {
+     "molecule_id": "m_00161",
+     "max_tanimoto": 0.5581,
+     "rr": 0.0,
+     "nn_inchikey14": "VYXPNQWWRFIRQU"
+    },
+    {
+     "molecule_id": "m_00162",
+     "max_tanimoto": 0.4878,
+     "rr": 1.0,
+     "nn_inchikey14": "ZLVXBBHTMQJRSX"
+    },
+    {
+     "molecule_id": "m_00163",
+     "max_tanimoto": 0.5152,
+     "rr": 0.0,
+     "nn_inchikey14": "KBFCVOAVUKWCPS"
+    },
+    {
+     "molecule_id": "m_00164",
+     "max_tanimoto": 0.6667,
+     "rr": 0.1111111111111111,
+     "nn_inchikey14": "NVKAWKQGWWIWPM"
+    },
+    {
+     "molecule_id": "m_00165",
+     "max_tanimoto": 0.5862,
+     "rr": 1.0,
+     "nn_inchikey14": "SCJQACPXMFUNKR"
+    },
+    {
+     "molecule_id": "m_00166",
+     "max_tanimoto": 0.9583,
+     "rr": 1.0,
+     "nn_inchikey14": "CGFRYGDUDNEUQK"
+    },
+    {
+     "molecule_id": "m_00167",
+     "max_tanimoto": 0.4058,
+     "rr": 1.0,
+     "nn_inchikey14": "RAAMXEPCRXNPJM"
+    },
+    {
+     "molecule_id": "m_00168",
+     "max_tanimoto": 0.6053,
+     "rr": 1.0,
+     "nn_inchikey14": "HDXVSZWKIHQDES"
+    },
+    {
+     "molecule_id": "m_00169",
+     "max_tanimoto": 0.5556,
+     "rr": 1.0,
+     "nn_inchikey14": "XUEJKOORORCJHZ"
+    },
+    {
+     "molecule_id": "m_00170",
+     "max_tanimoto": 0.2698,
+     "rr": 0.045454545454545456,
+     "nn_inchikey14": "FHFSGWKCZGXCFF"
+    },
+    {
+     "molecule_id": "m_00171",
+     "max_tanimoto": 1.0,
+     "rr": 1.0,
+     "nn_inchikey14": "VLPFTAMPNXLGLX"
+    },
+    {
+     "molecule_id": "m_00172",
+     "max_tanimoto": 0.7091,
+     "rr": 0.5,
+     "nn_inchikey14": "WZDIDEYNVACCCN"
+    },
+    {
+     "molecule_id": "m_00173",
+     "max_tanimoto": 0.625,
+     "rr": 0.16666666666666666,
+     "nn_inchikey14": "GBKBPIXSSQJOPJ"
+    },
+    {
+     "molecule_id": "m_00174",
+     "max_tanimoto": 0.7857,
+     "rr": 0.0,
+     "nn_inchikey14": "WPCVRWVBBXIRMA"
+    },
+    {
+     "molecule_id": "m_00175",
+     "max_tanimoto": 0.8776,
+     "rr": 1.0,
+     "nn_inchikey14": "KCWGBXXAJHVZNN"
+    },
+    {
+     "molecule_id": "m_00176",
+     "max_tanimoto": 0.6226,
+     "rr": 0.5,
+     "nn_inchikey14": "JQUKCPUPFALELS"
+    },
+    {
+     "molecule_id": "m_00177",
+     "max_tanimoto": 0.7447,
+     "rr": 1.0,
+     "nn_inchikey14": "LKSJDCKSSYHRME"
+    },
+    {
+     "molecule_id": "m_00178",
+     "max_tanimoto": 0.8281,
+     "rr": 0.1111111111111111,
+     "nn_inchikey14": "KPCPRCRZARJYDU"
+    },
+    {
+     "molecule_id": "m_00179",
+     "max_tanimoto": 0.9744,
+     "rr": 0.5,
+     "nn_inchikey14": "BYCBKXBTODCCRE"
+    },
+    {
+     "molecule_id": "m_00180",
+     "max_tanimoto": 0.5333,
+     "rr": 0.2,
+     "nn_inchikey14": "SUPSFAUIWDRKKZ"
+    },
+    {
+     "molecule_id": "m_00181",
+     "max_tanimoto": 0.9623,
+     "rr": 0.5,
+     "nn_inchikey14": "AVAMAXIWCFLWKK"
+    },
+    {
+     "molecule_id": "m_00182",
+     "max_tanimoto": 0.5333,
+     "rr": 0.1111111111111111,
+     "nn_inchikey14": "UKFAWRZYFYOXEG"
+    },
+    {
+     "molecule_id": "m_00183",
+     "max_tanimoto": 0.8182,
+     "rr": 1.0,
+     "nn_inchikey14": "XKRIOYOVRGAASD"
+    },
+    {
+     "molecule_id": "m_00184",
+     "max_tanimoto": 0.6923,
+     "rr": 1.0,
+     "nn_inchikey14": "OMPBWHUKFIKJRL"
+    },
+    {
+     "molecule_id": "m_00185",
+     "max_tanimoto": 0.7636,
+     "rr": 1.0,
+     "nn_inchikey14": "QCTHLCFVVACBSA"
+    },
+    {
+     "molecule_id": "m_00186",
+     "max_tanimoto": 0.5536,
+     "rr": 0.0,
+     "nn_inchikey14": "ZAIJLHHXEHKKNH"
+    },
+    {
+     "molecule_id": "m_00187",
+     "max_tanimoto": 0.7719,
+     "rr": 1.0,
+     "nn_inchikey14": "JXSWMXARKJHFCI"
+    },
+    {
+     "molecule_id": "m_00188",
+     "max_tanimoto": 0.5833,
+     "rr": 0.0,
+     "nn_inchikey14": "MGHSCXCFVZJHPT"
+    },
+    {
+     "molecule_id": "m_00189",
+     "max_tanimoto": 0.9143,
+     "rr": 0.09090909090909091,
+     "nn_inchikey14": "LTERDCBCHFKFRI"
+    },
+    {
+     "molecule_id": "m_00190",
+     "max_tanimoto": 0.7258,
+     "rr": 1.0,
+     "nn_inchikey14": "GZKDXUIWCNCNBJ"
+    },
+    {
+     "molecule_id": "m_00191",
+     "max_tanimoto": 0.4706,
+     "rr": 0.0,
+     "nn_inchikey14": "QZBUWPVZSXDWSB"
+    },
+    {
+     "molecule_id": "m_00192",
+     "max_tanimoto": 1.0,
+     "rr": 1.0,
+     "nn_inchikey14": "ARKUODUKOCWLOB"
+    },
+    {
+     "molecule_id": "m_00193",
+     "max_tanimoto": 1.0,
+     "rr": 0.1,
+     "nn_inchikey14": "VLPFTAMPNXLGLX"
+    },
+    {
+     "molecule_id": "m_00194",
+     "max_tanimoto": 0.625,
+     "rr": 0.0,
+     "nn_inchikey14": "JKQXZKUSFCKOGQ"
+    },
+    {
+     "molecule_id": "mb_00000",
+     "max_tanimoto": 0.6094,
+     "rr": 1.0,
+     "nn_inchikey14": "FODJWPHPWBKDON"
+    },
+    {
+     "molecule_id": "mb_00001",
+     "max_tanimoto": 0.6029,
+     "rr": 0.3333333333333333,
+     "nn_inchikey14": "QMGVPVSNSZLJIA"
+    },
+    {
+     "molecule_id": "mb_00002",
+     "max_tanimoto": 1.0,
+     "rr": 1.0,
+     "nn_inchikey14": "AMKOUQLHUASJMB"
+    },
+    {
+     "molecule_id": "mb_00003",
+     "max_tanimoto": 0.5814,
+     "rr": 1.0,
+     "nn_inchikey14": "PKYKNPLSFOKASK"
+    },
+    {
+     "molecule_id": "mb_00004",
+     "max_tanimoto": 1.0,
+     "rr": 1.0,
+     "nn_inchikey14": "JAMPNNNOPHDTDM"
+    },
+    {
+     "molecule_id": "mb_00005",
+     "max_tanimoto": 0.5429,
+     "rr": 1.0,
+     "nn_inchikey14": "DKLVJXTUCNPMDC"
+    },
+    {
+     "molecule_id": "mb_00006",
+     "max_tanimoto": 0.6176,
+     "rr": 0.25,
+     "nn_inchikey14": "VHOZZIUFGVJOEL"
+    },
+    {
+     "molecule_id": "mb_00007",
+     "max_tanimoto": 0.5417,
+     "rr": 1.0,
+     "nn_inchikey14": "IPFGKIZLLKODSG"
+    },
+    {
+     "molecule_id": "mb_00008",
+     "max_tanimoto": 1.0,
+     "rr": 1.0,
+     "nn_inchikey14": "BMBUWKNHXZNMFT"
+    },
+    {
+     "molecule_id": "mb_00009",
+     "max_tanimoto": 0.7674,
+     "rr": 1.0,
+     "nn_inchikey14": "KDRIURZVJMYZNJ"
+    },
+    {
+     "molecule_id": "mb_00010",
+     "max_tanimoto": 0.4444,
+     "rr": 1.0,
+     "nn_inchikey14": "ACDSTTDXRYHRGH"
+    },
+    {
+     "molecule_id": "mb_00011",
+     "max_tanimoto": 0.7551,
+     "rr": 1.0,
+     "nn_inchikey14": "LVGKNESDSKGROR"
+    },
+    {
+     "molecule_id": "mb_00012",
+     "max_tanimoto": 1.0,
+     "rr": 0.5,
+     "nn_inchikey14": "CZHPZFYKSIHJHZ"
+    },
+    {
+     "molecule_id": "mb_00013",
+     "max_tanimoto": 0.6,
+     "rr": 0.5,
+     "nn_inchikey14": "UXDPXZQHTDAXOZ"
+    },
+    {
+     "molecule_id": "mb_00014",
+     "max_tanimoto": 0.7231,
+     "rr": 0.07142857142857142,
+     "nn_inchikey14": "NEJKUCWBWUMARI"
+    },
+    {
+     "molecule_id": "mb_00015",
+     "max_tanimoto": 0.7222,
+     "rr": 0.09090909090909091,
+     "nn_inchikey14": "LLMFFOXSSQHNFR"
+    },
+    {
+     "molecule_id": "mb_00016",
+     "max_tanimoto": 0.6842,
+     "rr": 0.3333333333333333,
+     "nn_inchikey14": "XDTGIHZXYQBYAM"
+    },
+    {
+     "molecule_id": "mb_00017",
+     "max_tanimoto": 0.5429,
+     "rr": 1.0,
+     "nn_inchikey14": "YVTIXNGKMQLICL"
+    },
+    {
+     "molecule_id": "mb_00018",
+     "max_tanimoto": 0.7241,
+     "rr": 1.0,
+     "nn_inchikey14": "KIQQFVJHWNCGAU"
+    },
+    {
+     "molecule_id": "mb_00019",
+     "max_tanimoto": 0.7636,
+     "rr": 0.3333333333333333,
+     "nn_inchikey14": "WMBODJDHWWGSJT"
+    },
+    {
+     "molecule_id": "mb_00020",
+     "max_tanimoto": 0.4118,
+     "rr": 0.0,
+     "nn_inchikey14": "LQZXAHKUYJVAAR"
+    },
+    {
+     "molecule_id": "mb_00021",
+     "max_tanimoto": 0.3636,
+     "rr": 0.5,
+     "nn_inchikey14": "SWYXXNJANIXCRQ"
+    },
+    {
+     "molecule_id": "mb_00022",
+     "max_tanimoto": 0.5068,
+     "rr": 0.3333333333333333,
+     "nn_inchikey14": "SRFCUPVBYYAMIL"
+    },
+    {
+     "molecule_id": "mb_00023",
+     "max_tanimoto": 0.4833,
+     "rr": 0.25,
+     "nn_inchikey14": "DNAWGBOKUFFVMB"
+    },
+    {
+     "molecule_id": "mb_00024",
+     "max_tanimoto": 0.6167,
+     "rr": 1.0,
+     "nn_inchikey14": "PRYGKAJEGXTQNF"
+    },
+    {
+     "molecule_id": "mb_00025",
+     "max_tanimoto": 0.3878,
+     "rr": 1.0,
+     "nn_inchikey14": "JRXCUTAHLPYHAY"
+    },
+    {
+     "molecule_id": "mb_00026",
+     "max_tanimoto": 0.7944,
+     "rr": 1.0,
+     "nn_inchikey14": "MFEPAAMYDYMBSN"
+    },
+    {
+     "molecule_id": "mb_00027",
+     "max_tanimoto": 0.8364,
+     "rr": 0.5,
+     "nn_inchikey14": "XSTNTAIXZAKVEJ"
+    },
+    {
+     "molecule_id": "mb_00028",
+     "max_tanimoto": 1.0,
+     "rr": 1.0,
+     "nn_inchikey14": "BBXOPWQJGWAFOB"
+    },
+    {
+     "molecule_id": "mb_00029",
+     "max_tanimoto": 0.3111,
+     "rr": 1.0,
+     "nn_inchikey14": "DVBLPJWQXDCAKU"
+    },
+    {
+     "molecule_id": "mb_00030",
+     "max_tanimoto": 0.6479,
+     "rr": 0.25,
+     "nn_inchikey14": "JOGLPTTWXBWTKD"
+    },
+    {
+     "molecule_id": "mb_00031",
+     "max_tanimoto": 0.5588,
+     "rr": 0.2,
+     "nn_inchikey14": "WBEFPLHFVLPKHQ"
+    },
+    {
+     "molecule_id": "mb_00032",
+     "max_tanimoto": 0.6849,
+     "rr": 1.0,
+     "nn_inchikey14": "SEHSRKGPFXSUDP"
+    },
+    {
+     "molecule_id": "mb_00033",
+     "max_tanimoto": 0.6129,
+     "rr": 1.0,
+     "nn_inchikey14": "ZYEMGPIYFIJGTP"
+    },
+    {
+     "molecule_id": "mb_00034",
+     "max_tanimoto": 0.551,
+     "rr": 1.0,
+     "nn_inchikey14": "DJUOWOXTPXUHDQ"
+    },
+    {
+     "molecule_id": "mb_00035",
+     "max_tanimoto": 0.8696,
+     "rr": 0.0,
+     "nn_inchikey14": "QFSDWLPMRWDFID"
+    },
+    {
+     "molecule_id": "mb_00036",
+     "max_tanimoto": 0.5345,
+     "rr": 1.0,
+     "nn_inchikey14": "CDRRULDABVKKHU"
+    },
+    {
+     "molecule_id": "mb_00037",
+     "max_tanimoto": 0.9762,
+     "rr": 0.3333333333333333,
+     "nn_inchikey14": "HAHWWVOAEFFVGI"
+    },
+    {
+     "molecule_id": "mb_00038",
+     "max_tanimoto": 1.0,
+     "rr": 0.5,
+     "nn_inchikey14": "QXSTVVHZCWJIBU"
+    },
+    {
+     "molecule_id": "mb_00039",
+     "max_tanimoto": 0.7179,
+     "rr": 0.25,
+     "nn_inchikey14": "AEVRENPSCMLALQ"
+    },
+    {
+     "molecule_id": "mb_00040",
+     "max_tanimoto": 0.9688,
+     "rr": 0.0,
+     "nn_inchikey14": "OINNEUNVOZHBOX"
+    },
+    {
+     "molecule_id": "mb_00041",
+     "max_tanimoto": 0.675,
+     "rr": 0.5,
+     "nn_inchikey14": "DQTCDUUSFLMZQJ"
+    },
+    {
+     "molecule_id": "mb_00042",
+     "max_tanimoto": 0.8302,
+     "rr": 0.25,
+     "nn_inchikey14": "IVRQZYXJBVMHCW"
+    },
+    {
+     "molecule_id": "mb_00043",
+     "max_tanimoto": 1.0,
+     "rr": 1.0,
+     "nn_inchikey14": "BMFDOMNCFYFNSK"
+    },
+    {
+     "molecule_id": "mb_00044",
+     "max_tanimoto": 0.7353,
+     "rr": 0.125,
+     "nn_inchikey14": "MGFCUMGVVWKLOT"
+    },
+    {
+     "molecule_id": "mb_00045",
+     "max_tanimoto": 0.8171,
+     "rr": 1.0,
+     "nn_inchikey14": "GCYCNNNVEBIXIM"
+    },
+    {
+     "molecule_id": "mb_00046",
+     "max_tanimoto": 1.0,
+     "rr": 1.0,
+     "nn_inchikey14": "HBZNVZIRJWODIB"
+    },
+    {
+     "molecule_id": "mb_00047",
+     "max_tanimoto": 1.0,
+     "rr": 1.0,
+     "nn_inchikey14": "AXSLKOJPXNZXDK"
+    },
+    {
+     "molecule_id": "mb_00048",
+     "max_tanimoto": 0.5692,
+     "rr": 1.0,
+     "nn_inchikey14": "YREYEVIYCVEVJK"
+    },
+    {
+     "molecule_id": "mb_00049",
+     "max_tanimoto": 0.6667,
+     "rr": 1.0,
+     "nn_inchikey14": "URNDSORSHGTTQQ"
+    },
+    {
+     "molecule_id": "mb_00050",
+     "max_tanimoto": 1.0,
+     "rr": 0.16666666666666666,
+     "nn_inchikey14": "HBZNVZIRJWODIB"
+    },
+    {
+     "molecule_id": "mb_00051",
+     "max_tanimoto": 1.0,
+     "rr": 1.0,
+     "nn_inchikey14": "APDLCSPGWPLYEQ"
+    },
+    {
+     "molecule_id": "mb_00052",
+     "max_tanimoto": 0.5417,
+     "rr": 1.0,
+     "nn_inchikey14": "KQCMTOWTPBNWDB"
+    },
+    {
+     "molecule_id": "mb_00053",
+     "max_tanimoto": 0.7297,
+     "rr": 0.5,
+     "nn_inchikey14": "VTTCGBFKWPZDFS"
+    },
+    {
+     "molecule_id": "mb_00054",
+     "max_tanimoto": 1.0,
+     "rr": 0.5,
+     "nn_inchikey14": "GLNJHIVZKXCAHQ"
+    },
+    {
+     "molecule_id": "mb_00055",
+     "max_tanimoto": 0.6458,
+     "rr": 1.0,
+     "nn_inchikey14": "BZCVKAZXZWZULN"
+    },
+    {
+     "molecule_id": "mb_00056",
+     "max_tanimoto": 0.6207,
+     "rr": 0.3333333333333333,
+     "nn_inchikey14": "KMAKOBLIOCQGJP"
+    },
+    {
+     "molecule_id": "mb_00057",
+     "max_tanimoto": 0.8036,
+     "rr": 0.5,
+     "nn_inchikey14": "HVYWMOMLDIMFJA"
+    },
+    {
+     "molecule_id": "mb_00058",
+     "max_tanimoto": 0.7812,
+     "rr": 0.5,
+     "nn_inchikey14": "FITAKYVPWCVTII"
+    },
+    {
+     "molecule_id": "mb_00059",
+     "max_tanimoto": 0.6279,
+     "rr": 1.0,
+     "nn_inchikey14": "BRQQPHKRRCUYLA"
+    },
+    {
+     "molecule_id": "mb_00060",
+     "max_tanimoto": 0.233,
+     "rr": 1.0,
+     "nn_inchikey14": "LKAOZIIQNHMHNM"
+    },
+    {
+     "molecule_id": "mb_00061",
+     "max_tanimoto": 0.6167,
+     "rr": 0.2,
+     "nn_inchikey14": "NSDJVCFZKFOLGV"
+    },
+    {
+     "molecule_id": "mb_00062",
+     "max_tanimoto": 0.7568,
+     "rr": 0.5,
+     "nn_inchikey14": "VIHRKOVEWCGJQP"
+    },
+    {
+     "molecule_id": "mb_00063",
+     "max_tanimoto": 0.5556,
+     "rr": 1.0,
+     "nn_inchikey14": "YAUGXEUJUJPFQU"
+    },
+    {
+     "molecule_id": "mb_00064",
+     "max_tanimoto": 0.8172,
+     "rr": 1.0,
+     "nn_inchikey14": "QERHBVOJJKVACB"
+    },
+    {
+     "molecule_id": "mb_00065",
+     "max_tanimoto": 0.9028,
+     "rr": 0.0,
+     "nn_inchikey14": "IJMDOTXFQGFKQU"
+    },
+    {
+     "molecule_id": "mb_00066",
+     "max_tanimoto": 0.8056,
+     "rr": 1.0,
+     "nn_inchikey14": "VCCRNZQBSJXYJD"
+    },
+    {
+     "molecule_id": "mb_00067",
+     "max_tanimoto": 1.0,
+     "rr": 0.2,
+     "nn_inchikey14": "PHYFQTYBJUILEZ"
+    },
+    {
+     "molecule_id": "mb_00068",
+     "max_tanimoto": 1.0,
+     "rr": 0.3333333333333333,
+     "nn_inchikey14": "IVRNQYIPGILFPZ"
+    },
+    {
+     "molecule_id": "mb_00069",
+     "max_tanimoto": 0.8,
+     "rr": 0.3333333333333333,
+     "nn_inchikey14": "BQCHYYSNTUWIHP"
+    },
+    {
+     "molecule_id": "mb_00070",
+     "max_tanimoto": 0.7674,
+     "rr": 0.06666666666666667,
+     "nn_inchikey14": "KDXVVZMYSLWJMA"
+    },
+    {
+     "molecule_id": "mb_00071",
+     "max_tanimoto": 0.7,
+     "rr": 1.0,
+     "nn_inchikey14": "YCTBLMQFTMPXBD"
+    },
+    {
+     "molecule_id": "mb_00072",
+     "max_tanimoto": 0.8571,
+     "rr": 1.0,
+     "nn_inchikey14": "KIGVXRGRNLQNNI"
+    },
+    {
+     "molecule_id": "mb_00073",
+     "max_tanimoto": 0.3023,
+     "rr": 1.0,
+     "nn_inchikey14": "CXISPYVYMQWFLE"
+    },
+    {
+     "molecule_id": "mb_00074",
+     "max_tanimoto": 0.8372,
+     "rr": 1.0,
+     "nn_inchikey14": "DZTHLHPUUBICGU"
+    },
+    {
+     "molecule_id": "mb_00075",
+     "max_tanimoto": 0.7018,
+     "rr": 0.5,
+     "nn_inchikey14": "QSTHEUSPIBEICI"
+    },
+    {
+     "molecule_id": "mb_00076",
+     "max_tanimoto": 0.6349,
+     "rr": 1.0,
+     "nn_inchikey14": "MPQZUWAFVWPPIR"
+    },
+    {
+     "molecule_id": "mb_00077",
+     "max_tanimoto": 0.78,
+     "rr": 1.0,
+     "nn_inchikey14": "FUCWJKJZOHOLEO"
+    },
+    {
+     "molecule_id": "mb_00078",
+     "max_tanimoto": 0.8,
+     "rr": 0.2,
+     "nn_inchikey14": "VAPVFWUBNBLVMB"
+    },
+    {
+     "molecule_id": "mb_00079",
+     "max_tanimoto": 1.0,
+     "rr": 0.1111111111111111,
+     "nn_inchikey14": "PHYFQTYBJUILEZ"
+    },
+    {
+     "molecule_id": "mb_00080",
+     "max_tanimoto": 0.7955,
+     "rr": 0.5,
+     "nn_inchikey14": "ZPLILIOXZHNNLY"
+    },
+    {
+     "molecule_id": "mb_00081",
+     "max_tanimoto": 0.4941,
+     "rr": 0.25,
+     "nn_inchikey14": "XMLYZAYHZIXJGE"
+    },
+    {
+     "molecule_id": "mb_00082",
+     "max_tanimoto": 1.0,
+     "rr": 1.0,
+     "nn_inchikey14": "BIABMEZBCHDPBV"
+    },
+    {
+     "molecule_id": "mb_00083",
+     "max_tanimoto": 0.5625,
+     "rr": 0.16666666666666666,
+     "nn_inchikey14": "LBRPLJCNRZUXLS"
+    },
+    {
+     "molecule_id": "mb_00084",
+     "max_tanimoto": 0.913,
+     "rr": 0.3333333333333333,
+     "nn_inchikey14": "BMCZTYDZHNTKPR"
+    },
+    {
+     "molecule_id": "mb_00085",
+     "max_tanimoto": 1.0,
+     "rr": 1.0,
+     "nn_inchikey14": "GBZGMNJFQHOHOA"
+    },
+    {
+     "molecule_id": "mb_00086",
+     "max_tanimoto": 0.7917,
+     "rr": 1.0,
+     "nn_inchikey14": "XHHYJZGDOMKLEE"
+    },
+    {
+     "molecule_id": "mb_00087",
+     "max_tanimoto": 0.5068,
+     "rr": 1.0,
+     "nn_inchikey14": "MBEYJURZBQSTJR"
+    },
+    {
+     "molecule_id": "mb_00088",
+     "max_tanimoto": 0.6286,
+     "rr": 0.5,
+     "nn_inchikey14": "QXIPXNZUEQYPLZ"
+    },
+    {
+     "molecule_id": "mb_00089",
+     "max_tanimoto": 1.0,
+     "rr": 1.0,
+     "nn_inchikey14": "DZPKSVTWWIZUMS"
+    },
+    {
+     "molecule_id": "mb_00090",
+     "max_tanimoto": 0.7907,
+     "rr": 0.5,
+     "nn_inchikey14": "BUOADWXGPJXKRM"
+    },
+    {
+     "molecule_id": "mb_00091",
+     "max_tanimoto": 1.0,
+     "rr": 0.5,
+     "nn_inchikey14": "AMXXNFGRYHWAIZ"
+    },
+    {
+     "molecule_id": "mb_00092",
+     "max_tanimoto": 0.5476,
+     "rr": 1.0,
+     "nn_inchikey14": "OSFCMRGOZNQUSW"
+    },
+    {
+     "molecule_id": "mb_00093",
+     "max_tanimoto": 0.8226,
+     "rr": 1.0,
+     "nn_inchikey14": "BTFLTTRLLLELLS"
+    },
+    {
+     "molecule_id": "mb_00094",
+     "max_tanimoto": 0.6316,
+     "rr": 0.3333333333333333,
+     "nn_inchikey14": "QQRSPHJOOXUALR"
+    },
+    {
+     "molecule_id": "mb_00095",
+     "max_tanimoto": 0.5625,
+     "rr": 0.3333333333333333,
+     "nn_inchikey14": "WUQMVSOZWZOUJR"
+    },
+    {
+     "molecule_id": "mb_00096",
+     "max_tanimoto": 0.5385,
+     "rr": 1.0,
+     "nn_inchikey14": "RCPMGOCZIHMTRD"
+    },
+    {
+     "molecule_id": "mb_00097",
+     "max_tanimoto": 0.875,
+     "rr": 0.5,
+     "nn_inchikey14": "GZGUIQHCYLUWPM"
+    },
+    {
+     "molecule_id": "mb_00098",
+     "max_tanimoto": 0.7442,
+     "rr": 0.3333333333333333,
+     "nn_inchikey14": "OMIXKOJEIRRAJW"
+    },
+    {
+     "molecule_id": "mb_00099",
+     "max_tanimoto": 0.5294,
+     "rr": 0.5,
+     "nn_inchikey14": "LJKDOMVGKKPJBH"
+    },
+    {
+     "molecule_id": "mb_00100",
+     "max_tanimoto": 0.8462,
+     "rr": 1.0,
+     "nn_inchikey14": "YJXVFRWCHMYWTD"
+    },
+    {
+     "molecule_id": "mb_00101",
+     "max_tanimoto": 0.6512,
+     "rr": 0.3333333333333333,
+     "nn_inchikey14": "CKASNEFFHUIZEG"
+    },
+    {
+     "molecule_id": "mb_00102",
+     "max_tanimoto": 0.871,
+     "rr": 1.0,
+     "nn_inchikey14": "DULVJNJLXNQMQY"
+    },
+    {
+     "molecule_id": "mb_00103",
+     "max_tanimoto": 0.5319,
+     "rr": 1.0,
+     "nn_inchikey14": "CDRCOZFGMPTGBL"
+    },
+    {
+     "molecule_id": "mb_00104",
+     "max_tanimoto": 0.6792,
+     "rr": 0.0625,
+     "nn_inchikey14": "MSWJSDLNPCSSNW"
+    },
+    {
+     "molecule_id": "mb_00105",
+     "max_tanimoto": 0.814,
+     "rr": 0.16666666666666666,
+     "nn_inchikey14": "KPWZUIKRIDBRAR"
+    },
+    {
+     "molecule_id": "mb_00106",
+     "max_tanimoto": 1.0,
+     "rr": 0.07692307692307693,
+     "nn_inchikey14": "SYICYCXZKNWLQZ"
+    },
+    {
+     "molecule_id": "mb_00107",
+     "max_tanimoto": 0.7069,
+     "rr": 1.0,
+     "nn_inchikey14": "FYZXDJBVKBXHDM"
+    },
+    {
+     "molecule_id": "mb_00108",
+     "max_tanimoto": 0.6364,
+     "rr": 0.0,
+     "nn_inchikey14": "ABFLQNFYUZSMJY"
+    },
+    {
+     "molecule_id": "mb_00109",
+     "max_tanimoto": 0.7174,
+     "rr": 1.0,
+     "nn_inchikey14": "CDDCAFVGKIIDPG"
+    },
+    {
+     "molecule_id": "mb_00110",
+     "max_tanimoto": 0.7895,
+     "rr": 0.5,
+     "nn_inchikey14": "LLQCIZOXARRMDO"
+    },
+    {
+     "molecule_id": "mb_00111",
+     "max_tanimoto": 0.8571,
+     "rr": 0.3333333333333333,
+     "nn_inchikey14": "ZVPPRZPMYBPJIA"
+    },
+    {
+     "molecule_id": "mb_00112",
+     "max_tanimoto": 0.7143,
+     "rr": 1.0,
+     "nn_inchikey14": "CRVXJSNSTGEXDX"
+    },
+    {
+     "molecule_id": "mb_00113",
+     "max_tanimoto": 0.8421,
+     "rr": 0.0,
+     "nn_inchikey14": "JPUKWEQWGBDDQB"
+    },
+    {
+     "molecule_id": "mb_00114",
+     "max_tanimoto": 1.0,
+     "rr": 1.0,
+     "nn_inchikey14": "AAFPBUWBKCMUOC"
+    },
+    {
+     "molecule_id": "mb_00115",
+     "max_tanimoto": 0.8824,
+     "rr": 1.0,
+     "nn_inchikey14": "HBJXRRXWHSHZPU"
+    },
+    {
+     "molecule_id": "mb_00116",
+     "max_tanimoto": 0.963,
+     "rr": 1.0,
+     "nn_inchikey14": "NZIGMFUVQTXHJU"
+    },
+    {
+     "molecule_id": "mb_00117",
+     "max_tanimoto": 0.8025,
+     "rr": 0.5,
+     "nn_inchikey14": "OWPWFVVPBYFKBG"
+    },
+    {
+     "molecule_id": "mb_00118",
+     "max_tanimoto": 1.0,
+     "rr": 1.0,
+     "nn_inchikey14": "SLXKOJJOQWFEFD"
+    },
+    {
+     "molecule_id": "mb_00119",
+     "max_tanimoto": 0.8387,
+     "rr": 1.0,
+     "nn_inchikey14": "CBHANIXDPMXBGZ"
+    },
+    {
+     "molecule_id": "mb_00120",
+     "max_tanimoto": 0.7,
+     "rr": 1.0,
+     "nn_inchikey14": "MUHBBHLZPHKTTR"
+    },
+    {
+     "molecule_id": "mb_00121",
+     "max_tanimoto": 0.7407,
+     "rr": 0.5,
+     "nn_inchikey14": "TUTLRKKYUXPDGN"
+    },
+    {
+     "molecule_id": "mb_00122",
+     "max_tanimoto": 0.7381,
+     "rr": 1.0,
+     "nn_inchikey14": "ILRCGYURZSFMEG"
+    },
+    {
+     "molecule_id": "mb_00123",
+     "max_tanimoto": 0.7174,
+     "rr": 0.16666666666666666,
+     "nn_inchikey14": "LYRBFJCNZKRZPT"
+    },
+    {
+     "molecule_id": "mb_00124",
+     "max_tanimoto": 0.3855,
+     "rr": 1.0,
+     "nn_inchikey14": "CMZNNSDNQWPQRI"
+    },
+    {
+     "molecule_id": "mb_00125",
+     "max_tanimoto": 0.6094,
+     "rr": 0.5,
+     "nn_inchikey14": "UVASKESEGAJDKK"
+    },
+    {
+     "molecule_id": "mb_00126",
+     "max_tanimoto": 0.6538,
+     "rr": 1.0,
+     "nn_inchikey14": "FANMRWOIBYPWGA"
+    },
+    {
+     "molecule_id": "mb_00127",
+     "max_tanimoto": 0.8966,
+     "rr": 1.0,
+     "nn_inchikey14": "MDAHEEBYLFVHSJ"
+    },
+    {
+     "molecule_id": "mb_00128",
+     "max_tanimoto": 0.9398,
+     "rr": 0.3333333333333333,
+     "nn_inchikey14": "APKFDSVGJQXUKY"
+    },
+    {
+     "molecule_id": "mb_00129",
+     "max_tanimoto": 1.0,
+     "rr": 0.14285714285714285,
+     "nn_inchikey14": "RGZIXZYRGZWDMI"
+    },
+    {
+     "molecule_id": "mb_00130",
+     "max_tanimoto": 0.5091,
+     "rr": 1.0,
+     "nn_inchikey14": "YTCGNPGLMAECND"
+    },
+    {
+     "molecule_id": "mb_00131",
+     "max_tanimoto": 0.7419,
+     "rr": 1.0,
+     "nn_inchikey14": "BDNVCXVQYXUHCR"
+    },
+    {
+     "molecule_id": "mb_00132",
+     "max_tanimoto": 0.7656,
+     "rr": 0.3333333333333333,
+     "nn_inchikey14": "CVKZWRTYHCDWTE"
+    },
+    {
+     "molecule_id": "mb_00133",
+     "max_tanimoto": 0.7586,
+     "rr": 1.0,
+     "nn_inchikey14": "YFFZBDJDBQOLAI"
+    },
+    {
+     "molecule_id": "mb_00134",
+     "max_tanimoto": 0.4,
+     "rr": 0.0,
+     "nn_inchikey14": "ASBDWVACJRRBIZ"
+    },
+    {
+     "molecule_id": "mb_00135",
+     "max_tanimoto": 0.4848,
+     "rr": 0.0,
+     "nn_inchikey14": "UWPQNWXARKJJQM"
+    },
+    {
+     "molecule_id": "mb_00136",
+     "max_tanimoto": 0.8,
+     "rr": 1.0,
+     "nn_inchikey14": "HMBHRMFLDKKSCT"
+    },
+    {
+     "molecule_id": "mb_00137",
+     "max_tanimoto": 0.8684,
+     "rr": 1.0,
+     "nn_inchikey14": "IQOYABZSYGZAAQ"
+    },
+    {
+     "molecule_id": "mb_00138",
+     "max_tanimoto": 0.5484,
+     "rr": 0.0,
+     "nn_inchikey14": "IUVZTUKGYOYDHT"
+    },
+    {
+     "molecule_id": "mb_00139",
+     "max_tanimoto": 0.7547,
+     "rr": 1.0,
+     "nn_inchikey14": "YBOIMOCGJGWWTG"
+    },
+    {
+     "molecule_id": "mb_00140",
+     "max_tanimoto": 0.9082,
+     "rr": 1.0,
+     "nn_inchikey14": "ZFUKERYTFURFGA"
+    },
+    {
+     "molecule_id": "mb_00141",
+     "max_tanimoto": 0.5962,
+     "rr": 0.16666666666666666,
+     "nn_inchikey14": "YHJDRJVMBSUEDI"
+    },
+    {
+     "molecule_id": "mb_00142",
+     "max_tanimoto": 0.7536,
+     "rr": 0.3333333333333333,
+     "nn_inchikey14": "MFRVMJLCZUJXMN"
+    },
+    {
+     "molecule_id": "mb_00143",
+     "max_tanimoto": 0.7381,
+     "rr": 1.0,
+     "nn_inchikey14": "DJDSLBVSSOQSLW"
+    },
+    {
+     "molecule_id": "mb_00144",
+     "max_tanimoto": 0.8125,
+     "rr": 0.5,
+     "nn_inchikey14": "IPVYNYWIRWMRHH"
+    },
+    {
+     "molecule_id": "mb_00145",
+     "max_tanimoto": 1.0,
+     "rr": 1.0,
+     "nn_inchikey14": "AFSHUZFNMVJNKX"
+    },
+    {
+     "molecule_id": "mb_00146",
+     "max_tanimoto": 0.6863,
+     "rr": 0.3333333333333333,
+     "nn_inchikey14": "ATQOGGAGZJZAPQ"
+    },
+    {
+     "molecule_id": "mb_00147",
+     "max_tanimoto": 1.0,
+     "rr": 0.25,
+     "nn_inchikey14": "PHYFQTYBJUILEZ"
+    },
+    {
+     "molecule_id": "mb_00148",
+     "max_tanimoto": 0.8148,
+     "rr": 1.0,
+     "nn_inchikey14": "QBKMGAJNGCTGFA"
+    },
+    {
+     "molecule_id": "mb_00149",
+     "max_tanimoto": 0.6731,
+     "rr": 0.5,
+     "nn_inchikey14": "MNSCVRXKDINXEY"
+    },
+    {
+     "molecule_id": "mb_00150",
+     "max_tanimoto": 0.339,
+     "rr": 1.0,
+     "nn_inchikey14": "UPCIFQHZBUREPV"
+    },
+    {
+     "molecule_id": "mb_00151",
+     "max_tanimoto": 0.6667,
+     "rr": 0.5,
+     "nn_inchikey14": "BKYWAYNSDFXIPL"
+    },
+    {
+     "molecule_id": "mb_00152",
+     "max_tanimoto": 0.6727,
+     "rr": 1.0,
+     "nn_inchikey14": "IBVOKGNUOPSVJY"
+    },
+    {
+     "molecule_id": "mb_00153",
+     "max_tanimoto": 0.7467,
+     "rr": 0.5,
+     "nn_inchikey14": "PJHJORWYAZKNAL"
+    },
+    {
+     "molecule_id": "mb_00154",
+     "max_tanimoto": 0.5909,
+     "rr": 1.0,
+     "nn_inchikey14": "YOOHANJKYCQHED"
+    },
+    {
+     "molecule_id": "mb_00155",
+     "max_tanimoto": 0.7143,
+     "rr": 1.0,
+     "nn_inchikey14": "PFRGXCVKLLPLIP"
+    },
+    {
+     "molecule_id": "mb_00156",
+     "max_tanimoto": 0.6452,
+     "rr": 0.3333333333333333,
+     "nn_inchikey14": "YORZZUYHPOREJM"
+    },
+    {
+     "molecule_id": "mb_00157",
+     "max_tanimoto": 1.0,
+     "rr": 0.2,
+     "nn_inchikey14": "AFSHUZFNMVJNKX"
+    },
+    {
+     "molecule_id": "mb_00158",
+     "max_tanimoto": 0.8684,
+     "rr": 0.0,
+     "nn_inchikey14": "TZUKIKOHNDDFPS"
+    },
+    {
+     "molecule_id": "mb_00159",
+     "max_tanimoto": 0.5152,
+     "rr": 0.5,
+     "nn_inchikey14": "ZJHZBDRZEZEDGB"
+    },
+    {
+     "molecule_id": "mb_00160",
+     "max_tanimoto": 0.7255,
+     "rr": 1.0,
+     "nn_inchikey14": "DSGCKNJWFRMMHJ"
+    },
+    {
+     "molecule_id": "mb_00161",
+     "max_tanimoto": 1.0,
+     "rr": 1.0,
+     "nn_inchikey14": "ABENPAILMZUZDF"
+    },
+    {
+     "molecule_id": "mb_00162",
+     "max_tanimoto": 0.8375,
+     "rr": 1.0,
+     "nn_inchikey14": "QMNWISYXSJWHRY"
+    },
+    {
+     "molecule_id": "mb_00163",
+     "max_tanimoto": 0.7674,
+     "rr": 1.0,
+     "nn_inchikey14": "OCWYEMOEOGEQAN"
+    },
+    {
+     "molecule_id": "mb_00164",
+     "max_tanimoto": 0.8793,
+     "rr": 1.0,
+     "nn_inchikey14": "BTFLTTRLLLELLS"
+    },
+    {
+     "molecule_id": "mb_00165",
+     "max_tanimoto": 0.8286,
+     "rr": 1.0,
+     "nn_inchikey14": "DNHODRZUCGXYKU"
+    },
+    {
+     "molecule_id": "mb_00166",
+     "max_tanimoto": 0.5701,
+     "rr": 1.0,
+     "nn_inchikey14": "AYMGZLUKTNXEMY"
+    },
+    {
+     "molecule_id": "mb_00167",
+     "max_tanimoto": 0.9459,
+     "rr": 0.5,
+     "nn_inchikey14": "YJXRPXBRYBCYRH"
+    },
+    {
+     "molecule_id": "mb_00168",
+     "max_tanimoto": 0.7273,
+     "rr": 1.0,
+     "nn_inchikey14": "GLQWOMRSYSSFQS"
+    },
+    {
+     "molecule_id": "mb_00169",
+     "max_tanimoto": 0.8649,
+     "rr": 1.0,
+     "nn_inchikey14": "JXLKCKHEADTSCK"
+    },
+    {
+     "molecule_id": "mb_00170",
+     "max_tanimoto": 0.4138,
+     "rr": 0.5,
+     "nn_inchikey14": "BSYSQCIGSQBEKF"
+    },
+    {
+     "molecule_id": "mb_00171",
+     "max_tanimoto": 0.7407,
+     "rr": 1.0,
+     "nn_inchikey14": "DYTVYDVNJBXBMW"
+    },
+    {
+     "molecule_id": "mb_00172",
+     "max_tanimoto": 0.7073,
+     "rr": 0.05555555555555555,
+     "nn_inchikey14": "FODMMACJFYQIHT"
+    },
+    {
+     "molecule_id": "mb_00173",
+     "max_tanimoto": 0.6379,
+     "rr": 0.0,
+     "nn_inchikey14": "ORNBQBCIOKFOEO"
+    },
+    {
+     "molecule_id": "mb_00174",
+     "max_tanimoto": 0.7857,
+     "rr": 1.0,
+     "nn_inchikey14": "LGCMKPRGGJRYGM"
+    },
+    {
+     "molecule_id": "mb_00175",
+     "max_tanimoto": 0.7719,
+     "rr": 0.0,
+     "nn_inchikey14": "FHQSDRHZGCMBKG"
+    },
+    {
+     "molecule_id": "mb_00176",
+     "max_tanimoto": 0.625,
+     "rr": 0.05263157894736842,
+     "nn_inchikey14": "RQOFITYRYPQNLL"
+    },
+    {
+     "molecule_id": "mb_00177",
+     "max_tanimoto": 0.7381,
+     "rr": 1.0,
+     "nn_inchikey14": "YJRLSCDUYLRBIZ"
+    },
+    {
+     "molecule_id": "mb_00178",
+     "max_tanimoto": 0.625,
+     "rr": 0.0,
+     "nn_inchikey14": "DQNLRFRBAWCJHQ"
+    },
+    {
+     "molecule_id": "mb_00179",
+     "max_tanimoto": 0.9294,
+     "rr": 0.5,
+     "nn_inchikey14": "SZVZHAIFWPRDNE"
+    },
+    {
+     "molecule_id": "mb_00180",
+     "max_tanimoto": 0.451,
+     "rr": 1.0,
+     "nn_inchikey14": "SMUMBCREXHTKFN"
+    },
+    {
+     "molecule_id": "mb_00181",
+     "max_tanimoto": 0.5319,
+     "rr": 1.0,
+     "nn_inchikey14": "ZYEWXEYFIGFEEL"
+    },
+    {
+     "molecule_id": "mb_00182",
+     "max_tanimoto": 0.5616,
+     "rr": 0.3333333333333333,
+     "nn_inchikey14": "BWPDYIKQJFULIU"
+    },
+    {
+     "molecule_id": "mb_00183",
+     "max_tanimoto": 0.5738,
+     "rr": 1.0,
+     "nn_inchikey14": "SANDLGYNAAZLOD"
+    },
+    {
+     "molecule_id": "mb_00184",
+     "max_tanimoto": 0.4848,
+     "rr": 0.0,
+     "nn_inchikey14": "YCIXWYOBMVNGTB"
+    },
+    {
+     "molecule_id": "mb_00185",
+     "max_tanimoto": 0.6984,
+     "rr": 0.0625,
+     "nn_inchikey14": "KLGPVOFVVYHEGO"
+    },
+    {
+     "molecule_id": "mb_00186",
+     "max_tanimoto": 0.7949,
+     "rr": 0.045454545454545456,
+     "nn_inchikey14": "AEVRENPSCMLALQ"
+    },
+    {
+     "molecule_id": "mb_00187",
+     "max_tanimoto": 0.8182,
+     "rr": 1.0,
+     "nn_inchikey14": "CYJWWQALTIKOAG"
+    },
+    {
+     "molecule_id": "mb_00188",
+     "max_tanimoto": 0.6667,
+     "rr": 0.08333333333333333,
+     "nn_inchikey14": "LWYAMIUSVGPFKS"
+    },
+    {
+     "molecule_id": "mb_00189",
+     "max_tanimoto": 0.6721,
+     "rr": 0.0,
+     "nn_inchikey14": "BOJKULTULYSRAS"
+    },
+    {
+     "molecule_id": "mb_00190",
+     "max_tanimoto": 0.5818,
+     "rr": 0.5,
+     "nn_inchikey14": "DGAIEPBNLOQYER"
+    },
+    {
+     "molecule_id": "mb_00191",
+     "max_tanimoto": 0.5,
+     "rr": 0.08333333333333333,
+     "nn_inchikey14": "FWVHWDSCPKXMDB"
+    },
+    {
+     "molecule_id": "mb_00192",
+     "max_tanimoto": 1.0,
+     "rr": 1.0,
+     "nn_inchikey14": "WXLDEVYPZQFZLE"
+    },
+    {
+     "molecule_id": "mb_00193",
+     "max_tanimoto": 0.7667,
+     "rr": 1.0,
+     "nn_inchikey14": "YUHRVKGYFHPWRI"
+    },
+    {
+     "molecule_id": "mb_00194",
+     "max_tanimoto": 0.7246,
+     "rr": 0.05,
+     "nn_inchikey14": "INIPQDKLXQHEAJ"
+    },
+    {
+     "molecule_id": "mb_00195",
+     "max_tanimoto": 0.6379,
+     "rr": 1.0,
+     "nn_inchikey14": "XSAACZDYCQIFPG"
+    },
+    {
+     "molecule_id": "mb_00196",
+     "max_tanimoto": 0.8833,
+     "rr": 1.0,
+     "nn_inchikey14": "GVEZRDBRYNJUDQ"
+    },
+    {
+     "molecule_id": "mb_00197",
+     "max_tanimoto": 0.5741,
+     "rr": 1.0,
+     "nn_inchikey14": "MVAWJSIDNICKHF"
+    },
+    {
+     "molecule_id": "mb_00198",
+     "max_tanimoto": 0.64,
+     "rr": 1.0,
+     "nn_inchikey14": "DSOITGJEUKHAJN"
+    }
+   ]
+  }
+ },
+ "secs": {
+  "fingerprints": 12.7,
+  "total": 79.7
+ },
+ "peak_rss_mb": 475.2
+}
