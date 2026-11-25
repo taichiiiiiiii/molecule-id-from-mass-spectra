@@ -1,0 +1,413 @@
+{
+ "issue": 242,
+ "definitions": "https://github.com/taichiiiiiiii/molecule-id-from-mass-spectra/issues/242#issuecomment-7153124801",
+ "dev_list_sha256": "7a69f073fb94049440bd7fc52a4f3f9a116dd45e76a97498de94976ae2943b79",
+ "per_molecule_sha256": "ab9f301875713e9cdf54d503cfaa48cc4eb2d6f8e8b033d5737340ba78e9f838",
+ "counts": {
+  "A": {
+   "n": 3901,
+   "n_spec": 20117,
+   "n_no_cov_r": 350,
+   "n_no_cov_h": 397,
+   "mean_cat_r": 2.882,
+   "mean_cat_h": 2.541,
+   "cands_l60": 197170,
+   "cands_win": 49744039,
+   "cands_win_pool": 493904,
+   "cands_win_tier": 49250135,
+   "pred_l60_r": 544886,
+   "pred_l60_h": 488513,
+   "pred_win_r": 132610569,
+   "pred_win_h": 121618523,
+   "pred_win_r_unique": 89647566,
+   "pred_win_r_unique_pool": 862191,
+   "pred_win_r_unique_tier": 88785375,
+   "n_categories_r": 61,
+   "pred_win_h_unique": 78933897,
+   "pred_win_h_unique_pool": 728949,
+   "pred_win_h_unique_tier": 78204948,
+   "n_categories_h": 42
+  },
+  "B": {
+   "n": 220443,
+   "n_spec": 1942065,
+   "n_no_cov_r": 23186,
+   "n_no_cov_h": 25503,
+   "mean_cat_r": 3.229,
+   "mean_cat_h": 2.911,
+   "cands_l60": 10585652,
+   "cands_win": 2650349445,
+   "cands_win_pool": 26442269,
+   "cands_win_tier": 2623907176,
+   "pred_l60_r": 33208111,
+   "pred_l60_h": 30373944,
+   "pred_win_r": 8141962497,
+   "pred_win_h": 7559145775,
+   "pred_win_r_unique": 1160392409,
+   "pred_win_r_unique_pool": 9247849,
+   "pred_win_r_unique_tier": 1151144560,
+   "n_categories_r": 103,
+   "pred_win_h_unique": 856262576,
+   "pred_win_h_unique_pool": 6382036,
+   "pred_win_h_unique_tier": 849880540,
+   "n_categories_h": 59
+  },
+  "type_a": {
+   "n": 789,
+   "n_spec": 3680,
+   "n_no_cov_r": 75,
+   "n_no_cov_h": 78,
+   "mean_cat_r": 2.364,
+   "mean_cat_h": 2.303,
+   "cands_l60": 41798,
+   "cands_win": 11202496,
+   "cands_win_pool": 103394,
+   "cands_win_tier": 11099102,
+   "pred_l60_r": 99895,
+   "pred_l60_h": 97217,
+   "pred_win_r": 27045818,
+   "pred_win_h": 26342821,
+   "pred_win_r_unique": 23000992,
+   "pred_win_r_unique_pool": 204608,
+   "pred_win_r_unique_tier": 22796384,
+   "n_categories_r": 6,
+   "pred_win_h_unique": 22307713,
+   "pred_win_h_unique_pool": 196751,
+   "pred_win_h_unique_tier": 22110962,
+   "n_categories_h": 3
+  },
+  "type_b": {
+   "n": 787,
+   "n_spec": 7093,
+   "n_no_cov_r": 103,
+   "n_no_cov_h": 131,
+   "mean_cat_r": 5.379,
+   "mean_cat_h": 3.931,
+   "cands_l60": 31086,
+   "cands_win": 5734851,
+   "cands_win_pool": 69463,
+   "cands_win_tier": 5665388,
+   "pred_l60_r": 167760,
+   "pred_l60_h": 121854,
+   "pred_win_r": 31819296,
+   "pred_win_h": 23592283,
+   "pred_win_r_unique": 30808947,
+   "pred_win_r_unique_pool": 350869,
+   "pred_win_r_unique_tier": 30458078,
+   "n_categories_r": 61,
+   "pred_win_h_unique": 22692724,
+   "pred_win_h_unique_pool": 245389,
+   "pred_win_h_unique_tier": 22447335,
+   "n_categories_h": 42
+  },
+  "type_c": {
+   "n": 788,
+   "n_spec": 3610,
+   "n_no_cov_r": 39,
+   "n_no_cov_h": 42,
+   "mean_cat_r": 2.5,
+   "mean_cat_h": 2.435,
+   "cands_l60": 42047,
+   "cands_win": 11012543,
+   "cands_win_pool": 109888,
+   "cands_win_tier": 10902655,
+   "pred_l60_r": 105551,
+   "pred_l60_h": 102809,
+   "pred_win_r": 27877725,
+   "pred_win_h": 27104385,
+   "pred_win_r_unique": 23417317,
+   "pred_win_r_unique_pool": 227424,
+   "pred_win_r_unique_tier": 23189893,
+   "n_categories_r": 7,
+   "pred_win_h_unique": 22643923,
+   "pred_win_h_unique_pool": 219202,
+   "pred_win_h_unique_tier": 22424721,
+   "n_categories_h": 4
+  },
+  "type_d": {
+   "n": 745,
+   "n_spec": 1941,
+   "n_no_cov_r": 85,
+   "n_no_cov_h": 91,
+   "mean_cat_r": 1.655,
+   "mean_cat_h": 1.612,
+   "cands_l60": 39740,
+   "cands_win": 10440560,
+   "cands_win_pool": 106208,
+   "cands_win_tier": 10334352,
+   "pred_l60_r": 66847,
+   "pred_l60_h": 65043,
+   "pred_win_r": 17871099,
+   "pred_win_h": 17387877,
+   "pred_win_r_unique": 16263039,
+   "pred_win_r_unique_pool": 159728,
+   "pred_win_r_unique_tier": 16103311,
+   "n_categories_r": 6,
+   "pred_win_h_unique": 15788577,
+   "pred_win_h_unique_pool": 154071,
+   "pred_win_h_unique_tier": 15634506,
+   "n_categories_h": 3
+  },
+  "type_e": {
+   "n": 792,
+   "n_spec": 3793,
+   "n_no_cov_r": 48,
+   "n_no_cov_h": 55,
+   "mean_cat_r": 2.452,
+   "mean_cat_h": 2.376,
+   "cands_l60": 42499,
+   "cands_win": 11353589,
+   "cands_win_pool": 104951,
+   "cands_win_tier": 11248638,
+   "pred_l60_r": 104833,
+   "pred_l60_h": 101590,
+   "pred_win_r": 27996631,
+   "pred_win_h": 27191157,
+   "pred_win_r_unique": 23494689,
+   "pred_win_r_unique_pool": 212589,
+   "pred_win_r_unique_tier": 23282100,
+   "n_categories_r": 7,
+   "pred_win_h_unique": 22694889,
+   "pred_win_h_unique_pool": 204458,
+   "pred_win_h_unique_tier": 22490431,
+   "n_categories_h": 3
+  },
+  "type_none": {
+   "n": 216542,
+   "n_spec": 1921948,
+   "n_no_cov_r": 22836,
+   "n_no_cov_h": 25106,
+   "mean_cat_r": 3.235,
+   "mean_cat_h": 2.918,
+   "cands_l60": 10388482,
+   "cands_win": 2600605406,
+   "cands_win_pool": 25948365,
+   "cands_win_tier": 2574657041,
+   "pred_l60_r": 32663225,
+   "pred_l60_h": 29885431,
+   "pred_win_r": 8009351928,
+   "pred_win_h": 7437527252,
+   "pred_win_r_unique": 1153669447,
+   "pred_win_r_unique_pool": 9197143,
+   "pred_win_r_unique_tier": 1144472304,
+   "n_categories_r": 103,
+   "pred_win_h_unique": 852422033,
+   "pred_win_h_unique_pool": 6355256,
+   "pred_win_h_unique_tier": 846066777,
+   "n_categories_h": 59
+  }
+ },
+ "leak": {
+  "A": {
+   "truth": {
+    "tv": {
+     "raw": 493,
+     "key": 528
+    },
+    "all": {
+     "raw": 515,
+     "key": 557
+    },
+    "simtv": {
+     "raw": 199,
+     "key": 211
+    }
+   },
+   "n": 3901
+  },
+  "B": {
+   "truth": {
+    "tv": {
+     "raw": 20483,
+     "key": 21460
+    },
+    "all": {
+     "raw": 22793,
+     "key": 23935
+    },
+    "simtv": {
+     "raw": 11529,
+     "key": 11981
+    }
+   },
+   "n": 220443
+  },
+  "A_by_type": {
+   "a": {
+    "tv": {
+     "raw": 13,
+     "key": 13
+    },
+    "all": {
+     "raw": 13,
+     "key": 13
+    }
+   },
+   "b": {
+    "tv": {
+     "raw": 473,
+     "key": 508
+    },
+    "all": {
+     "raw": 495,
+     "key": 537
+    }
+   },
+   "c": {
+    "tv": {
+     "raw": 0,
+     "key": 0
+    },
+    "all": {
+     "raw": 0,
+     "key": 0
+    }
+   },
+   "d": {
+    "tv": {
+     "raw": 0,
+     "key": 0
+    },
+    "all": {
+     "raw": 0,
+     "key": 0
+    }
+   },
+   "e": {
+    "tv": {
+     "raw": 7,
+     "key": 7
+    },
+    "all": {
+     "raw": 7,
+     "key": 7
+    }
+   },
+   "none": {
+    "tv": {
+     "raw": 19990,
+     "key": 20932
+    },
+    "all": {
+     "raw": 22278,
+     "key": 23378
+    }
+   }
+  },
+  "candidates": {
+   "pool": {
+    "A": {
+     "raw_tv": {
+      "correct": 490,
+      "wrong": 12027
+     },
+     "raw_all": {
+      "correct": 517,
+      "wrong": 13257
+     },
+     "key_tv": {
+      "correct": 494,
+      "wrong": 12094
+     },
+     "key_all": {
+      "correct": 523,
+      "wrong": 13332
+     },
+     "raw_simtv": {
+      "correct": 198,
+      "wrong": 7710
+     },
+     "key_simtv": {
+      "correct": 200,
+      "wrong": 7726
+     }
+    },
+    "B": {
+     "raw_tv": {
+      "correct": 20628,
+      "wrong": 631396
+     },
+     "raw_all": {
+      "correct": 22969,
+      "wrong": 697223
+     },
+     "key_tv": {
+      "correct": 20827,
+      "wrong": 634374
+     },
+     "key_all": {
+      "correct": 23252,
+      "wrong": 700742
+     },
+     "raw_simtv": {
+      "correct": 11798,
+      "wrong": 406057
+     },
+     "key_simtv": {
+      "correct": 11863,
+      "wrong": 407138
+     }
+    }
+   },
+   "tier": {
+    "A": {
+     "raw_tv": {
+      "correct": 3653,
+      "wrong": 56070
+     },
+     "raw_all": {
+      "correct": 3853,
+      "wrong": 59338
+     },
+     "key_tv": {
+      "correct": 3786,
+      "wrong": 57677
+     },
+     "key_all": {
+      "correct": 3995,
+      "wrong": 61084
+     },
+     "raw_simtv": {
+      "correct": 1650,
+      "wrong": 34611
+     },
+     "key_simtv": {
+      "correct": 1754,
+      "wrong": 35665
+     }
+    },
+    "B": {
+     "raw_tv": {
+      "correct": 106219,
+      "wrong": 2906853
+     },
+     "raw_all": {
+      "correct": 118580,
+      "wrong": 3081783
+     },
+     "key_tv": {
+      "correct": 111160,
+      "wrong": 2997004
+     },
+     "key_all": {
+      "correct": 124269,
+      "wrong": 3179722
+     },
+     "raw_simtv": {
+      "correct": 61234,
+      "wrong": 1827941
+     },
+     "key_simtv": {
+      "correct": 64303,
+      "wrong": 1884208
+     }
+    }
+   }
+  }
+ },
+ "secs": {
+  "categories": 126.7,
+  "counts": 5.1,
+  "leak": 425.7
+ }
+}
