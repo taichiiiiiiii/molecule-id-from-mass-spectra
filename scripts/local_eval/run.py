@@ -331,8 +331,14 @@ def truth_path(holdout: str, truth_dir: str | Path | None = None) -> Path:
 
 
 def run(holdout: str, stages: list[str], logits_run: str | None = None, logits_dir: str | Path | None = None,
-        truth_dir: str | Path | None = None, dump_ranks: str | Path | None = None) -> dict:
-    """logits_dir・truth_dir は #199 で足した引数（既定 None = 今と同じ outputs/holdout_eval/<run>/・outputs/holdouts/<holdout>/）。"""
+        truth_dir: str | Path | None = None, dump_ranks: str | Path | None = None,
+        dump_features: str | Path | None = None, dump_opts: dict | None = None) -> dict:
+    """logits_dir・truth_dir は #199 で足した引数（既定 None = 今と同じ outputs/holdout_eval/<run>/・outputs/holdouts/<holdout>/）。
+    dump_features（#244）: 候補ごとの特徴表をこの parquet に書いて記録の dict を返す（submission・result は書かない、
+    MRR は計算しない）。stages は score,prior,frag だけ。None（既定）なら今までとまったく同じ動き。dump_ranks（#230）とは併用しない。"""
+    if dump_features is not None:
+        assert stages == ["score", "prior", "frag"], "--dump-features は --stages score,prior,frag だけ（#244）"
+        assert dump_ranks is None, "--dump-features と --dump-ranks は併用しない"
     from mrr25 import calculate_mrr25, read_truth
     from elem_rule import demote_unusual
     check_stages(stages)
@@ -400,6 +406,9 @@ def run(holdout: str, stages: list[str], logits_run: str | None = None, logits_d
         lists[mid] = dedup(rows, pool, TOPN)
         if "elem" in stages:   # #90: 天然物らしくない元素を含む候補を後ろへ（安定な分割、定数なし）
             lists[mid] = demote_unusual(lists[mid], lambda r: pool.smiles[r[1]])
+    if dump_features is not None:   # #244: 対照の L（lists）の上に特徴を作って書く。以下の段（lib・pubchem・MRR）は通らない
+        return _dump(holdout, truth, targets, zf, pool, fpc, hidden, rule, spectra, frag, fcache, lists,
+                     logits_path(run_name, logits_dir), Path(dump_features), dump_opts or {})
     diag = {}
     if need_lib:
         keys = {pool.key[i] for rows in lists.values() for _, i in rows}
@@ -481,6 +490,29 @@ def run(holdout: str, stages: list[str], logits_run: str | None = None, logits_d
     return res
 
 
+def _dump(holdout, truth, targets, zf, pool, fpc, hidden, rule, spectra, frag, fcache, lists, logits, path: Path,
+          opts: dict) -> dict:
+    """#244: scripts/features/dump_features.build を呼んで parquet を書く。opts: refs_cache（L の参照のキャッシュ、既定は
+    outputs/local_eval/<h>/refs_top60.parquet）、qrows（Q の候補の train の行の parquet。無ければ train.parquet を 1 回読む）、
+    np_scorer（fold ごとの使い回し）。"""
+    sys.path.insert(0, str(ROOT / "scripts/features"))
+    import dump_features as DF
+    import library as L
+    preds = {mid: [pool.smiles[i] for _, i in lists[mid][:K]] if mid in lists else [] for mid in truth}
+    refs_cache = Path(opts.get("refs_cache") or ROOT / f"outputs/local_eval/{holdout}/refs_top{TOPN}.parquet")
+    if opts.get("qrows"):
+        qrows = pd.read_parquet(opts["qrows"])
+    else:
+        pc = json.loads((ROOT / f"outputs/local_eval/{holdout}/pubchem_fold0.json").read_text())
+        qrows = L._read_rows(ROOT / "data/train.parquet", {k for m in lists for _s, _f, k in (pc.get(m) or [])})
+    tab, rec = DF.build(holdout, truth, targets, zf, pool, fpc, hidden, rule, spectra, frag, fcache, lists, preds,
+                        logits, refs_cache, qrows, opts.get("np_scorer"))
+    path.parent.mkdir(parents=True, exist_ok=True)
+    tab.to_parquet(path, index=False)
+    rec["path"] = str(path)
+    return rec
+
+
 def main() -> None:
     ap = argparse.ArgumentParser()
     ap.add_argument("--holdout", required=True)
@@ -489,9 +521,11 @@ def main() -> None:
     ap.add_argument("--logits-dir", default=None, help="#199: pc_logits.npz のあるディレクトリ（既定は outputs/holdout_eval/<run>/）")
     ap.add_argument("--truth-dir", default=None, help="#199: truth.csv のあるディレクトリ（既定は outputs/holdouts/<holdout>/）")
     ap.add_argument("--dump-ranks", default=None, help="#230: 深い順位を書く CSV（既定は書かない。submission は変えない）")
+    ap.add_argument("--dump-features", default=None, help="#244: 候補ごとの特徴表の parquet の出力先（既定は無効）。"
+                    "指定すると submission・result は書かず MRR も計算しない。--stages score,prior,frag だけ")
     args = ap.parse_args()
     print(json.dumps(run(args.holdout, args.stages.split(","), args.logits_run, args.logits_dir, args.truth_dir,
-                         args.dump_ranks), indent=2))
+                         dump_ranks=args.dump_ranks, dump_features=args.dump_features), indent=2))
 
 
 if __name__ == "__main__":
