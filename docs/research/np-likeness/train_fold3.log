@@ -1,0 +1,2 @@
+13:25:50 fold 3: 学習の行 719432（正 359864・負 359568）、fold 3 の構造との重なり（4 鍵） {"raw_inchikey14": 0, "canonical_key": 0, "scorer_key": 0, "identity_group": 0, "uncanonicalised_but_compatible": 0}、params {"objective": "binary", "seed": 20261125, "verbose": -1, "num_threads": 8} rounds 100
+13:25:54 fold 3: 学習 4.6s、保存 model_fold3.txt
