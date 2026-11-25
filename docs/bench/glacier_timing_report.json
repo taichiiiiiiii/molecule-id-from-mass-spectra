@@ -1,0 +1,101 @@
+{
+ "gpu": "Tesla T4",
+ "runs": {
+  "pool": {
+   "n_rows": 1000,
+   "site_mode": "wheels",
+   "status": "ok",
+   "device": "cuda",
+   "rdkit": "2025.03.6",
+   "n_pred": 1000,
+   "n_pred_fail": 0,
+   "n_feat_fail": 0,
+   "n_bad_smiles": 0,
+   "t_pred": 21.29,
+   "t_load": 34.16,
+   "seconds": 62.12,
+   "wall": 67.9,
+   "max_mem_gb": 0.31,
+   "bs_final": 32,
+   "sec_per_pred": 0.02129,
+   "sec_per_pred_excl_first_chunk": 0.02,
+   "chunks": [
+    {
+     "t": 46.6,
+     "mols": 250,
+     "jobs": 250,
+     "secs": 6.7
+    },
+    {
+     "t": 52.1,
+     "mols": 250,
+     "jobs": 250,
+     "secs": 5.3
+    },
+    {
+     "t": 57.2,
+     "mols": 250,
+     "jobs": 250,
+     "secs": 4.9
+    },
+    {
+     "t": 62.1,
+     "mols": 250,
+     "jobs": 250,
+     "secs": 4.8
+    }
+   ],
+   "errors": []
+  },
+  "tier": {
+   "n_rows": 1000,
+   "site_mode": "wheels",
+   "status": "ok",
+   "device": "cuda",
+   "rdkit": "2025.03.6",
+   "n_pred": 1000,
+   "n_pred_fail": 0,
+   "n_feat_fail": 0,
+   "n_bad_smiles": 0,
+   "t_pred": 20.19,
+   "t_load": 14.45,
+   "seconds": 40.87,
+   "wall": 43.4,
+   "max_mem_gb": 0.37,
+   "bs_final": 32,
+   "sec_per_pred": 0.02019,
+   "sec_per_pred_excl_first_chunk": 0.019467,
+   "chunks": [
+    {
+     "t": 25.8,
+     "mols": 250,
+     "jobs": 250,
+     "secs": 6.0
+    },
+    {
+     "t": 31.2,
+     "mols": 250,
+     "jobs": 250,
+     "secs": 5.3
+    },
+    {
+     "t": 36.0,
+     "mols": 250,
+     "jobs": 250,
+     "secs": 4.6
+    },
+    {
+     "t": 40.9,
+     "mols": 250,
+     "jobs": 250,
+     "secs": 4.7
+    }
+   ],
+   "errors": []
+  }
+ },
+ "n_pred": 2000,
+ "t_pred": 41.48,
+ "sec_per_pred": 0.02074,
+ "total_wall": 123.8
+}

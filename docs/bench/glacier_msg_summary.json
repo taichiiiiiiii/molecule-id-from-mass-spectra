@@ -1,0 +1,48 @@
+{
+ "msg_rows": 231104,
+ "msg_unique_smiles": 31602,
+ "msg_sha256": "0c9cc50450def3f0d4fe2dc09dea1105fc15e635db8c6656bc3e3be37a3bcd95",
+ "n_comp_groups": 8598,
+ "n_struct": {
+  "raw_tv": 25931,
+  "raw_all": 28929,
+  "key_tv": 25903,
+  "key_all": 28895,
+  "raw_simtv": 14657,
+  "key_simtv": 14641
+ },
+ "n_rows_scanned": {
+  "pool": 423141,
+  "tier": 45620692
+ },
+ "n_jobs": 35067,
+ "n_comp_match": 32615827,
+ "n_rdkit": 285110,
+ "n_hits": {
+  "pool": 28859,
+  "tier": 154818
+ },
+ "hits_by_flag": {
+  "pool": {
+   "raw_tv": 25703,
+   "raw_all": 28620,
+   "key_tv": 25861,
+   "key_all": 28845,
+   "raw_simtv": 14577,
+   "key_simtv": 14615
+  },
+  "tier": {
+   "raw_tv": 134961,
+   "raw_all": 150013,
+   "key_tv": 139238,
+   "key_all": 154778,
+   "raw_simtv": 76753,
+   "key_simtv": 79492
+  }
+ },
+ "secs": {
+  "msg": 47.6,
+  "plan": 0.3,
+  "scan": 608.0
+ }
+}
