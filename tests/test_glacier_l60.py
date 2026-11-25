@@ -102,3 +102,12 @@ def test_pack_marks_empty_prediction_as_failure():
     assert z["ok"].tolist() == [True, False, False]
     assert z["fail"].tolist() == [0, G.FAIL_SMILES, G.FAIL_PRED]
     assert z["offsets"].tolist() == [0, 1, 1, 1]
+
+
+def test_jobs_sha_change_invalidates_shards(tmp_path):
+    jobs, calls = _jobs(15), []
+    G.run_shards(tmp_path, jobs, _fake(calls), shard_size=10, log=lambda *x: None, jobs_sha256="aaa")
+    assert calls == [10, 5]
+    assert G.shard_done(tmp_path, 0, 0, 10, "aaa") and not G.shard_done(tmp_path, 0, 0, 10, "bbb")
+    r = G.run_shards(tmp_path, jobs, _fake(calls), shard_size=10, log=lambda *x: None, jobs_sha256="bbb")
+    assert r["ran"] == [0, 1] and calls == [10, 5, 10, 5]

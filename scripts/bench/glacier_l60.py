@@ -78,14 +78,16 @@ def shard_paths(out_dir: Path, i: int) -> tuple[Path, Path]:
     return d / f"shard_{i:05d}.npz", d / f"shard_{i:05d}.json"
 
 
-def shard_done(out_dir: Path, i: int, a: int, b: int) -> bool:
-    """json があり、npz の sha256・区間が合えば完了。合わなければ未完了（やり直す）。"""
+def shard_done(out_dir: Path, i: int, a: int, b: int, jobs_sha256: str | None = None) -> bool:
+    """json があり、npz の sha256・区間（と jobs.parquet の sha256）が合えば完了。合わなければ未完了（やり直す）。"""
     npz, js = shard_paths(out_dir, i)
     if not (npz.exists() and js.exists()):
         return False
     try:
         m = json.loads(js.read_text())
     except Exception:
+        return False
+    if jobs_sha256 is not None and m.get("jobs_sha256") != jobs_sha256:
         return False
     return m.get("row_start") == a and m.get("row_end") == b and m.get("npz_sha256") == sha256(npz)
 
@@ -123,7 +125,7 @@ def write_shard(out_dir: Path, i: int, a: int, b: int, arrays: dict, stats: dict
 
 
 def run_shards(out_dir: Path, jobs, predict_fn, shard_size: int = SHARD_SIZE, max_shards: int | None = None,
-               log=print) -> dict:
+               log=print, jobs_sha256: str | None = None) -> dict:
     """jobs（row 順の DataFrame）を shard に切り、完了していない shard だけ predict_fn で予測して書く。
     predict_fn(list[(smiles, adduct, instr, ce)]) -> (list[(mz, it) | None], fail ndarray[int8], stats dict)"""
     n = len(jobs)
@@ -131,7 +133,7 @@ def run_shards(out_dir: Path, jobs, predict_fn, shard_size: int = SHARD_SIZE, ma
     bounds = shard_bounds(n, shard_size)
     done_n, ran = 0, []
     for i, (a, b) in enumerate(bounds):
-        if shard_done(out_dir, i, a, b):
+        if shard_done(out_dir, i, a, b, jobs_sha256):
             done_n += 1
             continue
         if max_shards is not None and len(ran) >= max_shards:
@@ -144,12 +146,12 @@ def run_shards(out_dir: Path, jobs, predict_fn, shard_size: int = SHARD_SIZE, ma
         assert len(preds) == len(keys) == len(fail)
         stats = dict(stats, seconds=round(time.time() - t0, 2),
                      maxrss_bytes=int(resource.getrusage(resource.RUSAGE_SELF).ru_maxrss),
-                     finished_at=time.strftime("%Y-%m-%d %H:%M:%S %z"))
+                     finished_at=time.strftime("%Y-%m-%d %H:%M:%S %z"), jobs_sha256=jobs_sha256)
         meta = write_shard(out_dir, i, a, b, pack(sub["row"].values, preds, np.asarray(fail, np.int8)), stats)
         ran.append(i)
         log("SHARD " + json.dumps({k: meta[k] for k in ("shard", "n_rows", "n_ok", "n_fail_pred", "n_fail_smiles",
                                                          "seconds", "maxrss_bytes")}))
-    n_done = sum(shard_done(out_dir, i, a, b) for i, (a, b) in enumerate(bounds))
+    n_done = sum(shard_done(out_dir, i, a, b, jobs_sha256) for i, (a, b) in enumerate(bounds))
     return dict(n_shards=len(bounds), n_done=n_done, ran=ran, skipped=done_n)
 
 
@@ -298,7 +300,9 @@ def make_predict_fn(pkg: Path, site: Path, threads: int, log):
         for n in good:
             v = pred.cache.get(keys[n])
             preds[n] = None if v is None else (v[0].astype(np.float32), v[1].astype(np.float32))
-        stats = dict(n_model_calls=int(pred.n_pred), n_model_fail=int(pred.n_fail),
+        # n_model_* と n_feat_fail は canonical 形 × 区分の単位（行の単位の n_fail_pred とは違う）
+        stats = dict(count_unit_model="canonical (smiles, adduct, instr, ce)",
+                     n_model_calls=int(pred.n_pred), n_model_fail=int(pred.n_fail),
                      n_feat_fail=int(pred.n_feat_fail), t_pred=round(pred.t_pred, 2), bs_final=int(pred.bs), **env)
         if len(R._CANON) > 200_000:
             R._CANON.clear()
@@ -317,7 +321,7 @@ def stage_run(out_dir: Path, pkg: Path, site: Path, threads: int, max_shards: in
     def log(*x):
         print(time.strftime("%H:%M:%S"), *x, flush=True)
     fn = make_predict_fn(pkg, site, threads, log)
-    res = run_shards(out_dir, jobs, fn, man["shard_size"], max_shards, log)
+    res = run_shards(out_dir, jobs, fn, man["shard_size"], max_shards, log, jobs_sha256=man["outputs"]["jobs.parquet"])
     log("RUN " + json.dumps(res))
     return res
 
