@@ -1,0 +1,106 @@
+{
+ "issue": 236,
+ "definitions": "https://github.com/taichiiiiiiii/molecule-id-from-mass-spectra/issues/236#issuecomment-7150781116",
+ "ppm": 10.0,
+ "dev_list_sha256": "7a69f073fb94049440bd7fc52a4f3f9a116dd45e76a97498de94976ae2943b79",
+ "table": {
+  "a": {
+   "n": 789,
+   "used_b8": 1,
+   "recall_i": 1.0,
+   "recall_ii": 0.9303,
+   "recall_iii": 1.0,
+   "k_i": 789,
+   "k_ii": 734,
+   "k_iii": 789,
+   "mean_n_i": 131.0,
+   "mean_n_ii": 14067.3,
+   "mean_n_i_plus_ii": 14198.3,
+   "n_no_center": 0
+  },
+  "b": {
+   "n": 787,
+   "used_b8": 1,
+   "recall_i": 0.9339,
+   "recall_ii": 0.9314,
+   "recall_iii": 0.9352,
+   "k_i": 735,
+   "k_ii": 733,
+   "k_iii": 736,
+   "mean_n_i": 88.3,
+   "mean_n_ii": 7198.7,
+   "mean_n_i_plus_ii": 7287.0,
+   "n_no_center": 0
+  },
+  "c": {
+   "n": 788,
+   "used_b8": 1,
+   "recall_i": 0.0,
+   "recall_ii": 0.9721,
+   "recall_iii": 0.9721,
+   "k_i": 0,
+   "k_ii": 766,
+   "k_iii": 766,
+   "mean_n_i": 139.5,
+   "mean_n_ii": 13835.9,
+   "mean_n_i_plus_ii": 13975.3,
+   "n_no_center": 0
+  },
+  "d": {
+   "n": 745,
+   "used_b8": 1,
+   "recall_i": 1.0,
+   "recall_ii": 0.9799,
+   "recall_iii": 1.0,
+   "k_i": 745,
+   "k_ii": 730,
+   "k_iii": 745,
+   "mean_n_i": 142.6,
+   "mean_n_ii": 13871.6,
+   "mean_n_i_plus_ii": 14014.2,
+   "n_no_center": 0
+  },
+  "e": {
+   "n": 792,
+   "used_b8": 1,
+   "recall_i": 0.0,
+   "recall_ii": 0.9318,
+   "recall_iii": 0.9318,
+   "k_i": 0,
+   "k_ii": 738,
+   "k_iii": 738,
+   "mean_n_i": 132.5,
+   "mean_n_ii": 14202.8,
+   "mean_n_i_plus_ii": 14335.3,
+   "n_no_center": 0
+  },
+  "none": {
+   "n": 216542,
+   "used_b8": 0,
+   "recall_i": 0.9848,
+   "recall_ii": 0.9249,
+   "recall_iii": 0.9849,
+   "k_i": 213253,
+   "k_ii": 200279,
+   "k_iii": 213262,
+   "mean_n_i": 119.8,
+   "mean_n_ii": 11889.9,
+   "mean_n_i_plus_ii": 12009.7,
+   "n_no_center": 5
+  }
+ },
+ "top25_check": {
+  "sets": 20,
+  "control_top25_hits_in_i": 2232,
+  "pubchem_top25_hits_in_iii": 3105
+ },
+ "filter_stats": {
+  "same_comp_pool": 14692235,
+  "same_comp_tier": 1242094569,
+  "to_key_pool": 342191,
+  "to_key_tier": 1286774
+ },
+ "n_rows": 220443,
+ "n_truth_without_key": 0,
+ "secs": 661.0
+}

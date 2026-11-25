@@ -181,3 +181,10 @@ def test_no_holdout_paths_in_candidate_recall():
     src = (ROOT / "scripts/bench/candidate_recall.py").read_text()
     for name in ("v3_c1", "v3_c2", "enveda_v1", "outputs/holdouts", "holdout_eval"):
         assert name not in src, name
+
+
+def test_recall_miss_center_bins():
+    import recall_miss_center as RM
+    d = np.array([0.0005, 0.01, -0.3, 1.0, np.nan])
+    t = np.array([100.0, 100.0, 300.0, 300.0, 300.0])
+    assert RM.bins(d, t) == dict(n_mass=4, le10ppm=1, gt10ppm_le0p5Da=2, gt0p5Da=1)

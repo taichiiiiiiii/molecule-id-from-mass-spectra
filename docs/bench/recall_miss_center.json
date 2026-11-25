@@ -1,0 +1,34 @@
+{
+ "a": {
+  "n_miss_i": 0,
+  "found_ii_among_miss": 0,
+  "n_mass": 0,
+  "le10ppm": 0,
+  "gt10ppm_le0p5Da": 0,
+  "gt0p5Da": 0
+ },
+ "b": {
+  "n_miss_i": 52,
+  "found_ii_among_miss": 1,
+  "n_mass": 52,
+  "le10ppm": 0,
+  "gt10ppm_le0p5Da": 41,
+  "gt0p5Da": 11
+ },
+ "d": {
+  "n_miss_i": 0,
+  "found_ii_among_miss": 0,
+  "n_mass": 0,
+  "le10ppm": 0,
+  "gt10ppm_le0p5Da": 0,
+  "gt0p5Da": 0
+ },
+ "none": {
+  "n_miss_i": 3284,
+  "found_ii_among_miss": 9,
+  "n_mass": 3284,
+  "le10ppm": 0,
+  "gt10ppm_le0p5Da": 1764,
+  "gt0p5Da": 1520
+ }
+}
