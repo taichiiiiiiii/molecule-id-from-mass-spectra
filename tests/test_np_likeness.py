@@ -113,3 +113,14 @@ def test_wl_and_comp_hash_tautomers_compatible():
     s1, s2 = "Oc1ccccn1", "O=c1cccc[nH]1"
     assert N.comp_hash(N.heavy_comp_str(s1)) == N.comp_hash(N.heavy_comp_str(s2))
     assert N.wl_hash(s1) == N.wl_hash(s2) != 0
+
+
+def test_multi_fold_rows_never_trained():
+    st = pd.DataFrame(dict(inchikey14=["AAAAAAAAAAAAAA", "BBBBBBBBBBBBBB"], scorer_key=["BBBBBBBBBBBBBB", "CCCCCCCCCCCCCC"],
+                           identity_group=["1", "2"], fold_identity=[1, 3]))
+    mp = N.struct_map(st)
+    assert mp["BBBBBBBBBBBBBB"][0] == N.MULTI and mp["AAAAAAAAAAAAAA"][0] == 1
+    b = N.assign_bucket(["BBBBBBBBBBBBBB", "AAAAAAAAAAAAAA"], [mp["BBBBBBBBBBBBBB"][0], 1])
+    assert b[0] == N.MULTI
+    for k in N.FOLDS:
+        assert not N.train_mask(b, k)[0]

@@ -41,6 +41,7 @@ PPM = 10.0
 NBITS = 2048
 FOLDS = (0, 1, 2, 3, 4)
 EVAL_FOLDS = (1, 2, 3, 4)
+MULTI = -2   # 2 つの fold の構造に当たる行: どのモデルの学習にも入れない（bucket = -2）
 DESC_NAMES = ("MolWt", "MolLogP", "TPSA", "NumHDonors", "NumHAcceptors", "NumRotatableBonds", "RingCount",
               "NumAromaticRings", "NumAliphaticRings", "NumSaturatedRings", "FractionCSP3", "HeavyAtomCount",
               "NumHeteroatoms", "n_C", "n_N", "n_O", "n_S", "n_P", "n_halogen", "formal_charge")
@@ -106,10 +107,17 @@ def hash_bucket(key: str, n: int = 5) -> int:
 
 
 def assign_bucket(keys, train_fold) -> np.ndarray:
-    """train_fold: 行ごとの train の構造の fold_identity（当たらなければ -1）。当たれば その fold、無ければ hash mod 5。"""
+    """train_fold: 行ごとの train の構造の fold_identity（当たらなければ -1、2 つの fold なら MULTI）。当たれば その fold、
+    無ければ hash mod 5、MULTI はそのまま（どのモデルの学習にも入れない）。"""
     tf = np.asarray(train_fold, dtype=np.int64)
     hb = np.fromiter((hash_bucket(str(k)) for k in keys), np.int64, count=len(tf))
-    return np.where(tf >= 0, tf, hb)
+    return np.where(tf == MULTI, MULTI, np.where(tf >= 0, tf, hb))
+
+
+def train_mask(bucket: np.ndarray, k: int) -> np.ndarray:
+    """fold k のモデルの学習の行: bucket != k かつ MULTI でない。"""
+    b = np.asarray(bucket)
+    return (b != k) & (b >= 0)
 
 
 def fold_keysets(st: pd.DataFrame, k: int) -> dict:
@@ -325,14 +333,15 @@ def load_struct() -> pd.DataFrame:
 
 
 def struct_map(st: pd.DataFrame) -> dict:
-    """InChIKey14（生・scorer_key のどちらでも）→ (fold_identity, scorer_key, identity_group)。1 つの鍵が 2 つの fold に当たらないことを assert。"""
+    """InChIKey14（生・scorer_key のどちらでも）→ (fold_identity, scorer_key, identity_group)。1 つの鍵が 2 つの fold の構造に
+    当たる場合（ある構造の scorer_key が別の fold の構造の生の鍵と同じ、などの正準化の非冪等）は fold = MULTI とする。"""
     mp: dict = {}
     for r in st.itertuples(index=False):
         for k in (str(r.inchikey14), str(r.scorer_key)):
             v = (int(r.fold_identity), str(r.scorer_key), str(r.identity_group))
-            if k in mp:
-                assert mp[k][0] == v[0], f"鍵 {k} が 2 つの fold に当たる"
-            else:
+            if k in mp and mp[k][0] != v[0]:
+                mp[k] = (MULTI, mp[k][1], mp[k][2])
+            elif k not in mp:
                 mp[k] = v
     return mp
 
@@ -404,8 +413,12 @@ def stage_prepare(out: Path, workers: int, log) -> None:
     rows = pd.concat([P[["source", "row", "smiles", "mass", "raw_key", "canon_key", "compat", "label"]], N], ignore_index=True)
     tf, sk, gr = [], [], []
     for r, c in zip(rows.raw_key.astype(str), rows.canon_key.astype(str)):
-        hit = smap.get(r) or (smap.get(c) if c else None)
-        tf.append(hit[0] if hit else -1); sk.append(hit[1] if hit else None); gr.append(hit[2] if hit else None)
+        h1 = smap.get(r); h2 = smap.get(c) if c else None
+        hit = h1 or h2
+        f = hit[0] if hit else -1
+        if h1 and h2 and h1[0] != h2[0]:
+            f = MULTI
+        tf.append(f); sk.append(hit[1] if hit else None); gr.append(hit[2] if hit else None)
     rows["train_fold"] = tf; rows["scorer_key"] = sk; rows["identity_group"] = gr
     bkey = np.where(rows.source == "pool", rows.canon_key.astype(str), rows.raw_key.astype(str))
     rows["bucket"] = assign_bucket(bkey, rows.train_fold.values)
@@ -414,6 +427,7 @@ def stage_prepare(out: Path, workers: int, log) -> None:
     summ = dict(n_pos=int((rows.label == 1).sum()), n_neg=int((rows.label == 0).sum()), tier_mass=[lo, hi],
                 n_drawn=int(len(idx)), n_unparsable=int((raw == "").sum()), n_np_excluded=int(is_np.sum()),
                 n_dup=int((~first).sum()), n_to_key_failed_compatible=int(nokey.sum()), n_to_key=int(len(ci)), short_bins=len(short), short_rows=int(sum(short.values())),
+                n_multi_fold_rows=int((rows.bucket == MULTI).sum()),
                 train_struct_rows=dict(pos=int(((rows.label == 1) & (rows.train_fold >= 0)).sum()),
                                        neg=int(((rows.label == 0) & (rows.train_fold >= 0)).sum())),
                 bucket_counts={str(b): dict(pos=int(((rows.bucket == b) & (rows.label == 1)).sum()),
@@ -479,7 +493,7 @@ def stage_train(out: Path, log0) -> None:
         assert not mp.exists() and not lp.exists(), f"fold {k} は学習済み（学び直さない）: {mp}"
         log = log_to(lp)
         t0 = time.time()
-        tr = (rows.bucket.values != k) & ok
+        tr = train_mask(rows.bucket.values, k) & ok
         fk = fold_keysets(st, k)
         ov = assert_no_fold_overlap(rows[tr], fk, k)
         log(f"fold {k}: 学習の行 {int(tr.sum())}（正 {int((rows.label.values[tr] == 1).sum())}・負 {int((rows.label.values[tr] == 0).sum())}）"
@@ -502,7 +516,7 @@ def stage_predict(out: Path, log) -> None:
     # 学習の行の鍵（in_train の判定）: pool の行は pid、層の候補は正規化キー・生の鍵
     parts = []
     for k in FOLDS:
-        tr = (rows.bucket.values != k) & ok
+        tr = train_mask(rows.bucket.values, k) & ok
         rec = dict(n_train=int(tr.sum()))
         if k in EVAL_FOLDS:
             bst = lgb.Booster(model_file=str(out / f"model_fold{k}.txt"))
