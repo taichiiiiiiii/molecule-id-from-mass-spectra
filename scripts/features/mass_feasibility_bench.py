@@ -56,7 +56,7 @@ def main() -> None:
     ap.add_argument("--out", required=True, help="特徴表の parquet（scratch に置く）")
     ap.add_argument("--report", required=True)
     a = ap.parse_args()
-    if a.holdout.startswith("v3"):
+    if "v3" in a.holdout:
         raise SystemExit("v3（holdout）には当てない（#238）")
     import mass_feasibility as mf
     t0 = time.time()

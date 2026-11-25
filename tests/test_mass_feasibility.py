@@ -104,7 +104,8 @@ def test_parse_adduct_values():
     assert mf.parse_adduct("[M-2H2O+H]+")[1] == pytest.approx(DH - 2 * mf.formula_mass("H2O"))
     assert mf.parse_adduct("[M+CH2O2-H]-")[1] == pytest.approx(mf.formula_mass("CH2O2") - DH)
     assert mf.parse_adduct("[M+Cl]-")[2] == pytest.approx(mf.formula_mass("Cl") + mf.M_E)
-    assert mf.parse_adduct("[M+2H]2+") is None and mf.parse_adduct("junk") is None and mf.parse_adduct(None) is None
+    assert mf.parse_adduct("[M+2H]2+") is None and mf.parse_adduct("[M+FA-H]-") is None and \
+        mf.parse_adduct("[M+ACN+H]+") is None and mf.parse_adduct("junk") is None and mf.parse_adduct(None) is None
 
 
 # ---------------------------------------------------------------- 4. 他の候補が説明できないピーク（排他）と 13 測定

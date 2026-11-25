@@ -16,7 +16,7 @@
 論文に書かれていない点（docs/research/mass-feasibility-features.md「自前の決めごと」。値を見る前に固定）:
 
   - ピークの残し方: 有限・I > 0・m/z ≤ m0 + 0.5 のピークのうち強度の上位 100 本（MAX_PEAKS）
-  - 64 個への間引き: 重複を除いた原子集合を（大きさ, 原子番号の並び）で並べ、等間隔に 64 個を取る
+  - 64 個への間引き: 重複を除いた原子集合を（大きさ, 原子の index の並び）で並べ、等間隔に 64 個を取る
     （原子の番号は RDKit の canonical SMILES を読み直した順。同じ構造なら書き方によらず同じ提案になる）
   - 付加イオン: metadata の adduct 文字列から質量を計算する。断片のイオンの担い手は
     正イオンで Na > K > H、負イオンで Cl > 脱プロトン。[M+H]+・[M+Na]+ では論文の式とまったく同じ。
@@ -103,7 +103,7 @@ def parse_adduct(adduct: str):
     groups = re.findall(r"([+-])(\d*[A-Z][A-Za-z0-9]*)", m.group(2))
     try:
         delta = sum((1 if s == "+" else -1) * formula_mass(g) for s, g in groups) - charge * M_E
-    except ValueError:
+    except (ValueError, RuntimeError):   # RDKit は元素でない記号（FA・ACN など）で RuntimeError
         return None
     added = {g for s, g in groups if s == "+"}
     if charge > 0:
