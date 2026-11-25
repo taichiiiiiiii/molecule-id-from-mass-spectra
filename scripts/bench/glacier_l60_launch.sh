@@ -24,7 +24,7 @@ say() { echo "$(date '+%F %T') $*" >> "$LOG"; }
 # top の MEM（例 22G・1534M・512K、末尾の +/- は無視）→ GB
 heavy_pythons() {
   local own="$1"
-  top -l 1 -stats pid,mem,command -n 1000 | awk '$1 ~ /^[0-9]+$/ && tolower($3) ~ /^python/ {m=$2; gsub(/[+-]$/,"",m); u=substr(m,length(m)); v=substr(m,1,length(m)-1)+0;
+  top -l 1 -stats pid,mem,command | awk '$1 ~ /^[0-9]+$/ && tolower($3) ~ /^python/ {m=$2; gsub(/[+-]$/,"",m); u=substr(m,length(m)); v=substr(m,1,length(m)-1)+0;
       g=(u=="G")?v:(u=="M")?v/1024:(u=="K")?v/1048576:v/1073741824; if (g>=3) print $1, g}' |
   while read -r pid g; do
     cmd=$(ps -o command= -p "$pid" 2>/dev/null)
@@ -34,13 +34,15 @@ heavy_pythons() {
 }
 
 gate() {
-  local mp vm sw hv other
+  local mp vm sw hv other np
   mp=$(memory_pressure | awk -F': ' '/free percentage/{gsub("%","",$2); print $2}')
   vm=$(vm_stat | awk '/page size of/{ps=$8} /Pages free/{f=$3} /Pages inactive/{i=$3} /Pages speculative/{s=$3} END{gsub("\\.","",f);gsub("\\.","",i);gsub("\\.","",s); printf "%.1f", (f+i+s)*ps/1e9}')
   sw=$(sysctl -n vm.swapusage | awk '{for(i=1;i<=NF;i++) if($i=="used") {v=$(i+2); gsub("M","",v); print v}}')
+  np=$(top -l 1 -stats pid,mem,command | awk '$1 ~ /^[0-9]+$/' | wc -l | tr -d ' ')
   hv=$(heavy_pythons 1)
   other=$(heavy_pythons 0)
-  say "gate: memory_pressure_free=${mp}% vm_free_inactive_spec=${vm}GB swap_used=${sw}MB own_heavy_python=[${hv}] other_projects_python_ge3GB=[${other}]"
+  say "gate: top_pid_lines=${np} memory_pressure_free=${mp}% vm_free_inactive_spec=${vm}GB swap_used=${sw}MB own_heavy_python=[${hv}] other_projects_python_ge3GB=[${other}]"
+  [ "${np:-0}" -ge 50 ] || return 1          # top が読めない・形が変わった → 通さない（fail-closed）
   [ -n "$mp" ] && [ "$mp" -ge 30 ] || return 1
   [ -n "$vm" ] && awk -v v="$vm" 'BEGIN{exit !(v >= 10)}' || return 1
   [ -n "$sw" ] && awk -v v="$sw" 'BEGIN{exit !(v <= 7680)}' || return 1
