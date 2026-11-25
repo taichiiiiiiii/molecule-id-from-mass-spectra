@@ -1,0 +1,26 @@
+{
+ "set": "b8_f1_a_t10",
+ "n": 193,
+ "wl": {
+  "found_i": 193,
+  "found_ii": 178
+ },
+ "comp_only": {
+  "found_i": 193,
+  "found_ii": 178
+ },
+ "per_molecule_equal": true,
+ "stats_wl": {
+  "same_comp_pool": 14819,
+  "same_comp_tier": 1325209,
+  "to_key_pool": 193,
+  "to_key_tier": 196
+ },
+ "stats_comp_only": {
+  "same_comp_pool": 14819,
+  "same_comp_tier": 1325209,
+  "to_key_pool": 14819,
+  "to_key_tier": 1325209
+ },
+ "secs": 297.6
+}

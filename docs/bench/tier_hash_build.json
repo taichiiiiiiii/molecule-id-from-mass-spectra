@@ -1,0 +1,16 @@
+{
+ "comp": {
+  "n": 105875489,
+  "secs": 141.6,
+  "sample": 100000,
+  "sample_rdkit_parsed": 100000,
+  "sample_mismatch": 0,
+  "file": "/Users/taichi/.hermes/profiles/massspec/cache/scratch/i236/tier_comp_hash.npy"
+ },
+ "wl": {
+  "n": 105875489,
+  "secs": 1530.6,
+  "file": "/Users/taichi/.hermes/profiles/massspec/cache/scratch/i236/tier_wl_hash.npy",
+  "n_zero": 0
+ }
+}
