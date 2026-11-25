@@ -24,7 +24,7 @@ def tag(name, **kw):
     print('TAG ' + json.dumps(dict(tag=name, t=round(time.time() - T0, 1), **kw)), flush=True)
 
 def find_one(pattern):
-    hits = sorted(glob.glob(pattern, recursive=True))
+    hits = sorted({os.path.realpath(h) for h in glob.glob(pattern, recursive=True)})
     assert len(hits) == 1, (pattern, hits)
     return hits[0]
 
@@ -53,6 +53,7 @@ def items_for(src):
 
 CHUNK_RE = re.compile(r'\[gl\s+([0-9.]+)s\] chunk: (\d+) mols (\d+) jobs ([0-9.]+)s')
 report = dict(gpu=gpu, runs={})
+SITE = '/kaggle/working/ice_site'      # wheel の入れ方で落ちたら、以後は 'none'
 for src in ('pool', 'tier'):
     left = HARD_LIMIT_S - (time.time() - T0) - GRACE_S - 60.0
     if left < 120:
@@ -65,7 +66,7 @@ for src in ('pool', 'tier'):
     items = items_for(src)
     json.dump(items, open(fin, 'w'))
     cmd = [sys.executable, GL_RUNNER, GL_PKG, fin, fout, '--device', 'cuda', '--budget', str(budget),
-           '--site', '/kaggle/working/ice_site', '--wheels', WHEELS, '--any-rdkit', '--chunk-jobs', '250']
+           '--site', SITE, '--wheels', WHEELS, '--any-rdkit', '--chunk-jobs', '250']
     def run_once(c, b):
         try:
             r = subprocess.run(c, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True, timeout=b + GRACE_S)
@@ -76,14 +77,17 @@ for src in ('pool', 'tier'):
         return txt, m
     t1 = time.time()
     logtxt, meta = run_once(cmd, budget)
-    site_mode = 'wheels'
-    if meta.get('status') == 'error' and not meta.get('n_pred') and 'install' in json.dumps(meta.get('errors')):
+    site_mode = 'wheels' if SITE != 'none' else 'none'
+    left = HARD_LIMIT_S - (time.time() - T0) - GRACE_S - 60.0
+    if (SITE != 'none' and meta.get('status') == 'error' and not meta.get('n_pred')
+            and 'install' in json.dumps(meta.get('errors')) and left >= 120):
         # wheel の入れ方で落ちたときだけ、イメージの環境のまま 1 回やり直す（同じ push の中）
         tag('retry_site_none', source=src, errors=(meta.get('errors') or [])[-1:])
-        site_mode = 'none'
-        left = HARD_LIMIT_S - (time.time() - T0) - GRACE_S - 60.0
+        site_mode = SITE = 'none'
+        b2 = min(budget, left)
         cmd2 = [x if x != '/kaggle/working/ice_site' else 'none' for x in cmd]
-        logtxt2, meta = run_once(cmd2, min(budget, max(60.0, left)))
+        cmd2[cmd2.index('--budget') + 1] = str(b2)
+        logtxt2, meta = run_once(cmd2, b2)
         logtxt = logtxt + '\n--- retry --site none ---\n' + logtxt2
     wall = time.time() - t1
     open(os.path.join(wd, 'runner.log'), 'w').write(logtxt)
