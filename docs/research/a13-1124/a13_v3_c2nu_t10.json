@@ -1,0 +1,28 @@
+{
+  "set": "v3_c2nu_t10",
+  "n": 394,
+  "dup_total": 0,
+  "none_total": 0,
+  "mol_with_dup": 0,
+  "mol_with_dup_share": 0.0,
+  "mol_with_dup_wilson95": [
+    0.0,
+    0.0097
+  ],
+  "dup_per_mol_max": 0,
+  "mol_dup_above_truth": 0,
+  "mol_enter_top25_after_dedup": 0,
+  "truth_in_top25": 354,
+  "truth_deep_only": 15,
+  "truth_absent": 25,
+  "empty_window": 3,
+  "inputs": {
+    "ranks": "97f41e8336203fc10b4ec26b3ebd8dcae2d10647e8d47ea7d0d89d85b0e9a91d",
+    "truth": "8fdb00687e57d82c2863ebc80c6b74e00ec93bf47d229d10aeef0892bf55be69",
+    "sub": "acfaade80b152a41841a374aaab47e84ae86f142bbd3629f332c9904a81a1c93"
+  },
+  "aux_top25_pool_key_eq_to_key": {
+    "n": 7950,
+    "eq": 7949
+  }
+}

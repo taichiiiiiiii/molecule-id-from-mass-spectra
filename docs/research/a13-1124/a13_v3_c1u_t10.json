@@ -1,0 +1,28 @@
+{
+  "set": "v3_c1u_t10",
+  "n": 394,
+  "dup_total": 0,
+  "none_total": 0,
+  "mol_with_dup": 0,
+  "mol_with_dup_share": 0.0,
+  "mol_with_dup_wilson95": [
+    0.0,
+    0.0097
+  ],
+  "dup_per_mol_max": 0,
+  "mol_dup_above_truth": 0,
+  "mol_enter_top25_after_dedup": 0,
+  "truth_in_top25": 391,
+  "truth_deep_only": 3,
+  "truth_absent": 0,
+  "empty_window": 0,
+  "inputs": {
+    "ranks": "4ff334d3524a6c487b26e819295622221b6f1f8f00aaddb8c60725a648ccda48",
+    "truth": "5aec3356eac67c7f1bb8cd8870baca0517b3c14b1623de124c4b03207629d789",
+    "sub": "ebc59d2ce80715e370ad5c29d43c186bdfbbf566ca15f28f3fc7c9010729ea10"
+  },
+  "aux_top25_pool_key_eq_to_key": {
+    "n": 9525,
+    "eq": 9525
+  }
+}
