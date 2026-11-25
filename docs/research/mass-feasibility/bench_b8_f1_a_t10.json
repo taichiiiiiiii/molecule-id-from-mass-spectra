@@ -1,0 +1,39 @@
+{
+  "holdout": "b8_f1_a_t10",
+  "n_molecules": 193,
+  "n_candidates": 10518,
+  "n_spectra": 896,
+  "n_columns": 26,
+  "n_nan": 0,
+  "n_inf": 0,
+  "secs_candidates": 30.7,
+  "secs_features": 10.14,
+  "s_per_molecule": 0.0525,
+  "s_per_molecule_median": 0.0555,
+  "s_per_molecule_max": 0.0905,
+  "s_per_spectrum_candidate": 0.0002082,
+  "proposal_cache": {
+    "hits": 559,
+    "misses": 9959,
+    "maxsize": 200000,
+    "currsize": 9959
+  },
+  "n_spectra_used": 896,
+  "n_spectra_skipped": 0,
+  "n_unparsed_smiles": 0,
+  "rule": {
+    "rule": "enveda_libs",
+    "enveda_libs": [
+      "enveda-180",
+      "enveda-np-examples"
+    ],
+    "pool": "keep",
+    "query": "enveda"
+  },
+  "n_hidden": 0,
+  "peak_rss_bytes": 1774829568,
+  "wall_secs_total": 41.6,
+  "rdkit": "2026.09.1",
+  "code": "scripts/features/mass_feasibility.py (#238)",
+  "feature_table": "scratch に書き、記録の後に削除（値は読んでいない）"
+}
