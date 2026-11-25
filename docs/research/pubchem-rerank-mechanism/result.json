@@ -1,0 +1,58 @@
+{
+ "issue": 234,
+ "holdout": "v3_c2",
+ "n": 200,
+ "inputs": {
+  "cache": "outputs/local_eval/v3_c2/pubchem_fold0.json",
+  "cache_sha256": "5246a52c036d69928a883e45467d78c04421e427961549adeabf30bcc5b80b6e",
+  "cache_mtime": "2026-11-07T19:59:12+0900",
+  "logits": "outputs/holdout_eval/v3_c2_fold0/pc_logits.npz",
+  "logits_sha256": "bbaeee26a86e52940c7046c3f76578d1192e11b8678577b778689942715364d8",
+  "logits_mtime": "2026-11-07T19:25:33+0900",
+  "truth": "outputs/holdouts/v3_c2/truth.csv",
+  "truth_sha256": "f4f164ffb20348c4debc8c862e6479570c984e48f7acc597e76795aa912fe027",
+  "frag_rescore_sha256": "eeacdcf0afb173a8b438054d93c30f061df7c9c69d1ae32db3530b2916f2e6a7"
+ },
+ "rdkit": "2026.09.1",
+ "n_cached": 200,
+ "A": {
+  "n_in_top60": 145,
+  "share_in_top60": 0.725,
+  "rank_bins": {
+   "1-1": 65,
+   "2-5": 39,
+   "6-25": 34,
+   "26-60": 7
+  }
+ },
+ "check_headroom_2_2": {
+  "n_top1": 65,
+  "n_in_top25": 138,
+  "mrr25_channel_alone": 0.4183,
+  "matches_known": true
+ },
+ "B_descriptive": {
+  "headroom_top60": 0.3056
+ },
+ "C_descriptive": {
+  "n_molecules": 80,
+  "median_same_formula_share_above": 1.0
+ },
+ "D": {
+  "n_rank2_60": 80,
+  "n_frag_fail": 0,
+  "n_used": 80,
+  "n_truth_gt_top1": 61,
+  "n_tie": 9,
+  "share_truth_gt_top1": 0.7625,
+  "ci95": [
+   0.6625,
+   0.85
+  ],
+  "n_boot": 2000,
+  "seed": 0,
+  "threshold": 0.5,
+  "reading": "候補にする"
+ },
+ "seconds": 6.7
+}
