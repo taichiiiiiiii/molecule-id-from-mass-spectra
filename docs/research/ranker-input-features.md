@@ -29,7 +29,7 @@ Issue #251（2026-11-26 夜 計画 項目 5、F2・C3 #195）。**この文書�
 5. **MassSpecGym** — Bushuiev R, et al. "MassSpecGym: A benchmark for the discovery and identification of molecules". arXiv:2410.23326（読んだのは v3 の HTML、https://arxiv.org/html/2410.23326v3 、2026-11-26）
    - **【開いて確かめた】** §3.2 の検索の課題の定義（候補 ≤ 256、質量か分子式で揃える bonus）、Table 5（検索の基準の結果）と基準の手法の説明の段落
    - 読んでいない: 付録、データ作りの節の細部
-   - ライセンス: 論文は arXiv nonexclusive-distrib 1.0（abs ページ）。リポジトリ pluskal-lab/MassSpecGym は MIT（GitHub API、2026-11-26）。データは使わない（外部データの規則は確かめていない）
+   - ライセンス: 論文は arXiv nonexclusive-distrib 1.0（abs ページ https://arxiv.org/abs/2410.23326 を 2026-11-26 に curl で取り、license のリンク `licenses/nonexclusive-distrib/1.0/` を確かめた）。リポジトリ pluskal-lab/MassSpecGym は MIT（GitHub API、2026-11-26）。データは使わない（外部データの規則は確かめていない）
 
 ## 1. 各手法の並べ替えの入力と ablation（著者の数字）
 
@@ -52,7 +52,7 @@ Issue #251（2026-11-26 夜 計画 項目 5、F2・C3 #195）。**この文書�
 - こちらへの意味: 参照の数（人気度）の項が一番効いた。これは `prior_unverified_pop` と同じ種類の情報で、PubChem の層の候補（Q）では今 0 になっている
 
 ### 1.3 COSMIC の確信度（線形 SVM、向きの強制）【開いて確かめた（補足 Table 1）／CSI:FingerID の点そのものは要約のみ】
-- 入力 22 個（補足 Table 1。1〜19 は PubChem と生体分子の DB の両方、20〜22 は生体分子の DB だけ）。向き（P = 正の重みに限る、N = 負に限る）を前もって決めた線形 SVM、Platt scaling で確率に。候補 1 個の場合は別の SVM
+- 入力 22 個（補足 Table 1。1〜19 は PubChem と生体分子の DB の両方、20〜22 は生体分子の DB だけ）。向き（P = 正の重みに限る、N = 負に限る）を前もって決めた線形 SVM（ただし表の 22 には向きの印が無い）、Platt scaling で確率に。候補 1 個の場合は別の SVM
   - 1・2: 1 位と 2 位の点の差（log と生、Modified Platt）、3・4: 同じく Covariance score
   - 5・6: 1 位の Modified Platt / Covariance の点、7・8: その較正した点（PubChem の候補の点の分布からの E 値）
   - 9: 断片化の木が説明した強度の和、11: 断片化の木の点
@@ -90,7 +90,7 @@ Issue #251（2026-11-26 夜 計画 項目 5、F2・C3 #195）。**この文書�
 
 ## 3. 入力の一覧と、こちらの特徴表での扱い
 
-扱い: **既にある**（#244 の列名）／**作れる**（必要なデータ・作り方、オフラインで動くか）／**作れない**（理由）。「出どころ」は playbook §4.3 の区分（自前 / 公開の部品 / 主催者が可とした重み）。
+扱い: **既にある**（#244 の列名）／**作れる**（必要なデータ・作り方、オフラインで動くか）／**作れない**（理由）。新しく作る列の出どころ（playbook §4.3 の区分）は、M4・M5・M3・C1・C2・C4〜C10・A3・A4・A6・A7 はどれも「自前（公開の部品の出力の上の自前の式、または論文の定義だけ）」、F6 は「主催者が可とした重み」（GLACIER の MassSpecGym 版は主催者が名指しで可。ただし最終提出に残す条件の一部は未確認: `glacier-iceberg-provenance.md`）、A1・A2 は「自前の学習モデル」の見込み。作るときに #244 と同じく列ごとに書く。
 
 | # | 出典の入力 | こちらでの扱い | 列・作り方 | 必要なデータ・ライセンス・オフライン |
 |---|---|---|---|---|
@@ -98,12 +98,12 @@ Issue #251（2026-11-26 夜 計画 項目 5、F2・C3 #195）。**この文書�
 | M2 | MS2Query 2: 問い合わせの precursor m/z | 作れる（群で一定） | `q_prec_mz` = test の `precursor_mz` | test.parquet にある。群の中で一定なので、ランカーには他の列との組み合わせでだけ効く |
 | M3 | MS2Query 3: precursor m/z の差 | 作れる | `ppm_err` = (候補の中性の単一同位体の質量 + 付加イオンのずれ − `precursor_mz`) / `precursor_mz` × 1e6（付加イオンのずれは `mass_feasibility.parse_adduct` と同じ）、`abs_ppm_err` | オフライン。候補は ±10 ppm の窓の中なので値は −10〜10。同じ分子式の候補では同じ値なので、異性体は分けない（誤りの多くは同じ式の異性体、`fragment-isomer-ranking.md`）。窓は #203 の結論で変えない |
 | M4 | MS2Query 4: 構造の近いライブラリ分子 10 個のスペクトルとの類似度の平均 | 作れる（新しい群 N1、§4） | `nbr_lib_sim_mean` = 候補の構造に Tanimoto で近い参照の構造（参照のある構造だけ、隠す規則の後）上位 10 個のそれぞれで、問い合わせとその参照スペクトルのエントロピー類似度の最大を取り、10 個を平均（MS2Query の「構造ごとに平均してから平均」の形。類似度は MS2Deepscore の代わりに `library.lib_scores` と同じエントロピー類似度）。候補自身の構造は近傍から除く | train.parquet の参照（`normalized_smiles` あり）と `library.load_refs` の隠す規則。オフラインで動く。参照の構造は数万の見込みなので、近傍の表は 1 回だけ作る（時間は未測定）。**漏れの点検**: 近傍の参照にも dev の正解の構造・その互変異性の別名の参照を隠す規則を同じく当てる（§4.2 (b)、raw と canonical の両方の鍵） |
-| M5 | MS2Query 5: その 10 構造との Tanimoto の平均 | 作れる（A1 と一緒） | `nbr_lib_tani_mean`（A1 で選んだ 10 構造と候補の Tanimoto の平均）、`nbr_lib_tani_max` | M4 と同じ |
+| M5 | MS2Query 5: その 10 構造との Tanimoto の平均 | 作れる（A1 と一緒） | `nbr_lib_tani_mean`（M4 で選んだ 10 構造と候補の Tanimoto の平均）、`nbr_lib_tani_max` | M4 と同じ |
 | F1 | MetFrag: 断片の点（リストの最大で正規化） | 既にある | `metfrag_lite`・`has_frag`（MetFrag-lite v7c、学習なし）と `metfrag_lite_dmax` など | — |
 | F2 | MetFrag: 保持時間（log P–RT の線形モデル） | 作れない | — | このコンペのデータに保持時間の列が無い（test.parquet・train.parquet の列を 2026-11-26 に確かめた） |
 | F3 | MetFrag: 参照の数（PubChem の特許数・PubMed 数） | プールの候補は既にある／PubChem の層の候補は作れない（今は） | `prior_unverified_pop`（プール L だけ、Q は 0） | Q の候補の特許数・PubMed 数はローカルに無い（`pool_popularity.csv` はプールの鍵だけ）。PubChem から取るには外部データの規則と取得の手順の確認が要る【未確認】。`build_pop.py` で train 由来でないと確かめるまで `prior_unverified` の印は外さない（#244） |
-| F4 | MetFrag: SMARTS の部分構造の含む／除く | 作れない | — | 部分構造の情報の源（MS1 の同位体、別の分類器）がこのコンペの入力に無い |
-| F5 | MetFrag: suspect list（他の DB にあるか） | 作れない（今の規則では） | — | 例えば COCONUT の所属は、プールの行では由来の印 `src` と同じ情報になる（#244 で `np_coconut`・`src` を入れない列にした理由と同じ） |
+| F4 | MetFrag: SMARTS の部分構造の含む／除く | 作れない（利用者が与える外部の部分構造の情報としては）／近いものは既にある | 近いもの: `fz`・`tani_pred`（FPNet の予測した指紋は部分構造のビットの予測で、候補のビットとの一致がこの量に当たる） | MetFrag の項は利用者が与える SMARTS（MS1 の同位体や別の分類器から）。その外部の情報はこのコンペの入力に無い |
+| F5 | MetFrag: suspect list（他の DB にあるか） | 作れない（今の規則では） | — | 例えば COCONUT の所属は、#244 で入れない列にした `np_coconut`・`src`（#236 §4.2(c) による除外）と同じ情報で、#244 が `in_train` について書いた「プールの行では COCONUT 所属＝src と同じ情報」も当てはまる |
 | F6 | MetFrag: CFM-ID の確率（予測スペクトルの点） | 作れる（GLACIER の予測ができた後） | `glacier_cos` など（予測スペクトルと問い合わせの一致を CE ごと） | 項目 2 のジョブ（#242・draft PR #246、L60 の 544,886 本を手元 CPU で生成中）。Q の候補は L60 の外なので値が無い（欠けの印が要る）。漏れの規則は #242 の msg_overlap |
 | C1 | COSMIC 1〜4: 1 位と 2 位の点の差 | 既にある（候補ごとの形で） | `fz_dmax`・`tani_pred_dmax`（最大との差）。1 位の候補にとっての「2 位との差」は `_dmax` だけでは分からない | 作れる: `fz_gap_next` = 候補の点 − その候補を除いた群の最大（1 位では 2 位との差、他では最大との差と同じ）。オフライン |
 | C2 | COSMIC 5〜8: 1 位の点・較正した点（PubChem の候補の点の分布の E 値） | 一部は既にある／作れる | `fz`・`fz_z`（群の中の z）。較正の形: `fz_tier_pct` = PubChem の層の窓の全候補（上限 60 に切る前）の `fz` の分布の中での候補の分位 | `pubchem.probe` は窓の全候補に `sc1` を計算している（ただし選んだビットのうち 4096 未満の部分だけの f·z で、`fz` そのものではない。2026-11-26 にコードで確かめた）。分位は `sc1` の分布で取るか、窓の全候補の `fz` を計算し直すかを先に決める（後者は時間が延びる、未測定）。オフライン |
@@ -137,9 +137,9 @@ Issue #251（2026-11-26 夜 計画 項目 5、F2・C3 #195）。**この文書�
 - 学習が要るもの（A1 の pair reranker の形、A2 の複数 seed）: 自前の学習モデルとして別の Issue にする（今夜は作らない）
 
 測り方（各群で同じ。**G1 の承認の前は dev でも測らない**）:
-1. **dev**: G1 承認後、台帳 `experiments.csv` に 1 行（群を足した版 − 足さない版）。B8 の 20 集合（3,901 分子、fold 1〜4、leave-one-fold-out）で、**5 つの型（a〜e）を型ごとに**報告し、まとめた値を使うなら #249 の型の重み（`docs/research/type-weights.md`、draft PR #250、main には未マージ）で。dev の実験の上限 40 本（playbook §4.1）に数える
+1. **dev**: G1 承認後、台帳 `experiments.csv` に 1 行（群を足した版 − 足さない版）。B8 の 20 集合（3,901 分子、fold 1〜4、leave-one-fold-out）で、**5 つの型（a〜e）を型ごとに**報告する。#249（`docs/research/type-weights.md`、draft PR #250、main には未マージ）の結論は「型の重みは置かない、型をまとめた値は判定にも報告の見出しにも使わない」なので、まとめた値は出さない（#247 の `experiments.csv` の書式で型ごとの n・MRR・対照・Δ・95% 区間）。dev の実験の上限 40 本（playbook §4.1）に数える
 2. **holdout**: 12/6 の凍結版に入れる場合だけ（入れない群は holdout で測らない）。v3 の 4 集合を **型ごとに**報告する: C1 型 = `v3_c1u_t10`・`enveda_v1u_t10`（プールにあり参照なし）、C2 型 = `v3_c2_t10`・`v3_c2nu_t10`。条件は playbook §4.1: **どの型も、同じ holdout の score+prior の基準より −0.02 以上悪くない**（C1 も C2 も）。holdout は 12/6 と 12/11 の 2 回だけで、中間の結果で群を足し引きしない
-3. 共通: ハイパラは既定のまま、群の中の定数は出典のまま（MS2Query の 10 個、2611.28096 の 0.25・τ_c = 0.1・κ）で、dev の値を見て変えない。漏れの点検 §4.2 (a)〜(e) を群ごとに（N1 は (b) の隠す規則が近傍の参照にも効いているか、N2・C4 は PubChem の層の窓が hold の正解を隠した後の窓か）
+3. 共通: ハイパラは既定のまま、群の中の定数は出典のまま（MS2Query の 10 個、2611.28096 の 0.25・τ_c = 0.1・κ）で、dev の値を見て変えない。漏れの点検 §4.2 (a)〜(e) を群ごとに（N1 は (b) の隠す規則が近傍の参照にも効いているか。N1 は §4.2 (c)「近傍の特徴は dev の分子を除いた train から作る」にも触れる: (a)(e) 型は enveda 系の参照だけを隠すので、正解の他の装置の参照が近傍に入りうる。作る前に Issue で決める〈★案: `lib_max_sim` と同じ hide_rule にそろえる。理由: 同じ参照のライブラリを読む照合で、(a)(e) 型は「正解の参照が他の装置にある」型として作ってある。もう一つの案は dev の全分子の正解の構造の参照を近傍から除く〉。N2・C4 は PubChem の層の窓が hold の正解を隠した後の窓か）
 
 ## 5. 言えないこと
 
