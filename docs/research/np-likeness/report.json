@@ -1,0 +1,186 @@
+{
+ "issue": 240,
+ "folds": {
+  "0": {
+   "n_train": 718475,
+   "note": "fold-0: 学習して保存するだけ（予測も評価もしない）",
+   "overlap_4keys": {
+    "raw_inchikey14": 0,
+    "canonical_key": 0,
+    "scorer_key": 0,
+    "identity_group": 0,
+    "uncanonicalised_but_compatible": 0
+   }
+  },
+  "1": {
+   "n_train": 719016,
+   "heldout": {
+    "n_pos": 89564,
+    "n_neg": 89994,
+    "auc": 0.9609878248429757,
+    "auc_train_struct_rows": 0.9038851327738767,
+    "n_train_struct_rows": {
+     "pos": 4991,
+     "neg": 301
+    },
+    "auc_other_rows": 0.9627116796362295,
+    "mean_score_pos": 0.8253354622270548,
+    "mean_score_neg": 0.1754661373675679
+   },
+   "train_sample": {
+    "n": 200000,
+    "auc": 0.9622723192682539,
+    "mean_score_pos": 0.8262059699292266,
+    "mean_score_neg": 0.17416574846828464
+   },
+   "train_rows_in_fold_windows": {
+    "pos": 0.621989738233276,
+    "neg": 0.5381393107712532,
+    "all": 0.5801192184874885
+   },
+   "pred_rows": {
+    "pool": 710701,
+    "pool_in_window": 0.7299398762630136,
+    "pool_in_train": 0.5081898013369898,
+    "pubchem_b8": 57871,
+    "pubchem_b8_in_train": 0.0032140450311900605
+   },
+   "overlap_4keys": {
+    "raw_inchikey14": 0,
+    "canonical_key": 0,
+    "scorer_key": 0,
+    "identity_group": 0,
+    "uncanonicalised_but_compatible": 0
+   }
+  },
+  "2": {
+   "n_train": 718599,
+   "heldout": {
+    "n_pos": 90090,
+    "n_neg": 89885,
+    "auc": 0.9612539875865236,
+    "auc_train_struct_rows": 0.8951390028642373,
+    "n_train_struct_rows": {
+     "pos": 4906,
+     "neg": 308
+    },
+    "auc_other_rows": 0.9629266417284579,
+    "mean_score_pos": 0.8262167950293151,
+    "mean_score_neg": 0.17585437719774583
+   },
+   "train_sample": {
+    "n": 200000,
+    "auc": 0.9618435012453554,
+    "mean_score_pos": 0.8260351966630434,
+    "mean_score_neg": 0.17437677542668475
+   },
+   "train_rows_in_fold_windows": {
+    "pos": 0.6292401467793941,
+    "neg": 0.5432718545000946,
+    "all": 0.5862741250683622
+   },
+   "pred_rows": {
+    "pool": 710701,
+    "pool_in_window": 0.7327525921590092,
+    "pool_in_train": 0.5074412446303016,
+    "pubchem_b8": 57911,
+    "pubchem_b8_in_train": 0.003712593462381931
+   },
+   "overlap_4keys": {
+    "raw_inchikey14": 0,
+    "canonical_key": 0,
+    "scorer_key": 0,
+    "identity_group": 0,
+    "uncanonicalised_but_compatible": 0
+   }
+  },
+  "3": {
+   "n_train": 719432,
+   "heldout": {
+    "n_pos": 89677,
+    "n_neg": 89465,
+    "auc": 0.9606607100688286,
+    "auc_train_struct_rows": 0.8950637045243739,
+    "n_train_struct_rows": {
+     "pos": 4960,
+     "neg": 313
+    },
+    "auc_other_rows": 0.962650487296898,
+    "mean_score_pos": 0.82457447493109,
+    "mean_score_neg": 0.17621322156794741
+   },
+   "train_sample": {
+    "n": 200000,
+    "auc": 0.9618146328423236,
+    "mean_score_pos": 0.8247344791495049,
+    "mean_score_neg": 0.1742580576197496
+   },
+   "train_rows_in_fold_windows": {
+    "pos": 0.6268506991530134,
+    "neg": 0.5392387531704712,
+    "all": 0.5830627495023852
+   },
+   "pred_rows": {
+    "pool": 710701,
+    "pool_in_window": 0.7308671297775013,
+    "pool_in_train": 0.5080139186521476,
+    "pubchem_b8": 57934,
+    "pubchem_b8_in_train": 0.003676597507508544
+   },
+   "overlap_4keys": {
+    "raw_inchikey14": 0,
+    "canonical_key": 0,
+    "scorer_key": 0,
+    "identity_group": 0,
+    "uncanonicalised_but_compatible": 0
+   }
+  },
+  "4": {
+   "n_train": 718774,
+   "heldout": {
+    "n_pos": 89973,
+    "n_neg": 89827,
+    "auc": 0.9615644320752954,
+    "auc_train_struct_rows": 0.9092131370091896,
+    "n_train_struct_rows": {
+     "pos": 5040,
+     "neg": 304
+    },
+    "auc_other_rows": 0.9633032932250994,
+    "mean_score_pos": 0.8237997446951009,
+    "mean_score_neg": 0.17364789642768466
+   },
+   "train_sample": {
+    "n": 200000,
+    "auc": 0.9618360207526905,
+    "mean_score_pos": 0.825227348318408,
+    "mean_score_neg": 0.1754813132454689
+   },
+   "train_rows_in_fold_windows": {
+    "pos": 0.6342583322208872,
+    "neg": 0.5369342382922334,
+    "all": 0.5856207931839493
+   },
+   "pred_rows": {
+    "pool": 710701,
+    "pool_in_window": 0.736886538783539,
+    "pool_in_train": 0.5076100920077501,
+    "pubchem_b8": 58108,
+    "pubchem_b8_in_train": 0.00375163488676258
+   },
+   "overlap_4keys": {
+    "raw_inchikey14": 0,
+    "canonical_key": 0,
+    "scorer_key": 0,
+    "identity_group": 0,
+    "uncanonicalised_but_compatible": 0
+   }
+  }
+ },
+ "pred_dev": {
+  "n_rows": 3074628,
+  "n_fold0_query_rows": 0,
+  "model_fold_eq_query_fold": true,
+  "n_nan": 0
+ }
+}

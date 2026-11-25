@@ -1,0 +1,44 @@
+{
+ "n_pos": 449541,
+ "n_neg": 449033,
+ "tier_mass": [
+  150.00001725,
+  1249.99949137
+ ],
+ "n_drawn": 517518,
+ "n_unparsable": 69,
+ "n_np_excluded": 13373,
+ "n_dup": 2032,
+ "n_to_key_failed_compatible": 0,
+ "n_to_key": 24418,
+ "short_bins": 17,
+ "short_rows": 508,
+ "n_multi_fold_rows": 0,
+ "train_struct_rows": {
+  "pos": 24855,
+  "neg": 1496
+ },
+ "bucket_counts": {
+  "0": {
+   "pos": 90237,
+   "neg": 89862
+  },
+  "1": {
+   "pos": 89564,
+   "neg": 89994
+  },
+  "2": {
+   "pos": 90090,
+   "neg": 89885
+  },
+  "3": {
+   "pos": 89677,
+   "neg": 89465
+  },
+  "4": {
+   "pos": 89973,
+   "neg": 89827
+  }
+ },
+ "secs": 119.8
+}
