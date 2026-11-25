@@ -1,0 +1,1 @@
+exp_id,date_utc,git_commit,table_sha256,n_molecules,n_rows,n_features,features_sha256,model,seed,train_types,n_a,mrr_a,ctrl_a,delta_a,delta_lo_a,delta_hi_a,n_b,mrr_b,ctrl_b,delta_b,delta_lo_b,delta_hi_b,n_c,mrr_c,ctrl_c,delta_c,delta_lo_c,delta_hi_c,n_d,mrr_d,ctrl_d,delta_d,delta_lo_d,delta_hi_d,n_e,mrr_e,ctrl_e,delta_e,delta_lo_e,delta_hi_e,note
