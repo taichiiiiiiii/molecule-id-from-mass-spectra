@@ -19,12 +19,12 @@
   "n_lt_k": 0,
   "secs": {
     "load_library": 0.4,
-    "cand_fp": 13.6,
-    "topk": 97.5,
-    "refs_and_sims": 29.5,
+    "cand_fp": 13.7,
+    "topk": 115.5,
+    "refs_and_sims": 29.7,
     "features": 0.2
   },
-  "secs_total": 142.2,
+  "secs_total": 160.5,
   "out_sha256": "7b08ccd9c1bf3d7bd8ca5510cc35c6b7eb1d67e4f4fa8bbee6e7fa558b66d282",
   "table_sha256": "609de98873176e87c5e28cedf8cf6bdef93fcf6fc1c6b7753c8664c330e6e6c7",
   "k": 10

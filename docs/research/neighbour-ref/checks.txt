@@ -1,0 +1,20 @@
+#261 の点検の記録（2026-11-26 のセッションで実行したコマンドの出力の写し。スクリプトは残していない）
+
+1. pool_fp.npy の行 = raw_fingerprint(pool_meta.smiles)[fp_bits]（pool_meta の先頭 300 行）
+   出力: "bits (10226,) int32 16549" / "pool_fp (710701, 1279) uint8" / "pool_fp == raw[bits] True (300, 10226)"
+   ほか: train_structs の key はすべて pool_meta の key にある（"train key in pool 1.0"）、pool の key は一意（True、710,701 行）
+
+2. 1 回目（全部読む版、出力 sha a4d3bfbe…）と 2 回目（流し読み版、出力 sha 7b08ccd9…）の出力の比較（その後 1・2 回目の parquet は消した）
+   出力: "(22098, 6) (22098, 6) True"（set・molecule_id・cand_key・nbr_n が equals）
+         "tani identical True"（nbr_tani_mean が array_equal）
+         "ms max abs diff 1.1102230246251565e-16"（nbr_ms_mean の差の最大）
+         "row order == dev table True"（dev_b8.parquet を set で絞った set・molecule_id・cand_key と equals）
+   値そのものは表示していない
+
+3. 資源（1 回目の開始前）: "System-wide memory free percentage: 83%"、vm_stat の free+inactive+speculative "22.7626 GB"、
+   "vm.swapusage: total = 7168.00M  used = 6182.25M"、df -h / で空き 39Gi
+   3 回目の開始前: "System-wide memory free percentage: 81%"、swap used 6182.25M。終了時も 6182.25M
+
+4. 参照の構造の指紋の最大ビット数（nbr_ref_fp.npy、274,186 構造）: "ref max popcount 3797"。
+   和集合の上限 7,594 では 1/u² = 1.73e-08 < 2·m·1e-13 = 5.48e-08 になり、前の版の同点の決め方（合成の鍵 tani − j·1e-13）は
+   保証できないので、厳密な選び方（v より大きいもの + v に等しいものを番号順）に直した（4 回目の実行）

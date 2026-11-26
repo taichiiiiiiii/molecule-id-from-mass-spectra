@@ -20,7 +20,7 @@ Issue #261（2026-11-26 昼 計画 項目 4、F2・N1、親 #195）。前段は 
 - **入力 4**（本文 Methods）: 「the average MS2Deepscore between a query spectrum and all spectra of 10 chemical similar library molecules」。「These 10 library molecules are selected based on the known chemical structures of the spectra in the library, by selecting the library structures with the highest Tanimoto score. For each of the 10 library molecules all corresponding library spectra are selected.」
 - **入力 5**（同）: 「the average of the Tanimoto score between the starting library structure and the 10 library structures」
 - **平均の取り方**（補足 Note 3「Weighting of the average of multiple library structures」）: 構造ごとに平均してから 10 個を平均（検証 MSE 0.0257）が、全スペクトルをまとめて平均（0.0286）より良かったので前者を採った。コード `_calculate_average_multiple_library_structures` も構造ごとの平均（`average_inchikey_scores`）を 10 個で割る
-- **重み**（補足 Note 3「Weighting based on Tanimoto score」、Table S3）: Tanimoto の 1〜3 乗の重みは改善しなかった（検証 MSE 0.0257 / 0.0260 / 0.0262 / 0.0265）ので **重みなし**
+- **重み**（補足 Note 3「Weighting based on Tanimoto score」、Table S3）: Tanimoto の 1〜3 乗の重みは改善しなかった（検証 MSE 0.0257 / 0.0260 / 0.0262 / 0.0265）ので **重みなし**。なお本文 Results の概要の文は「a weighted average MS2Deepscore over 10 chemically similar library molecules」と書いていて、補足 Note 3 とコード（10 で割るだけ）と食い違う。こちらは補足とコードに従った
 - **構造の近さ**（本文「Tanimoto scores as structural similarity label」）: RDKit の daylight 指紋 2,048 ビット、構造の単位は InChIKey の先頭 14 文字。コード `get_fingerprint` は `Chem.RDKFingerprint(mol, fpSize=2048)`
 - **10 個の選び方に自分自身が入るか**: 本文には書いていない。コード `create_sqlite_database.py` 204 行目は `calculate_highest_tanimoto_score(list_of_spectra, list_of_spectra, 10)` で、ライブラリの全構造どうしの Tanimoto の上位 10 を取り、自分を除く処理は無い（自分との Tanimoto は 1 なので通常は 1 位に入る）。→ **自分自身を含む**（コードを読んだうえでの判断。本文の文では確かめていない）
 - 効き（補足 Note 2、著者の数字）: 全 5 特徴で検証 MSE 0.0255。入力 4 を抜くと 0.0331（Table S2、最大の悪化）、入力 5 を抜くと 0.0259。Gini 重要度は入力 4 が 0.62、入力 5 が 0.02（Table S1）。入力 4 を「1 本のスペクトルの MS2Deepscore」に替えると 0.0337（Note 2 の本文）
@@ -44,7 +44,7 @@ Issue #261（2026-11-26 昼 計画 項目 4、F2・N1、親 #195）。前段は 
 
 論文から置き換えたところ（計画 #261 で決めた置き換え。dev の値では選ばない）:
 - 類似度: MS2Deepscore → `library.lib_scores`（`lib_max_sim`）と同じエントロピー類似度（`casmi.spectra.entropy_sim`、`SearchCfg` の既定 tol 0.01・ppm_tol 20）。MS2Deepscore は GNPS で学習した外部のモデルで、規則の確認をしていない
-- 指紋: RDKit daylight 2,048 ビット → 既存の指紋（`fp_bits.npy` の 10,226 ビット。プールの候補と参照の構造は `pool_fp.npy` の行、PubChem 層の候補は `casmi.chem.raw_fingerprint(smiles)[fp_bits]`。300 構造で両者が一致することを確かめた）
+- 指紋: RDKit daylight 2,048 ビット → 既存の指紋（`fp_bits.npy` の 10,226 ビット。プールの候補と参照の構造は `pool_fp.npy` の行、PubChem 層の候補は `casmi.chem.raw_fingerprint(smiles)[fp_bits]`。pool_meta の先頭 300 構造で両者が一致することを確かめた。記録 `neighbour-ref/checks.txt` の 1）
 - 構造の単位: inchikey14 → `train_structs.parquet` の正準の鍵（`key`。互変異性の別名 275,810 → 274,186 構造）
 - 問い合わせが複数（分子ごとに先頭 16 本、`run.query_spectra` と同じ）: 参照 1 本ごとに問い合わせの最大を取る（`lib_scores` と同じ形。論文は問い合わせ 1 本なので、ここは論文に無い決め事）
 - 同点: Tanimoto が同じなら正準の鍵の名前順で先のもの
@@ -56,7 +56,7 @@ Issue #261（2026-11-26 昼 計画 項目 4、F2・N1、親 #195）。前段は 
 - **(c) 「近傍の特徴は dev の分子を除いた train から作る」との関係**: 型 a・e は「正解の参照が他の装置にある」型として作った集合なので、`hide_rule` のままでは正解の構造（他の装置の参照）が近傍に入る。これは `lib_max_sim` が正解自身の他の装置の参照を照合するのと同じ扱いで、隠れテストの C1 型（正解の参照がライブラリにある）を写した形。ただし §4.2(c) を文字どおりに読むと「dev の分子を除く」なので、読み方が分かれる
   - ★案（計画の指定）: `--mode hide_rule`（`lib_max_sim` とそろえる）
   - 別の案: `--mode all_truth`（型 a・e でも集合の正解の構造の参照をすべて隠す）
-  - **未決**: #252 §4 は「★案を採るなら playbook §4.2(c) の改訂と独立レビューが要り、漏れの点検を緩める変更なのでオーナーの承認も要りうる」と書いた。この回は時間の測定だけなので決めない。**台帳の行を作る前に Issue で決める**（決めるまで dev の当てはめに N1 を入れない）。時間はどちらの mode でも同じ（隠す行が増えるだけ）
+  - **未決**: #252 §4 は「★案を採るなら playbook §4.2(c) の改訂と独立レビューが要り、漏れの点検を緩める変更なのでオーナーの承認も要りうる」と書いた。この回は時間の測定だけなので決めない。**台帳の行を作る前に #261 で決める**（この PR は #261 を閉じない）（決めるまで dev の当てはめに N1 を入れない）。時間はどちらの mode でも同じ（隠す行が増えるだけ）
 - (a)(d)(e): N1 は FPNet のロジット・予測スペクトルを使わないので (a)(d) は当たらない。(e) はランカー側（`lambdarank_oof.py`）の分子単位の GroupKFold のまま
 - holdout（v3 の 4 集合）では特徴を作っていない（今日は holdout を読まない）
 
@@ -64,19 +64,20 @@ Issue #261（2026-11-26 昼 計画 項目 4、F2・N1、親 #195）。前段は 
 
 対象: `b8_f1_a_t10`（型 a、`rule=enveda_libs`、193 分子・22,098 行・SMILES で一意な候補 21,463）。入力の表 `outputs/local_eval/features/dev_b8.parquet`（sha256 609de988…e6e6c7）。M4 Pro、`memguard_run.sh`（MIN_FREE_PCT 15）の下で `/usr/bin/time -l`。1 回目の開始前: memory_pressure 空き 83%、vm_stat（free + inactive + speculative）22.8 GB、swap 使用 6,182 MB。3 回目の開始前: memory_pressure 空き 81%、swap 6,182 MB、終了時も swap 6,182 MB。
 
-1 回目（参照スペクトルを全部読んでから計算）は peak が大きかったので、流し読みに直して測り直した。3 回とも記録する:
+1 回目（参照スペクトルを全部読んでから計算）は peak が大きかったので、流し読みに直して測り直した。さらに完了レビューの指摘（同点の決め方が保証できない）で上位 10 の選び方を厳密な形に直して測り直した。4 回とも記録する:
 - 1 回目（全部読む版）: 134.7 s、max RSS 9.34 GB、peak footprint 12.29 GB
 - 2 回目（参照を train.parquet から 8,192 行ずつ流し読み、候補の指紋を uint8 のまま持つ）: 143.9 s、max RSS 6.02 GB、peak footprint 5.82 GB
-- **3 回目（2 回目 ＋ 行列の塊を小さく: 参照 8,192 × 候補 1,024）: 142.6 s、max RSS 3.64 GB、peak footprint 3.46 GB**（これを既定にした）
-- 出力は 2 回目と 3 回目で sha256 が同じ（7b08ccd9…d66282）。1 回目とは行・`nbr_n`・`nbr_tani_mean` が完全に一致し、`nbr_ms_mean` の差は最大 1.1e-16（平均の足し方の順の違い）。比べたのは差だけで、値そのものは見ていない
-- 3 回目の段ごとの秒数: ライブラリの読み込み 0.4 s（キャッシュあり。初回の作成も 2.0 s）、候補の指紋 13.6 s、Tanimoto の上位 10（候補 21,463 × 構造 274,186、10,226 ビット、float32 の行列積）97.5 s、参照の流し読みと類似度 29.5 s、特徴 0.2 s
+- 3 回目（2 回目 ＋ 行列の塊を小さく: 参照 8,192 × 候補 1,024）: 142.6 s、max RSS 3.64 GB、peak footprint 3.46 GB
+- **4 回目（3 回目 ＋ 同点の厳密な選び方。今のコード）: 161.0 s、max RSS 3.68 GB、peak footprint 3.49 GB**（記録 `neighbour-ref/b8_f1_a_t10_timing.json`・`b8_f1_a_t10_time_l.txt`）
+- 出力は 2・3・4 回目で sha256 が同じ（7b08ccd9…d66282。この集合では同点の選び方の違いが出なかった）。1 回目とは行・`nbr_n`・`nbr_tani_mean` が完全に一致し、`nbr_ms_mean` の差は最大 1.1e-16（平均の足し方の順の違い）。比べたのは差だけで、値そのものは見ていない（記録 `neighbour-ref/checks.txt` の 2。1・2・3 回目の parquet は比べた後に消した）
+- 4 回目の段ごとの秒数: ライブラリの読み込み 0.4 s（キャッシュあり。初回の作成も 2.0 s）、候補の指紋 13.7 s、Tanimoto の上位 10（候補 21,463 × 構造 274,186、10,226 ビット、float32 の行列積）115.5 s、参照の流し読みと類似度 29.7 s、特徴 0.2 s
 - 量: 近傍に入った構造 111,850、使った参照スペクトル 948,666 本、(分子, 構造) の組 174,061。隠した行 1,250（正準の鍵 200）。NaN は 0（近傍が 10 未満の候補 0）
 
 外挿（どれも推定。測っていない）:
-- **dev 全体（B8 の 20 集合、430,979 行、集合ごとの一意な候補の合計 425,565）**: 時間の大半（Tanimoto の上位 10）は一意な候補の数に比例するので 142.2 s × 425,565 / 21,461 ≈ **約 2,820 s（約 47 分）**、1 プロセスで集合を順に。peak は集合ごとなので約 3.5 GB のまま
-- **holdout（v3 の 4 集合、1,358 分子）**: 分子あたりの候補の数が dev と同じと置くと 142.2 s × 1,358 / 193 ≈ **約 1,000 s（約 17 分）**
-- Kaggle の 9 時間の実行に載せる場合: 隠れテストの分子数と Kaggle の CPU の行列積の速さで決まり、**未測定**。ライブラリの構造は 274,186 で固定なので、候補あたり 274,186 × 10,226 ビットの積が要る（ここでは 21,463 候補で 97.5 s）。12/1 の Kaggle での時間測定の対象に入れるかは別に決める
-- 速くする余地（未測定、定義は変えない）: 集合をまたいで同じ候補の上位を共有する（20 集合で一意な候補は 370,644。隠す構造は集合ごとに高々 200 なので、上位 210 を 1 回求めてから集合ごとに外せば同じ結果）
+- **dev 全体（B8 の 20 集合、430,979 行、集合ごとの SMILES で一意な候補の合計 425,608）**: 時間の大半（Tanimoto の上位 10）は一意な候補の数に比例するので 160.5 s × 425,608 / 21,463 ≈ **約 3,180 s（約 53 分）**、1 プロセスで集合を順に。peak は集合ごとなので約 3.5 GB のまま
+- **holdout（v3 の 4 集合、1,358 分子）**: 分子あたりの候補の数が dev と同じと置くと 160.5 s × 1,358 / 193 ≈ **約 1,130 s（約 19 分）**
+- Kaggle の 9 時間の実行に載せる場合: 隠れテストの分子数と Kaggle の CPU の行列積の速さで決まり、**未測定**。ライブラリの構造は 274,186 で固定なので、候補あたり 274,186 × 10,226 ビットの積が要る（ここでは 21,463 候補で 115.5 s）。12/1 の Kaggle での時間測定の対象に入れるかは別に決める
+- 速くする余地（未測定、定義は変えない）: 集合をまたいで同じ候補の上位を共有する（20 集合で SMILES で一意な候補は 371,391〈cand_key で数えると 370,644〉。隠す構造は集合ごとに高々 200 なので、上位 210 を 1 回求めてから集合ごとに外せば同じ結果）
 
 ## 5. 測る案（今日は測らない）
 
