@@ -62,7 +62,7 @@
   - 確認（セル 0）: 「ishankarnick の casmi26-lb-0-509-47-7m-virtual-natural-products を変えずに実行」「コードのセルは採点された写しとバイト一致」と書く。**中身は ishankarnick の 0.509 版の写し**で、alexchilton 自身の追加は最後のセルの提出の表（194 件）だけ。コードがバイト一致かは確かめていない（未確認、ishankarnick の原本は pull していない）
   - 確認（セル 1・最後のセル）: 「同じ土台で 1 つの値だけ変えた 71 本のうち +0.002 を超えたのは 5 本、最大 +0.006。39 本が下がり、最大 −0.047」。土台の上がりは主に他人の新しい公開ノートを走らせたことによる、と書く（主張）
 - B: ozertuu「0.509+ CASMI26 Gold Baseline Analog Ranker」 https://www.kaggle.com/code/ozertuu/0-509-casmi26-gold-baseline-analog-ranker — ipynb sha256 ddda2aec…、51 セル（コード 30）、lastRunTime 2026-11-26 13:00 UTC、票 102
-  - 確認（セル 0・コード）: A と同じ系統（0.505 の stack ＋ 仮想 NP 層）に、Dual-Mode Mass Sync（コードのセル 15）、ExtLib の Tier-2（`EXTLIB_TIER2_TAU = 0.72`）、LOTUS の候補を足したもの。題の「0.515+」は目標の記述で、盤面の値は書いていない
+  - 確認（セル 0・コード）: A と同じ系統（0.505 の stack ＋ 仮想 NP 層。ExtLib の Tier-2 と質量の点検は A・B の両方にあり、lb495 から見た追加）に、Dual-Mode Mass Sync（コードのセル 15）、N-1c の分子ネットワークの置き換え（セル 13 の Omni-Adduct N-1c とセル 14 の D-L1。lb495・A の `_NNET_NOTEBOOK` のセルは無い）、LOTUS の候補の dataset を足したもの。題の「0.515+」は目標の記述で、盤面の値は書いていない
 
 `dataset_sources` の差（lb495 から見て。確認）: A・B とも `bgunshui/casmi26-scorer-v2-model`、`ishankarnick/casmi-scorer-x1full`、`ishankarnick/casmi26-vt0`、`ishankarnick/casmi26-vtlp` を足す。B はさらに `qwertykeypadapple/casmi26-lotus-candidates` と `ozertuu/quantum-sim-linalg-cache` を足す。`kernel_sources` は 3 本とも `popwenman/casmi26-scorer-train-v80`。
 
@@ -83,9 +83,9 @@
 | romanrozen の同式異性体リランカー（`V8`） | セル 0 で `V8 = 'MASS'`（RR8 を切る。lb495 と同じ値で、追加ではない） | セル 0 で `V8 = 'MASS'`（コメント「destructive RR8 isomer reranker OFF」） | — 使っていない | 見つからない（#80 の記録） | — | — |
 | Dual-Mode Mass Sync（陽・陰の両方がある分子で中性の質量をそろえ、2〜25 位を並べ替え） | 無し | セル 15 | 構造（規則） | ノートの中 | 同上 | 可 |
 | ExtLib Tier-2（0.72 ≤ cos < 0.80 を 2 位に差し込む） | セル 15、`TIER2_TAU = 0.72`（lb495 には無い） | セル 16、`EXTLIB_TIER2_TAU` 0.72 | 規則は既知（#80 の ozertuu 版 21 と同じ）、0.72 は定数 | ノートの中 | ExtLib は既知（部品表 21・22） | 可 |
-| ExtLib の質量の点検（照合した構造の精密質量が分子と合わなければ外す） | セル 15、`_ext_mass_ok`（lb495 には無い） | セル 16 の `_exact_mw`（RDKit の `CalcExactMolWt`）による点検。許容 15 ppm は markdown セル 24 の記述で、コードの値は確かめていない | 構造（既存チャネルの照合の直し）、15 ppm は定数 | ノートの中 | 同上 | 可 |
+| ExtLib の質量の点検（照合した構造の精密質量が分子と合わなければ外す） | セル 15、`_ext_mass_ok`（lb495 には無い） | セル 16 の `_exact_mw`（RDKit の `CalcExactMolWt`）による点検。許容はセル 0 の `EXTLIB_MAX_PPM = 15.0`（セル 16 が読む） | 構造（既存チャネルの照合の直し）、15 ppm は定数 | ノートの中 | 同上 | 可 |
 | N-1c の分子ネットワーク（test の中の近いスペクトルの分子の候補で並べ替え） | セル 14 `_NNET_NOTEBOOK`（lb495 のセル 14 と同じ部品。lib・mass・steps・lock1 の切り替えつき） | `_NNET_NOTEBOOK` は無く、セル 13 の Omni-Adduct N-1c（全付加イオン、同じ付加イオンの中だけで辺、timsTOF の質量の守り、`ENABLE_N1C = True`、`N1C_LAM = 0.35`）とセル 14 の D-L1（train.parquet の既知構造の錨・編集の質量差の妥当さ・2 段の伝播、2〜25 位、`ENABLE_N1C_DL1 = True`）に置き換え | lb495 にある部品の作り直し。付加イオンを広げたのと質量の守りは構造（規則）、0.35 などは定数。D-L1 は train の参照の構造と質量の編集を使うので、同じ式の候補の並びも動かしうる | ノートの中 | 同上 | 可 |
-| CES-FSE・TAP-SV（衝突エネルギー別のエントロピー類似度、互変異性をまとめた骨格の投票） | 無し（セル 15 の `CES` の一致は `SUCCESS` の一部だった） | セル 16 に関数がある。`ENABLE_EXTLIB2 = False` で、効いているかは確かめていない（未確認） | 構造（候補）だが有効かは未確認 | ノートの中 | 同上 | 可 |
+| CES-FSE・TAP-SV（衝突エネルギー別のエントロピー類似度、互変異性をまとめた骨格の投票） | 無し（セル 15 の `CES` の一致は `SUCCESS` の一部だった） | セル 16 に関数（`compute_entropy_similarity`・`tautomer_aggregated_planar_voting`）が定義されているだけで、どのセルからも呼ばれていない（独立レビューが全セルを検索して確認）。`ENABLE_EXTLIB2 = False` は Source C（nakhun/casmi26-extlib2）の読み込みの切り替えで、これとは別 | 機能なし（定義だけ） | ノートの中 | 同上 | 可 |
 | LOTUS の候補（149,983 構造） | セル 12 に `candidates_lotus.parquet` を探して空き枠を埋めるコードはあるが、dataset が添付されていないので動かない（lb495 と同じ） | dataset を添付（セル 12・22 など） | 構造（候補源）、既知（部品表 23） | README に作り方（#80 の記録） | CC0-1.0 | 可 |
 | quantum-sim-linalg-cache | 無し | セル 1 で名前を print するだけ | 機能なし（別の競技の dataset。こちらの読みでは何の計算にも使っていない） | — | CC0-1.0 | — |
 
@@ -129,6 +129,7 @@
 - **自分の構造の分を除く（own-out）**: 候補 c が train の構造なら、c 自身の参照の寄与を N から引いてから θ を計算する。「自身」は raw の inchikey14 と正準の鍵の両方で数え、同じ正準の鍵に写る別名（互変異性体）の構造の寄与も引く。正解・偽物のどちらにも同じ規則を当てる（参照のある構造だけが自分の (m, f) で有利になるのを防ぐ。出典 1 の著者も 70:30 の分け方で同じ点を避けている。`lib_max_sim` で起きた「学習では偽物だけが占める領域」の型の偏りを避ける狙い）
 - θ の推定: θ_mf = (N_mf + α) / (Σ_{f'∈F_m} N_mf' + α·|F_m| + β)、θ_m⊥ = β / (同じ分母)（出典 1 と同じく N_m⊥ = 0）。F_m は bin m で学習に現れた断片の名前の集合（候補の断片が F_m に無ければ 1 つ足す）。**α = 0.0001、β = 0.0025**（出典 1 の Table 1 の α・β の最頻値。陽性モードは α が 10 行すべて 0.0001、β は 0.0025 が 5/10。陰性モードも α 0.0001 が 5/10、β 0.0025 が 5/10 で、両モードで同じ値。dev で動かさない）
 - **出典 1 からの変更（こちらの決め）**: (1) 出典 1 の分母は断片の指紋の全体 F̃ にわたる和で、案は bin ごとの F_m にわたる和。(2) 出典 1 の f は断片の構造の指紋（Circular など、似た断片が同じ指紋になりうる）で、案の f は断片の正準 SMILES（完全に同じ部分構造だけが同じ）。(3) 1 つのピークに複数の断片が合うときの選び方（数え上げは切断の少ないもの、点は θ が最大のもの）。α・β は出典 1 の正規化の下で選ばれた値なので、案では意味が少し変わる。それでも定数はそのまま使う（dev で動かさない）
+- 既知の限界（推定、測らない）: (a) 学習の側は断片の理論質量を、問い合わせの側は観測した m/z を bin に入れる。照合の許容 ±0.005 Da と bin の幅 0.01 Da が同じ大きさなので、正しい断片でも観測の誤差で隣の bin に入り、N = 0（未観測）として引かれる割合が小さくない見込み。隣の bin も合わせて引くなどの手当てをするなら、値を見る前に定義の Issue で固定する。(b) 学習で一度も現れない bin では θ_m⊥ = β/β = 1（log 0）で、候補の断片がそこに合うと θ = α/(α+β) ≈ 0.038 になる。つまり未観測の bin のピークを説明した候補は、説明しなかった候補より `pfs_ll` が下がる。α/β の比からくる出典 1 と同じ性質で、`mf_*`（説明したピークが多いほど上）と逆向きに働きうる。`pfs_seen_frac` を別の列で持つのはこのため
 - 欠け: 問い合わせのスペクトルにピークが無い分子は全列 0、`pfs_seen_frac` は NaN にせず 0（`cc` と同じ扱い）。SMILES が読めない候補は全ピーク ⊥
 - 学習・ハイパラ: 無い（数え上げと既定の pseudo count だけ）。LightGBM lambdarank は既定のまま
 
