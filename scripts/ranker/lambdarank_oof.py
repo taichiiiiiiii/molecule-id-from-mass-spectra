@@ -56,6 +56,8 @@ EXTRA_ALLOWED = {
     # 群 N2（候補源の比べ、#266 で定義を固定）: 窓の件数 2・候補源の差 4・候補源の中の相対化 10 = 16 列
     "n2": ("#266", ("log_n_tier_window", "log_n_pool_window", "src_gap_fz", "src_gap_tani", "opp_gap_fz", "opp_gap_tani")
            + tuple(f"{v}_src_{r}" for v in ("fz", "tani_pred") for r in _REL)),
+    # 群 N1（近傍の参照の照合、MS2Query の入力 4・5 の形、#261 で定義を固定・playbook §4.2(c) の hide_rule）: 2 列
+    "n1": ("#261", ("nbr_ms_mean", "nbr_tani_mean")),
 }
 EXTRA_ALL = tuple(c for _iss, cols in EXTRA_ALLOWED.values() for c in cols)
 ROWS_MODES = ("all", "pool")
