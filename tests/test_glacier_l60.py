@@ -161,3 +161,22 @@ def test_cand_msg_overlap_counts_decoys_only_by_key():
     assert r["n_hit_decoy"] == 2                             # K4・K7（正解の K2 は除く）
     assert r["by_type"]["a"] == dict(n_rows=3, n_hit=2, n_hit_decoy=1)
     assert r["by_type"]["c"] == dict(n_rows=2, n_hit=1, n_hit_decoy=1)
+
+
+def test_check_shards(tmp_path, monkeypatch):
+    sys.path.insert(0, str(ROOT / "scripts/bench"))
+    import glacier_check_shards as CS
+    jobs = _jobs(25)
+    jobs.to_parquet(tmp_path / "jobs.parquet", index=False)
+    jsha = G.sha256(tmp_path / "jobs.parquet")
+    man = dict(part="tier", n_jobs=25, shard_size=10, outputs={"jobs.parquet": jsha})
+    (tmp_path / "manifest.json").write_text(json.dumps(man))
+    monkeypatch.setitem(G.EXPECTED, "tier", dict(n_jobs=25, n_L=5))
+    G.run_shards(tmp_path, jobs, _fake([]), shard_size=10, max_shards=2, log=lambda *x: None, jobs_sha256=jsha)
+    r = CS.check(tmp_path)
+    assert not r["ok"] and r["n_done"] == 2 and r["n_rows_done"] == 20
+    G.run_shards(tmp_path, jobs, _fake([]), shard_size=10, log=lambda *x: None, jobs_sha256=jsha)
+    r = CS.check(tmp_path)
+    assert r["ok"] and r["n_done"] == 3 and r["n_rows_done"] == 25
+    monkeypatch.setitem(G.EXPECTED, "tier", dict(n_jobs=26, n_L=5))   # 期待の本数と違えば通さない
+    assert not CS.check(tmp_path)["ok"]
