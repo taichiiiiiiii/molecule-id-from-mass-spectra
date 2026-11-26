@@ -1,0 +1,31 @@
+{
+  "set": "b8_f1_a_t10",
+  "mode": "hide_rule",
+  "rule": "enveda_libs",
+  "n_rows": 22098,
+  "n_molecules": 193,
+  "n_unique_cand": 21463,
+  "n_structures": 274186,
+  "n_avail": 274186,
+  "n_hidden_canon": 200,
+  "n_rows_hidden": 1250,
+  "n_need_structures": 111850,
+  "n_ref_spectra_used": 948666,
+  "n_mol_struct_pairs": 174061,
+  "n_nan": {
+    "nbr_ms_mean": 0,
+    "nbr_tani_mean": 0
+  },
+  "n_lt_k": 0,
+  "secs": {
+    "load_library": 0.4,
+    "cand_fp": 13.7,
+    "topk": 115.5,
+    "refs_and_sims": 29.7,
+    "features": 0.2
+  },
+  "secs_total": 160.5,
+  "out_sha256": "7b08ccd9c1bf3d7bd8ca5510cc35c6b7eb1d67e4f4fa8bbee6e7fa558b66d282",
+  "table_sha256": "609de98873176e87c5e28cedf8cf6bdef93fcf6fc1c6b7753c8664c330e6e6c7",
+  "k": 10
+}
