@@ -125,6 +125,7 @@ with open(OUT / "e2e.log", "w") as log:
 print("rc", rc, f"elapsed {time.time() - T0:.0f}s")
 if (OUT / "timing.json").is_file():
     print(open(OUT / "timing.json").read())
+assert rc == 0, f"e2e_timing.py が rc {rc} で止まった（ログ e2e.log の TAG で、どの段まで進んだかを見る）"
 '''
 
 
