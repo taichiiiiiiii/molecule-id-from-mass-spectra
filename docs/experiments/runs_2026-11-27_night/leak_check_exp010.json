@@ -1,0 +1,92 @@
+{
+ "exp010": {
+  "a_model_fold_eq_query_fold": true,
+  "oof_rows_eq_table_rows": true,
+  "b_leave_one_fold_out": {
+   "1": {
+    "overlap": 0,
+    "n_train_mol": 2333,
+    "excluded_in_train": 0,
+    "meta_n_train_mol": 2333,
+    "train_folds": [
+     2,
+     3,
+     4
+    ]
+   },
+   "2": {
+    "overlap": 0,
+    "n_train_mol": 2330,
+    "excluded_in_train": 0,
+    "meta_n_train_mol": 2330,
+    "train_folds": [
+     1,
+     3,
+     4
+    ]
+   },
+   "3": {
+    "overlap": 0,
+    "n_train_mol": 2333,
+    "excluded_in_train": 0,
+    "meta_n_train_mol": 2333,
+    "train_folds": [
+     1,
+     2,
+     4
+    ]
+   },
+   "4": {
+    "overlap": 0,
+    "n_train_mol": 2331,
+    "excluded_in_train": 0,
+    "meta_n_train_mol": 2331,
+    "train_folds": [
+     1,
+     2,
+     3
+    ]
+   }
+  },
+  "b_ok": true,
+  "c_type_e_rows_in_train": {
+   "1": 0,
+   "2": 0,
+   "3": 0,
+   "4": 0
+  },
+  "c_ok": true,
+  "d_excluded_not_in_features": {
+   "bad": [],
+   "excluded": [
+    "prior_unverified_pop",
+    "log_n_tier_window",
+    "log_n_pool_window",
+    "src_gap_fz",
+    "src_gap_tani",
+    "opp_gap_fz",
+    "opp_gap_tani",
+    "fz_src_dmean",
+    "fz_src_z",
+    "fz_src_dmax",
+    "fz_src_softmax",
+    "fz_src_sd",
+    "tani_pred_src_dmean",
+    "tani_pred_src_z",
+    "tani_pred_src_dmax",
+    "tani_pred_src_softmax",
+    "tani_pred_src_sd"
+   ],
+   "features_eq_expected": true,
+   "models_eq_meta": true,
+   "n_features": 66,
+   "features_sha256": "85ff424e50a452edfd1048eae74b5371eb822dafc616fbbd11a07c0c52d16785",
+   "sha_ok": true
+  },
+  "d_ok": true,
+  "e_tables": "outputs/local_eval/features/dev_b8_cc_n2_n1.parquet",
+  "e_ok": true,
+  "table_sha256_ok": true,
+  "all_ok": true
+ }
+}
