@@ -10,7 +10,7 @@ sys.path.insert(0, str(ROOT / "scripts/ranker")); sys.path.insert(0, str(ROOT / 
 import lambdarank_oof as LR
 
 out = {}
-for exp in (sys.argv[1:] or ["exp001", "exp002", "exp003"]):
+for exp in (sys.argv[1:] or ["exp001", "exp002", "exp003"]):  # 引数で exp004〜 も
     d = ROOT / "outputs/local_eval/ranker/lambdarank" / exp
     meta = json.loads((d / "meta.json").read_text())
     tab = pd.read_parquet(meta["table"], columns=list(LR.CHECK_READ_COLS) + ["is_tier"])
@@ -38,10 +38,15 @@ for exp in (sys.argv[1:] or ["exp001", "exp002", "exp003"]):
     for k in LR.FOLDS:
         t = (d / f"model_fold{k}.txt").read_text()
         models_feats.append(t.split("feature_names=")[1].split("\n")[0].split())
-    bad = [f for f in feats if f in LR.FORBIDDEN or f in LR.ID_COLS or f == "prior_unverified_pop"]
-    r["d_excluded_not_in_features"] = dict(bad=bad, models_eq_meta=all(m == feats for m in models_feats), n_features=len(feats),
+    # #257（#256 の minor 2）: 外した列は meta の exclude_features と、求めていない登録済みの列から読む
+    excluded = list(meta.get("exclude_features", [])) + list(meta.get("ignored_registered_columns", []))
+    expect = [f for f in LR.FEATURES if f not in meta.get("exclude_features", [])] + list(meta.get("extra_features", []))
+    bad = [f for f in feats if f in LR.FORBIDDEN or f in LR.ID_COLS or f in excluded]
+    r["d_excluded_not_in_features"] = dict(bad=bad, excluded=excluded, features_eq_expected=feats == expect,
+                                          models_eq_meta=all(m == feats for m in models_feats), n_features=len(feats),
                                           features_sha256=meta["features_sha256"], sha_ok=LR.features_sha256(feats) == meta["features_sha256"])
-    r["d_ok"] = not bad and all(m == feats for m in models_feats) and r["d_excluded_not_in_features"]["sha_ok"]
+    r["d_ok"] = (not bad and feats == expect and all(m == feats for m in models_feats)
+                 and r["d_excluded_not_in_features"]["sha_ok"])
     sets = sorted(meta["sets"])
     r["e_tables"] = meta["table"]
     r["e_ok"] = ("features_holdout" not in meta["table"] and "holdout" not in Path(meta["table"]).name
