@@ -1,0 +1,200 @@
+{
+ "exp001": {
+  "a_model_fold_eq_query_fold": true,
+  "oof_rows_eq_table_rows": true,
+  "b_leave_one_fold_out": {
+   "1": {
+    "overlap": 0,
+    "n_train_mol": 2324,
+    "meta_n_train_mol": 2324,
+    "train_folds": [
+     2,
+     3,
+     4
+    ]
+   },
+   "2": {
+    "overlap": 0,
+    "n_train_mol": 2322,
+    "meta_n_train_mol": 2322,
+    "train_folds": [
+     1,
+     3,
+     4
+    ]
+   },
+   "3": {
+    "overlap": 0,
+    "n_train_mol": 2326,
+    "meta_n_train_mol": 2326,
+    "train_folds": [
+     1,
+     2,
+     4
+    ]
+   },
+   "4": {
+    "overlap": 0,
+    "n_train_mol": 2322,
+    "meta_n_train_mol": 2322,
+    "train_folds": [
+     1,
+     2,
+     3
+    ]
+   }
+  },
+  "b_ok": true,
+  "c_type_e_rows_in_train": {
+   "1": 0,
+   "2": 0,
+   "3": 0,
+   "4": 0
+  },
+  "c_ok": true,
+  "d_excluded_not_in_features": {
+   "bad": [],
+   "models_eq_meta": true,
+   "n_features": 62,
+   "features_sha256": "4c90058e5bbd2e47923e7b12a32df1429409cd3c359c52ef229a2fd7e2c79b14",
+   "sha_ok": true
+  },
+  "d_ok": true,
+  "e_tables": "outputs/local_eval/features/dev_b8.parquet",
+  "e_ok": true,
+  "table_sha256_ok": true,
+  "all_ok": true
+ },
+ "exp002": {
+  "a_model_fold_eq_query_fold": true,
+  "oof_rows_eq_table_rows": true,
+  "b_leave_one_fold_out": {
+   "1": {
+    "overlap": 0,
+    "n_train_mol": 2333,
+    "meta_n_train_mol": 2333,
+    "train_folds": [
+     2,
+     3,
+     4
+    ]
+   },
+   "2": {
+    "overlap": 0,
+    "n_train_mol": 2330,
+    "meta_n_train_mol": 2330,
+    "train_folds": [
+     1,
+     3,
+     4
+    ]
+   },
+   "3": {
+    "overlap": 0,
+    "n_train_mol": 2333,
+    "meta_n_train_mol": 2333,
+    "train_folds": [
+     1,
+     2,
+     4
+    ]
+   },
+   "4": {
+    "overlap": 0,
+    "n_train_mol": 2331,
+    "meta_n_train_mol": 2331,
+    "train_folds": [
+     1,
+     2,
+     3
+    ]
+   }
+  },
+  "b_ok": true,
+  "c_type_e_rows_in_train": {
+   "1": 0,
+   "2": 0,
+   "3": 0,
+   "4": 0
+  },
+  "c_ok": true,
+  "d_excluded_not_in_features": {
+   "bad": [],
+   "models_eq_meta": true,
+   "n_features": 62,
+   "features_sha256": "4c90058e5bbd2e47923e7b12a32df1429409cd3c359c52ef229a2fd7e2c79b14",
+   "sha_ok": true
+  },
+  "d_ok": true,
+  "e_tables": "outputs/local_eval/features/dev_b8.parquet",
+  "e_ok": true,
+  "table_sha256_ok": true,
+  "all_ok": true
+ },
+ "exp003": {
+  "a_model_fold_eq_query_fold": true,
+  "oof_rows_eq_table_rows": true,
+  "b_leave_one_fold_out": {
+   "1": {
+    "overlap": 0,
+    "n_train_mol": 2333,
+    "meta_n_train_mol": 2333,
+    "train_folds": [
+     2,
+     3,
+     4
+    ]
+   },
+   "2": {
+    "overlap": 0,
+    "n_train_mol": 2330,
+    "meta_n_train_mol": 2330,
+    "train_folds": [
+     1,
+     3,
+     4
+    ]
+   },
+   "3": {
+    "overlap": 0,
+    "n_train_mol": 2333,
+    "meta_n_train_mol": 2333,
+    "train_folds": [
+     1,
+     2,
+     4
+    ]
+   },
+   "4": {
+    "overlap": 0,
+    "n_train_mol": 2331,
+    "meta_n_train_mol": 2331,
+    "train_folds": [
+     1,
+     2,
+     3
+    ]
+   }
+  },
+  "b_ok": true,
+  "c_type_e_rows_in_train": {
+   "1": 0,
+   "2": 0,
+   "3": 0,
+   "4": 0
+  },
+  "c_ok": true,
+  "d_excluded_not_in_features": {
+   "bad": [],
+   "models_eq_meta": true,
+   "n_features": 64,
+   "features_sha256": "e0b73e5cd9e46e0b11c89dea8aa4b0a03c4182efabc3c45daa0f61880c9ed303",
+   "sha_ok": true
+  },
+  "d_ok": true,
+  "e_tables": "outputs/local_eval/features/dev_b8_cc.parquet",
+  "e_ok": true,
+  "table_sha256_ok": true,
+  "all_ok": true
+ }
+}
