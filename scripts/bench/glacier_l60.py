@@ -7,6 +7,9 @@
     .venv/bin/python scripts/bench/glacier_l60.py run --out-dir outputs/local_eval/glacier_l60 \
         --pkg outputs/local_eval/glacier_l60/env/pkg --site outputs/local_eval/glacier_l60/env/site
 
+    # Issue #268: PubChem 層の行（is_tier = 1 の全行 233,809、673,214 本）は --part tier で list し、別の out-dir に
+    .venv/bin/python scripts/bench/glacier_l60.py list --part tier --out-dir outputs/local_eval/glacier_tier
+
 定義（#242 の定義のコメントと同じ。数え直さない）:
   - 候補 L = 対照 score,prior,frag の重複除去した上位 60（#244 の dev 表 `outputs/local_eval/features/dev_b8.parquet`
     の is_tier = 0 の行、ctrl_rank の順）。分子ごとに |L| = min(60, n_i)（#236 の n_i）であることを確かめる
@@ -48,6 +51,9 @@ for _p in ("scripts/bench", "scripts/validate"):
 EXPECTED_N_JOBS = 544_886          # #242 の L60 版 (r)
 EXPECTED_N_MOLS = 3_901
 EXPECTED_N_L = 197_170
+# part ごとの本数（pool = #242 の L60 版、tier = #268 の PubChem 層の全行。#259 手順 5 の数え）
+EXPECTED = {"pool": dict(n_jobs=EXPECTED_N_JOBS, n_L=EXPECTED_N_L),
+            "tier": dict(n_jobs=673_214, n_L=233_809)}
 SHARD_SIZE = 20_000
 DEV_B8 = "outputs/local_eval/features/dev_b8.parquet"
 PER_MOL = "outputs/local_eval/i236_recall/per_molecule.parquet"
@@ -156,6 +162,33 @@ def run_shards(out_dir: Path, jobs, predict_fn, shard_size: int = SHARD_SIZE, ma
 
 
 # ---------------------------------------------------------------- 段: list
+def select_rows(dev, part: str):
+    """dev 表から予測する候補の行を選び、分子ごとに cand_rank（ctrl_rank の順の 0 始まり）を付ける。
+    pool = is_tier = 0 の行（表にあるのが既に対照の上位 60）、tier = is_tier = 1 の全行（#268）。"""
+    if part not in EXPECTED:
+        raise ValueError(f"part は {sorted(EXPECTED)} のどれか")
+    L = dev[dev.is_tier == (1 if part == "tier" else 0)].copy()
+    L["molecule_id"] = L.molecule_id.astype(str)
+    L = L.sort_values(["set", "molecule_id", "ctrl_rank"], kind="stable")
+    assert not L.duplicated(["set", "molecule_id", "cand_smiles"]).any()
+    L["cand_rank"] = L.groupby(["set", "molecule_id"]).cumcount()
+    return L
+
+
+def cand_msg_overlap(L, mols, key_tv: set) -> dict:
+    """候補の鍵（cand_key = 正規化キー）が MSG train ∪ val と一致する行の数（#268: 記録だけ。除外も補正もしない）。
+    正解の行（cand_key = 分子の key）を除いた数（偽物の候補）も型ごとに出す。値・MRR は見ない。"""
+    m = L.merge(mols[["set", "molecule_id", "key"]], on=["set", "molecule_id"], how="left", validate="many_to_one")
+    hit = m.cand_key.isin(key_tv).to_numpy()
+    decoy = (m.cand_key != m.key).to_numpy()
+    by = {}
+    for t in sorted(m.type.unique()):
+        k = (m.type == t).to_numpy()
+        by[t] = dict(n_rows=int(k.sum()), n_hit=int((hit & k).sum()), n_hit_decoy=int((hit & k & decoy).sum()))
+    return dict(n_rows=int(len(m)), n_hit=int(hit.sum()), n_hit_decoy=int((hit & decoy).sum()),
+                n_truth_rows=int((~decoy).sum()), by_type=by)
+
+
 def msg_key_sets(root: Path, workers: int = 6) -> dict:
     import pandas as pd
     from multiprocessing import Pool
@@ -179,7 +212,7 @@ def _to_key(s):
         return None
 
 
-def stage_list(root: Path, out_dir: Path, workers: int) -> dict:
+def stage_list(root: Path, out_dir: Path, workers: int, part: str = "pool") -> dict:
     import pandas as pd
     import glacier_counts as G
     t0 = time.time()
@@ -188,12 +221,9 @@ def stage_list(root: Path, out_dir: Path, workers: int) -> dict:
     mols = dev[["set", "type", "molecule_id"]].drop_duplicates().copy()
     mols["molecule_id"] = mols.molecule_id.astype(str)
     assert len(mols) == EXPECTED_N_MOLS, len(mols)
-    L = dev[dev.is_tier == 0].copy()
-    L["molecule_id"] = L.molecule_id.astype(str)
-    L = L.sort_values(["set", "molecule_id", "ctrl_rank"], kind="stable")
-    assert not L.duplicated(["set", "molecule_id", "cand_smiles"]).any()
-    assert len(L) == EXPECTED_N_L, len(L)
-    L["cand_rank"] = L.groupby(["set", "molecule_id"]).cumcount()
+    exp = EXPECTED[part]
+    L = select_rows(dev, part)
+    assert len(L) == exp["n_L"], len(L)
     # |L| = min(60, n_i)（#236）
     pm = pd.read_parquet(root / PER_MOL, columns=["set", "molecule_id", "type", "n_i"])
     pm = pm[pm.type != "none"].copy()
@@ -203,7 +233,8 @@ def stage_list(root: Path, out_dir: Path, workers: int) -> dict:
     mols = mols.merge(nL, on=["set", "molecule_id"], how="left").fillna({"n_L": 0})
     mols["n_L"] = mols.n_L.astype(np.int64)
     assert mols.n_i.notna().all()
-    assert (np.minimum(TOPN, mols.n_i.astype(np.int64)) == mols.n_L).all(), "|L| が min(60, n_i) と違う"
+    if part == "pool":
+        assert (np.minimum(TOPN, mols.n_i.astype(np.int64)) == mols.n_L).all(), "|L| が min(60, n_i) と違う"
     # 区分 (r)
     cols = ["molecule_id", "adduct", "ionization_mode", "instrument_type", "collision_energy_orig",
             "collision_energy_ev", "collision_energy_orig_units"]
@@ -230,7 +261,7 @@ def stage_list(root: Path, out_dir: Path, workers: int) -> dict:
     mols = mols.merge(nj, on=["set", "molecule_id"], how="left").fillna({"n_jobs": 0})
     mols["n_jobs"] = mols.n_jobs.astype(np.int64)
     assert int((mols.n_L * mols.n_cat_r).sum()) == len(jobs)
-    assert len(jobs) == EXPECTED_N_JOBS, f"本数 {len(jobs)} が #242 の {EXPECTED_N_JOBS} と違う"
+    assert len(jobs) == exp["n_jobs"], f"本数 {len(jobs)} が {part} の {exp['n_jobs']} と違う"
     assert np.isfinite(jobs.ce.values).all()
     # 漏れの印（#242 の規則）
     dl = pd.read_csv(root / DEV_LIST, dtype={"identity_group": str})
@@ -242,6 +273,7 @@ def stage_list(root: Path, out_dir: Path, workers: int) -> dict:
     ms = msg_key_sets(root, workers)
     mols["msg_overlap"] = (mols.inchikey14.isin(ms["raw_tv"]) | mols.key.isin(ms["key_tv"])).astype(np.int8)
     mols["msg_overlap_all"] = (mols.inchikey14.isin(ms["raw_all"]) | mols.key.isin(ms["key_all"])).astype(np.int8)
+    cmo = cand_msg_overlap(L, mols, ms["key_tv"])
     mols = mols[["set", "molecule_id", "type", "inchikey14", "key", "n_i", "n_L", "n_cat_r", "n_jobs",
                  "msg_overlap", "msg_overlap_all"]].sort_values(["set", "molecule_id"]).reset_index(drop=True)
     out_dir.mkdir(parents=True, exist_ok=True)
@@ -251,7 +283,7 @@ def stage_list(root: Path, out_dir: Path, workers: int) -> dict:
         os.replace(tmp, out_dir / f"{name}.parquet")
     n_uniq = int(jobs[["smiles", "adduct", "instr", "ce"]].drop_duplicates().shape[0])
     man = dict(
-        n_mols=len(mols), n_L=int(len(L)), n_jobs=int(len(jobs)), n_jobs_unique_smiles_cat=n_uniq,
+        part=part, n_mols=len(mols), n_L=int(len(L)), n_jobs=int(len(jobs)), n_jobs_unique_smiles_cat=n_uniq,
         n_query_spectra=n_spec, n_mols_no_cov=int((mols.n_cat_r == 0).sum()),
         n_mols_no_L=int((mols.n_L == 0).sum()), shard_size=SHARD_SIZE,
         n_shards=len(shard_bounds(len(jobs), SHARD_SIZE)),
@@ -259,6 +291,7 @@ def stage_list(root: Path, out_dir: Path, workers: int) -> dict:
                          by_type={t: dict(n=int((mols.type == t).sum()), n1=int(mols.msg_overlap[mols.type == t].sum()))
                                   for t in sorted(mols.type.unique())},
                          msg_rows=ms["n_rows"], msg_smiles=ms["n_smiles"], msg_key_none=ms["n_key_none"]),
+        cand_msg_overlap_tv=cmo,
         inputs={p: sha256(root / p) for p in (DEV_B8, PER_MOL, DEV_LIST, MSG)},
         outputs={f"{n}.parquet": sha256(out_dir / f"{n}.parquet") for n in ("jobs", "molecules")},
         seconds=round(time.time() - t0, 1))
@@ -316,7 +349,8 @@ def stage_run(out_dir: Path, pkg: Path, site: Path, threads: int, max_shards: in
     jp = out_dir / "jobs.parquet"
     assert sha256(jp) == man["outputs"]["jobs.parquet"], "jobs.parquet が manifest と違う"
     jobs = pd.read_parquet(jp, columns=["row", "smiles", "adduct", "instr", "ce"])
-    assert len(jobs) == man["n_jobs"] == EXPECTED_N_JOBS
+    part = man.get("part", "pool")             # #242 の manifest には part が無い（= pool）
+    assert len(jobs) == man["n_jobs"] == EXPECTED[part]["n_jobs"]
 
     def log(*x):
         print(time.strftime("%H:%M:%S"), *x, flush=True)
@@ -336,10 +370,12 @@ def main(argv=None) -> None:
     ap.add_argument("--threads", type=int, default=0)
     ap.add_argument("--workers", type=int, default=6)
     ap.add_argument("--max-shards", type=int, default=None, help="この回に予測する shard の上限（完了済みは数えない）")
+    ap.add_argument("--part", choices=tuple(EXPECTED), default="pool",
+                    help="list で選ぶ行: pool = is_tier 0（#242）、tier = is_tier 1 の全行（#268）")
     a = ap.parse_args(argv)
     out = a.out_dir.resolve()
     if a.stage == "list":
-        stage_list(a.root.resolve(), out, a.workers)
+        stage_list(a.root.resolve(), out, a.workers, a.part)
     else:
         assert a.pkg and a.site
         stage_run(out, a.pkg.resolve(), a.site.resolve(), a.threads, a.max_shards)
