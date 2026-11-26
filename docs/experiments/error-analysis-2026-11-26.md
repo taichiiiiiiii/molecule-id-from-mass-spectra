@@ -10,10 +10,11 @@ Issue #257（親 #255・#228・#195 B9）、計画 plan_2026-11-26_noon.md 項�
 
 - 群 R（式 (8) の相対化 25 列＋cc_z）、外した列の一覧の sha256 `57cb7535…668f275`
 - 群 M（`mf_*` 13 列＋`mf_*_dmean` 13 列）、sha256 `c5f6d497…3a45`
-- 群 N（`np_score`・`has_np`）、sha256 `6c2f959f…a76db`。`np_score_*` の相対化 5 列は群 R なので exp006 には残る（生の値 2 列の効果）
-- 「exp003 − cc・cc_z」は exp002 と特徴・行・seed が同じなので回さず、exp002 を使う
+- 群 N（`np_score`・`has_np`）、sha256 `6c2f959f…a76db`。`np_score_*` の相対化 5 列は群 R なので exp006 には残る（生の値 2 列の効果）。ただし `has_np` は dev_b8_cc の全 430,979 行で定数（標準偏差 0）なので、中身が効くのは実質 `np_score` の 1 列（完了レビュー minor）
+- 「exp003 − cc・cc_z」は exp002 と特徴・行・seed が同じなので回さず、exp002 を使う。exp002 の表のファイルは cc 列の無い dev_b8.parquet（sha256 609de988…）で exp003 の dev_b8_cc.parquet（304f50c3…）とは別だが、行数・分子の一覧・正解の行の数は同じ（`--compare` は分子の一覧の一致を確かめて通る）
 - 群と引数: `scripts/ranker/feature_groups.py`（`--check` で重なり 0・exp003 の列に含まれることを確かめる）、当てはめ `scripts/ranker/run_group_ablation.sh`（memguard の下で 1 本ずつ）。当てはめは commit 10eceda、評価は 3af07b4（exp004・exp005）と e07fc38（exp006）、どれも dirty なし。当てはめのコード（lambdarank_oof.py）は 3 つの commit で同じ
-- 資源: 当てはめ 15.6 / 15.5 / 15.6 分、peak RSS 1.71 / 1.74 / 2.04 GB、swap 6.68 → 6.56 GB（開始 → 終了）
+- 誤り分析（§2）は exp004 の当てはめと時間が重なって走った（どちらも CPU、memguard の下は当てはめだけ、空き 86%）。結果への影響は無い
+- 資源: 当てはめ 15.6 / 15.5 / 15.5 分（934 / 927 / 928 秒）、peak RSS 1.71 / 1.74 / 2.04 GB、swap 6.68 → 6.56 GB（開始 → 終了）
 
 台帳 `docs/experiments/experiments.csv` の値（対照 = score,prior,frag の出力。12/6 の基準 score,prior とは別物。型 c・e の対照はプールだけの並びなので 0）:
 
