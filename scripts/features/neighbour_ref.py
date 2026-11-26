@@ -100,7 +100,7 @@ def topk_neighbours(cand: np.ndarray, ref_packed: np.ndarray, avail: np.ndarray,
             best_idx[c0:c1] = np.take_along_axis(alli, o, 1)
     valid = np.isfinite(best_key)
     idx = np.where(valid, best_idx, -1)
-    # 返す Tanimoto は選んだ近傍について float64 で作り直す（選ぶときの値と同じ式。点検を兼ねる）
+    # 返す Tanimoto は選んだ近傍について float64 で作り直す（選ぶときの値と同じ式）
     tani = np.full((n, k), np.nan)
     for i in range(n):
         js = idx[i][valid[i]]
