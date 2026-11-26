@@ -154,3 +154,20 @@ def test_unregistered_extra_name_still_stops():
         LR.resolve_features((), ("src_gap_fz", "src_gap_mf"))      # 登録外の名前
     with pytest.raises(LR.HarnessError):
         LR.check_columns(list(LR.ID_COLS) + list(LR.FEATURES) + ["n_tier_raw"], ())   # 表に知らない列
+
+
+def test_top1_source_matches_evaluate_order():
+    import evaluate as EV
+    import top1_source as TS
+    oof = pd.DataFrame(dict(row=np.arange(6), set=["s"] * 3 + ["t"] * 3, molecule_id=["m"] * 3 + ["n"] * 3,
+                            type=["a"] * 3 + ["c"] * 3, score=[1.0, 2.0, 2.0, 0.5, 0.1, 0.9],
+                            cand_key=list("ABCDEF"), cand_smiles=list("ABCDEF")))
+    is_tier = np.array([0, 1, 0, 0, 1, 1])
+    top = TS.top1_rows(oof)
+    lists = EV.ranked_lists(oof)
+    for r in top.itertuples():
+        assert lists[(r.set, r.molecule_id)][0] == oof.cand_smiles[r.row]   # 同点は row の順（B が先）
+    pm = pd.DataFrame(dict(set=["s", "t"], molecule_id=["m", "n"], rr=[1.0, 0.5]))
+    c = TS.count(top, is_tier, pm)
+    assert c["a"] == dict(n_molecules_with_rows=1, top1_tier=1, top1_pool=0, top1_tier_correct=1, top1_pool_correct=0)
+    assert c["c"]["top1_tier"] == 1 and c["c"]["top1_tier_correct"] == 0
