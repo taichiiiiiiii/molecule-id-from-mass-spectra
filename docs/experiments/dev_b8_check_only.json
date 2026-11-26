@@ -1,0 +1,49 @@
+{
+  "table": "/Users/taichi/work/molecule-id-dev/outputs/local_eval/features/dev_b8.parquet",
+  "mode": "check-only",
+  "columns": {
+    "n_columns": 71,
+    "n_expected": 71,
+    "n_features": 63,
+    "missing": [],
+    "extra": [],
+    "forbidden": [],
+    "duplicated": []
+  },
+  "non_numeric_features": [],
+  "rows": {
+    "n_rows": 430979,
+    "n_molecules": 3901,
+    "n_sets": 20,
+    "folds": [
+      1,
+      2,
+      3,
+      4
+    ],
+    "types": [
+      "a",
+      "b",
+      "c",
+      "d",
+      "e"
+    ],
+    "molecules_per_type": {
+      "a": 789,
+      "b": 787,
+      "c": 788,
+      "d": 745,
+      "e": 792
+    },
+    "molecules_per_fold": {
+      "1": 974,
+      "2": 975,
+      "3": 975,
+      "4": 977
+    }
+  },
+  "missing_files": [],
+  "truth_id_mismatch_sets": [],
+  "features_sha256": "d3434e6a92918e6cc0544fd9f4e4dd609fbddf43e6c90ebb045ad981bee83e79",
+  "note": "学習なし・点なし。正解の SMILES と特徴の値は読んでいない（truth.csv は molecule_id 列だけ）"
+}
