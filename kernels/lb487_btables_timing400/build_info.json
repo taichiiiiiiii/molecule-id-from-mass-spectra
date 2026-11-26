@@ -1,0 +1,40 @@
+{
+ "frozen_sha_old": "d1e757c2b71b46e6e8a5777f14302a4737d0fdbcd56d8365093c039b93c5fd88",
+ "frozen_sha_new": "f59a6748f2ae16cb79a31190bb6b49a7a8aeca4353b12f463521b70876c28855",
+ "changed_frozen_cell": 32,
+ "changed_outer_cells": [
+  5,
+  12
+ ],
+ "changed_metadata": [
+  "casmi.frozen_source_sha256",
+  "casmi.upstream_casmi_metadata.frozen_source_sha256"
+ ],
+ "kernel_source": "taichiiiii/casmi26-engine2-build-b-run1",
+ "sim_rel": "own/own_sim_rank_rows.npz",
+ "sim_sha": "9ee9011314e158ef410e499368137e96aec8eafc13d3999594cfa70b3650d013",
+ "sim_size": 90404186,
+ "rt_rel": "own/own_rank_train.npz",
+ "rt_sha": "74c0a37545d8c3cc578ef14d24ac79cfc1c9cbdae7eb65fe8c76ccf4633bf269",
+ "rt_size": 63410966,
+ "dataset_sources": [
+  "samartalwar/casmi-2026-spectral-library-massbankharmonized",
+  "sanpier/casmi-spectrum-model-v1",
+  "dmitriigluzdov/casmi26-fold-safe-fpnet",
+  "dmitriigluzdov/casmi26-natural-product-knowledge-table",
+  "dmitriigluzdov/casmi26-natural-product-panel-benchmark",
+  "dmitriigluzdov/casmi26-pubchem-popularity-prior",
+  "dmitriigluzdov/casmi26-attributed-v4g-reproduction-assets",
+  "takumuhata/casmi26-extlib",
+  "sanpier/catalogue-experiment-saner",
+  "metric/rdkit-2026-3-3-wheel"
+ ],
+ "kernel_sources": [
+  "popwenman/casmi26-scorer-train-v80",
+  "taichiiiii/casmi26-engine2-build-b-run1"
+ ],
+ "push_source_bytes": 834808,
+ "timing_only": true,
+ "smoke_n": 400,
+ "do_not_submit": "時間測定の版。提出しない（凍結セル 30 が提出版と違う）"
+}
