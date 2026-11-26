@@ -14,16 +14,16 @@
 ## 1. 出典（今回開いて読んだもの）
 
 1. **MetFrag 2.4.5（統計学習の断片の注釈）** — Ruttkies C, Neumann S. "Improving MetFrag with statistical learning of fragment annotations". BMC Bioinformatics 20, 376 (2019). doi:10.1186/s12859-019-2954-7 、PMC6612146
-   - 確認: Europe PMC の全文 XML（https://www.ebi.ac.uk/europepmc/webservices/rest/PMC6612146/fullTextXML 、2026-11-27 05:5x JST に取得、92,914 字）。読んだ: 要旨、Methods の「断片の構造の指紋」「m/z の区切り」「平均事後（MP）推定」「断片の損失」「候補の点」、学習の 2 段、Table 1 の陰性モードの 10 行、Table 2、Availability。#124 では方法の前半までしか読めていなかった部分
-   - 読んでいない: Fig. 3〜6 の図そのもの、Additional file、陽性モードの Table 1 の全行
+   - 確認: Europe PMC の全文 XML（https://www.ebi.ac.uk/europepmc/webservices/rest/PMC6612146/fullTextXML 、2026-11-27 05:5x JST に取得、92,914 字）。読んだ: 要旨、Methods の「断片の構造の指紋」「m/z の区切り」「平均事後（MP）推定」「断片の損失」「候補の点」、学習の 2 段、Table 1 の陰性・陽性モードの各 10 行、Table 2、Availability。#124 では方法の前半までしか読めていなかった部分
+   - 読んでいない: Fig. 3〜6 の図そのもの、Additional file
    - ライセンス: 論文は CC BY 4.0（全文の permissions の文「provide a link to the Creative Commons license」と、#124 の記録）。コードは https://github.com/ipb-halle/MetFragRelaunched の branch `feature/statistical_scoring`（本文の Availability、確認）。リポジトリにライセンスのファイルが見当たらないこと（#124 の記録、今回は取り直していない）から、**コードは写さず、式だけから自前で書く**。学習に使ったスペクトルの一覧 https://github.com/c-ruttkies/metfrag_statistical_annotation は開いていない（未確認）
 2. **MARASON** — Wang R, Wang R-X, Manjrekar M, Coley CW. "Neural Graph Matching Improves Retrieval Augmented Generation in Molecular Machine Learning". arXiv:2502.17874v2（2025-07-03 改訂）. https://arxiv.org/abs/2502.17874 、doi:10.48550/arXiv.2502.17874
    - 確認: HTML 版 https://arxiv.org/html/2502.17874v2 を `curl -sL -A Mozilla` で取り、タグを除いて読んだ（68,570 字）。読んだ: 貢献の節、Table 1 の説明、検索の設定（§4.2.2 の前段）、Table 3（アブレーション）、§4.2.2・§4.2.3・§4.2.4・§4.2.6
    - 読んでいない: §3 の式の細部、付録の Table 5〜7 の数値
-   - ライセンス: arXiv の abs ページの license のリンクが `licenses/by-sa/4.0/`（CC BY-SA 4.0、確認）。コードは本文に「publicly available at https://github.com/coleygroup/ms-pred」（確認）。ms-pred は MIT（#118・#124 の記録、今回は取り直していない）。本文の主な重みは NIST20 で学習（**NIST 由来の重みは競技の規則 750330 で不可**）。MassSpecGym で学習し直したとある（§4.2.3、確認）が、その重みの配布は未確認
+   - ライセンス: arXiv の abs ページの license のリンクが `licenses/by-sa/4.0/`（CC BY-SA 4.0、確認）。コードは本文に「publicly available at https://github.com/coleygroup/ms-pred」（確認）。ms-pred は MIT（#118・#124 の記録、今回は取り直していない）。本文の主な重みは NIST20 で学習（**NIST 由来の重みは競技の規則 750330 で不可**）。MassSpecGym で学習し直したとある（§4.2.3、確認）が、衝突エネルギーの無いスペクトルには **NIST で事前学習したモデルで擬似ラベル**を付けている（同、確認）ので、MassSpecGym 版も NIST 由来を含む。その重みの配布は未確認
 3. **ICEBERG** — Goldman S, Li J, Coley CW. "Generating Molecular Fragmentation Graphs with Autoregressive Neural Networks". arXiv:2304.13136v2. https://arxiv.org/abs/2304.13136
    - 確認: HTML 版 https://arxiv.org/html/2304.13136v2（93,937 字）。今回読んだ: §3.3 の断片の例（切れやすい結合）、§3.4（異性体の検索）。#118 で読んだ retrieval の節を、入力の観点で読み直した
-   - ライセンス: 論文 CC BY-NC-SA 4.0（#118 の記録。今回の HTML からは license のリンクを取れなかった、未確認）。コード ms-pred（MIT、同上）。ICEBERG・GLACIER の MassSpecGym 版は主催者が名指しで承認（744338・745841、`glacier-iceberg-provenance.md` の記録）。GLACIER は項目 2（#268）で既に特徴にしている途中
+   - ライセンス: 論文 CC BY-NC-SA 4.0（HTML 版の本文に「License: CC BY-NC-SA 4.0」、確認）。コード ms-pred（MIT、同上）。ICEBERG・GLACIER の MassSpecGym 版は主催者が名指しで承認（744338・745841、`glacier-iceberg-provenance.md` の記録）。GLACIER は項目 2（#268）で既に特徴にしている途中
 4. 公開ノート 2 本（§2）と、その `dataset_sources` の dataset のメタデータ（`kaggle datasets metadata`、05:5x JST）
 
 既に別の文書で読んだもの（今回は開いていない）: CFM-ID 4.0（`fragment-isomer-ranking.md` 出典 5）、MetFrag 2.2（同 出典 2）、MIST（`gems-isomer-search.md` 出典 4）、MS2Query（`ranker-input-features.md` 出典 1、群 N1 の元）。
@@ -41,13 +41,13 @@
 ### MARASON（出典 2）
 - 入力（確認）: 予測したい候補の構造ごとに、学習のライブラリから似た構造（参照）を取り、ICEBERG の断片化で**参照のスペクトルのピークに断片を注釈**し、候補の断片と参照の断片を神経グラフ照合で対応づけ、参照の強度を候補の強度の予測に使う（retrieval-augmented）
 - アブレーション（主張、Table 3、NIST20 random split、cosine）: RAG 無し 0.739、参照のスペクトルを入力に連結 0.737（−0.3%）、Hungarian 0.746、RRWM 0.742、NGM Softmax（GNN を分ける）0.757（+2.4%）
-- 異性体の検索（主張、§4.2.2、Table 1、NIST20、正解 1 + PubChem の Tanimoto の高い異性体 49）: top-1 は ICEBERG 18.7% → 衝突エネルギーつき ICEBERG 20.2% → MARASON 27.8%。著者は「改善の大半は RAG による」と書く。MassSpecGym（§4.2.3）では FraGNNet 31.93% → 34.03%
+- 異性体の検索（主張、§4.2.2 の本文、NIST20、正解 1 + PubChem の Tanimoto の高い異性体 49。Table 1 の ICEBERG の行は 0.189 ± 0.012）: top-1 は ICEBERG 18.7% → 衝突エネルギーつき ICEBERG 20.2% → MARASON 27.8%。著者は「改善の大半は RAG による」と書く。MassSpecGym（§4.2.3）では FraGNNet 31.93% → 34.03%
 - 参照の近さ（主張、§4.2.6、Table 4）: 参照の Tanimoto が 0.3 を超えると RAG の利得がはっきりし、0.1〜0.3 では有意な利得が無い
 - この競技との関係（推定）: 「近い構造の参照スペクトルで、断片ごとの強度を借りる」は、群 N1（`neighbour-reference-features.md`、近傍の参照と問い合わせの一致）が分子単位でやっていることを、**断片単位**にしたもの。MARASON そのものは NIST の重みが不可、学習し直すと GPU の学習になる（G8 で新しいネットは入れない決まり）。考え方だけを下の H3 群の作り方（学習の参照の断片の統計）に使う
 
 ### ICEBERG（出典 3）
 - 入力（確認、§3.3）: 原子を 1 つずつ外す断片の DAG と、断片ごとの水素の移動に応じた複数の強度。図の例の読みとして「C–O・C–N の結合は、C–C や環の開裂よりも切れやすい」と書く（定性的な観察で、数の表は無い）
-- 異性体の検索（主張、§3.4、#118 と同じ）: PubChem の Tanimoto の高い異性体 49 を候補に、NPLIB1 で top-1 が次点より 9 ポイント上（相対 46%）。NIST20 の top-1 は MassFormer と同じ。CASMI22 陽性 303 で 12.9%（次点 NEIMS 8.6%）
+- 異性体の検索（主張、§3.4、#118 と同じ）: PubChem の Tanimoto の高い異性体 49 を候補に、NPLIB1 で top-1 が次点より 9 ポイント上（相対 46%）。NIST20 の top-1 は MassFormer と同じ。CASMI22 陽性 303 は**候補の設定が違い**（PubChem の全異性体、付録 S1.1）、12.9%（次点 NEIMS (FFN) 8.6%。本文によれば CFM-ID の参加の結果も 26/303 = 8.6%）
 - この競技との関係: GLACIER（ICEBERG と同じ ms-pred の、断片を列挙しない版）の予測との一致は項目 2（#268）で特徴にする途中なので、H3 群は**それと重ならない**入力にする
 
 ### まとめ（3 本から言えること、推定）
@@ -80,14 +80,17 @@
 | NPX（天然物らしさの LightGBM、ノートの中で学習） | セル 21 | セル 21 | 構造（学習） | ノートの中 | 同上 | 可 |
 | E180X（enveda-180 などの合成の構造を下げる） | セル 22 | セル 22 | 構造（規則） | ノートの中 | 同上 | 可 |
 | P5 Tail の後に FR 3-25（順番の入れ替え） | セル 17・18 | セル 17・18（`RUN_FR325_AFTER_P5 = True`） | 規則の順番（構造）、`FR325_W = 3.0` は定数 | FR の学習コードは fr3to25-clean にある（`lineage-reproducibility.md` の記録） | CC BY-NC-SA 4.0（同） | 可 |
-| romanrozen の同式異性体リランカー（`V8`） | セル 13、`V8 = 'MASS'`（切ってある） | `V8 = 'MASS'`（コメント「destructive RR8 isomer reranker OFF」） | — 使っていない | 見つからない（#80 の記録） | — | — |
+| romanrozen の同式異性体リランカー（`V8`） | セル 0 で `V8 = 'MASS'`（RR8 を切る。lb495 と同じ値で、追加ではない） | セル 0 で `V8 = 'MASS'`（コメント「destructive RR8 isomer reranker OFF」） | — 使っていない | 見つからない（#80 の記録） | — | — |
 | Dual-Mode Mass Sync（陽・陰の両方がある分子で中性の質量をそろえ、2〜25 位を並べ替え） | 無し | セル 15 | 構造（規則） | ノートの中 | 同上 | 可 |
-| ExtLib Tier-2（0.72 ≤ cos < 0.80 を 2 位に差し込む） | 無し（`EXTLIB_TIER2_TAU` の語が無い） | セル 16、0.72 | 規則は既知（#80 の ozertuu 版 21 と同じ）、0.72 は定数 | ノートの中 | ExtLib は既知（部品表 21・22） | 可 |
-| LOTUS の候補（149,983 構造） | 無し | セル 12・22 など | 構造（候補源）、既知（部品表 23） | README に作り方（#80 の記録） | CC0-1.0 | 可 |
+| ExtLib Tier-2（0.72 ≤ cos < 0.80 を 2 位に差し込む） | セル 15、`TIER2_TAU = 0.72`（lb495 には無い） | セル 16、`EXTLIB_TIER2_TAU` 0.72 | 規則は既知（#80 の ozertuu 版 21 と同じ）、0.72 は定数 | ノートの中 | ExtLib は既知（部品表 21・22） | 可 |
+| ExtLib の質量の点検（照合した構造の精密質量が分子と合わなければ外す） | セル 15、`_ext_mass_ok`（lb495 には無い） | セル 16 の `_exact_mw`（RDKit の `CalcExactMolWt`）による点検。許容 15 ppm は markdown セル 24 の記述で、コードの値は確かめていない | 構造（既存チャネルの照合の直し）、15 ppm は定数 | ノートの中 | 同上 | 可 |
+| N-1c の分子ネットワーク（test の中の近いスペクトルの分子の候補で並べ替え） | セル 14 `_NNET_NOTEBOOK`（lb495 のセル 14 と同じ部品。lib・mass・steps・lock1 の切り替えつき） | `_NNET_NOTEBOOK` は無く、セル 13 の Omni-Adduct N-1c（全付加イオン、同じ付加イオンの中だけで辺、timsTOF の質量の守り、`ENABLE_N1C = True`、`N1C_LAM = 0.35`）とセル 14 の D-L1（train.parquet の既知構造の錨・編集の質量差の妥当さ・2 段の伝播、2〜25 位、`ENABLE_N1C_DL1 = True`）に置き換え | lb495 にある部品の作り直し。付加イオンを広げたのと質量の守りは構造（規則）、0.35 などは定数。D-L1 は train の参照の構造と質量の編集を使うので、同じ式の候補の並びも動かしうる | ノートの中 | 同上 | 可 |
+| CES-FSE・TAP-SV（衝突エネルギー別のエントロピー類似度、互変異性をまとめた骨格の投票） | 無し（セル 15 の `CES` の一致は `SUCCESS` の一部だった） | セル 16 に関数がある。`ENABLE_EXTLIB2 = False` で、効いているかは確かめていない（未確認） | 構造（候補）だが有効かは未確認 | ノートの中 | 同上 | 可 |
+| LOTUS の候補（149,983 構造） | セル 12 に `candidates_lotus.parquet` を探して空き枠を埋めるコードはあるが、dataset が添付されていないので動かない（lb495 と同じ） | dataset を添付（セル 12・22 など） | 構造（候補源）、既知（部品表 23） | README に作り方（#80 の記録） | CC0-1.0 | 可 |
 | quantum-sim-linalg-cache | 無し | セル 1 で名前を print するだけ | 機能なし（別の競技の dataset。こちらの読みでは何の計算にも使っていない） | — | CC0-1.0 | — |
 
 読み（推定）:
-- 2 本とも、0.495 → 0.509 の差は「候補源（仮想 NP 層）」と「事前分布・規則の段（APRIOR・UNIQ・NPX・E180X）」から来ている。**同じ式の異性体を並べ替える新しい証拠（断片の証拠）は、FR 3-25（既に 0.495 にある）以外に足されていない**。romanrozen の異性体リランカーはどちらも切ってある
+- 2 本とも、0.495 → 0.509 の差は「候補源（仮想 NP 層）」と「事前分布・規則の段（APRIOR・UNIQ・NPX・E180X）」と ExtLib の照合の直し（Tier-2・質量の点検）から来ている（作者の記述からの推定）。**断片から異性体を分ける新しい証拠は、FR 3-25（既に 0.495 にある）以外に見当たらない**。ただし B の N-1c・D-L1（lb495 の部品の作り直し）は、train の参照の構造と分子ネットワークで同じ式の候補の並びも動かしうるので、「異性体の並びを動かす段が無い」とは言えない。romanrozen の異性体リランカーはどちらも切ってある
 - 仮想 NP 層は計画（11/27 夜 計画の「採らなかった候補」）で analog-edit と同じ系統として却下済み。A の記録でも「弱い群（ライブラリの一致 0.825 未満など）では層の上位 25 が 0.000」と書かれている（主張）
 - APRIOR・NPX・E180X は「ノートの中で学習・計算するので自前のコードで作り直せる」形。ただし分子の事前分布で、異性体の断片の証拠ではない（H3 の答えではない）。採るかは H3 と別の話で、この文書では決めない
 - 盤面の差: A の作者自身が「一つの値の変更の利得は 1〜2 分子（0.004/分子）」と書く。公開の区分の SE（約 0.035、`kaggle-improvement-loop` の記録）より小さい差は根拠にしない
@@ -120,11 +123,12 @@
 
 ### 4.3 作り方（自前のコード、既定の定数）
 - 断片: MetFrag-lite と同じ「0〜2 本の結合を切った連結成分」（2 本切りは結合 ≤ 100 の分子だけ、`fragment_levels` の `max_bonds_2=100` と同じ）を、**原子の集合**で列挙し、成分の正準 SMILES（RDKit `MolFragmentToSmiles`、水素は書かない）を断片の名前 f とする。MetFrag-lite の `frag_rescore.py` は断片の質量しか返さないので、列挙は新しく書く（`frag_rescore.py` は data/ext の外部のファイルなので変えない）
-- m: ピークに合った断片の**分子式**と、電荷の担い手・水素の移動 dh の組（MetFrag 2.4.5 が m を断片の式の質量に直してから区切るのと同じ意味。式で持てば区切りの幅の定数が要らない）。照合の許容と dh は MetFrag-lite の `DEFAULT_CFG` のまま
-- 数え上げ N_mf: train の参照スペクトル（構造ごとに先頭 16 本まで、`QUERY_CAP` と同じ）について、**その参照の正解の構造**の断片で説明できたピークの (m, f) を数える。fold ごとの数 N_mf^(fold) と、構造ごとの寄与を持っておく
-- fold-safe と隠す規則: dev の問い合わせ（fold k）には Σ_{j≠k} N^(j) を使う。さらに集合の `hide_rule.json`・`drop_keys.txt` で隠す参照の分を引く（raw の inchikey14 と正準の鍵の両方、N1 と同じ厳しい側）。12/6 の holdout は fold 0 を除く数、提出は全 train
-- **自分の構造の分を除く（own-out）**: 候補 c が train の構造なら、c 自身の参照の寄与を N から引いてから θ を計算する。正解・偽物のどちらにも同じ規則を当てる（参照のある構造だけが自分の (m, f) で有利になるのを防ぐ。出典 1 の著者も 70:30 の分け方で同じ点を避けている。`lib_max_sim` で起きた「学習では偽物だけが占める領域」の型の偏りを避ける狙い）
-- θ の推定: θ_mf = (N_mf + α) / (Σ_f' N_mf' + α·|F_m| + β)、⊥ には β/(…)。|F_m| は m で観測された断片の種類の数（候補の断片が未観測なら |F_m| に 1 を足す）。**α = 0.0001、β = 0.0025**（出典 1 の Table 1 陰性モード 10 行の α・β の最頻値。dev で動かさない。論文の陽性モードの行は全部は読んでいない）
+- m: m/z の区切り（bin）。出典 1 の b_{i+1} = b_i + 2·(mzppm + mzabs) を mzppm = 0、mzabs = MetFrag-lite の `DEFAULT_CFG` の tol（0.005 Da）で使い、幅 0.01 Da の等間隔の bin（b_0 = 0）。**問い合わせの側では、観測ピークの m/z をそのまま bin に入れる**ので、m はピークごとに 1 つで、全候補に共通（⊥ の θ もこの m で決まる）。**学習の側では**、出典 1 と同じく、合った断片のイオンの精密質量（断片の式 + 電荷の担い手 + dh・H）に直してから bin に入れる。照合の許容 0.005 Da と dh（−2〜+3）は `DEFAULT_CFG` のまま
+- 数え上げ N_mf: train の参照スペクトル（構造ごとに先頭 16 本まで、`QUERY_CAP` と同じ）について、**その参照の正解の構造**の断片で説明できたピークの (m, f) を数える。1 つのピークに複数の断片が合うときは、切断の数の少ないものを、それでも複数なら f の文字列順で最初のものを 1 つだけ数える（こちらの決め）。fold ごとの数 N_mf^(fold) と、構造ごとの寄与を持っておく
+- fold-safe と隠す規則: dev の問い合わせ（fold k、k = 1〜4）には Σ_{j≠k} N^(j) を使う。fold 0（12/6 の holdout の fold）の参照を dev の数に入れるかは、ほかの群（N1 など）の dev の扱いに合わせて、値を見る前に定義の Issue で固定する（この文書では決めない）。さらに集合の `hide_rule.json`・`drop_keys.txt` で隠す参照の分を引く（raw の inchikey14 と正準の鍵の両方、N1 と同じ厳しい側）。12/6 の holdout は fold 0 を除く数、提出は全 train
+- **自分の構造の分を除く（own-out）**: 候補 c が train の構造なら、c 自身の参照の寄与を N から引いてから θ を計算する。「自身」は raw の inchikey14 と正準の鍵の両方で数え、同じ正準の鍵に写る別名（互変異性体）の構造の寄与も引く。正解・偽物のどちらにも同じ規則を当てる（参照のある構造だけが自分の (m, f) で有利になるのを防ぐ。出典 1 の著者も 70:30 の分け方で同じ点を避けている。`lib_max_sim` で起きた「学習では偽物だけが占める領域」の型の偏りを避ける狙い）
+- θ の推定: θ_mf = (N_mf + α) / (Σ_{f'∈F_m} N_mf' + α·|F_m| + β)、θ_m⊥ = β / (同じ分母)（出典 1 と同じく N_m⊥ = 0）。F_m は bin m で学習に現れた断片の名前の集合（候補の断片が F_m に無ければ 1 つ足す）。**α = 0.0001、β = 0.0025**（出典 1 の Table 1 の α・β の最頻値。陽性モードは α が 10 行すべて 0.0001、β は 0.0025 が 5/10。陰性モードも α 0.0001 が 5/10、β 0.0025 が 5/10 で、両モードで同じ値。dev で動かさない）
+- **出典 1 からの変更（こちらの決め）**: (1) 出典 1 の分母は断片の指紋の全体 F̃ にわたる和で、案は bin ごとの F_m にわたる和。(2) 出典 1 の f は断片の構造の指紋（Circular など、似た断片が同じ指紋になりうる）で、案の f は断片の正準 SMILES（完全に同じ部分構造だけが同じ）。(3) 1 つのピークに複数の断片が合うときの選び方（数え上げは切断の少ないもの、点は θ が最大のもの）。α・β は出典 1 の正規化の下で選ばれた値なので、案では意味が少し変わる。それでも定数はそのまま使う（dev で動かさない）
 - 欠け: 問い合わせのスペクトルにピークが無い分子は全列 0、`pfs_seen_frac` は NaN にせず 0（`cc` と同じ扱い）。SMILES が読めない候補は全ピーク ⊥
 - 学習・ハイパラ: 無い（数え上げと既定の pseudo count だけ）。LightGBM lambdarank は既定のまま
 
