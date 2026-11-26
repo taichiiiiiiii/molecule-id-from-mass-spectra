@@ -42,3 +42,18 @@ def test_cli_writes_csv(tmp_path):
     assert '"mrr25": 0.25' in r.stdout
     with open(o) as f:
         assert list(csv.reader(f)) == [["molecule_id", "rr"], ["m1", "0.5"], ["m2", "0.0"]]
+
+
+def test_empty_truth_rejected():
+    with pytest.raises(ValueError):
+        P.per_molecule_rr({}, {})
+
+
+def test_cli_rejects_extra_ids(tmp_path):
+    t = tmp_path / "truth.csv"
+    t.write_text(f"molecule_id,inchikey\nm1,{A}\n")
+    s = tmp_path / "sub.csv"
+    s.write_text(f"molecule_id,smiles\nm1,{A}\nm9,{B}\n")
+    r = subprocess.run([sys.executable, "-O", str(ROOT / "scripts/local_eval/per_mol_rr.py"), "--truth", str(t),
+                        "--pred", str(s), "--out", str(tmp_path / "rr.csv")], capture_output=True, text=True)
+    assert r.returncode != 0 and "truth に無い" in r.stderr

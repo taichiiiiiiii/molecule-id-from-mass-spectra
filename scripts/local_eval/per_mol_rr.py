@@ -33,6 +33,8 @@ def _mrr25():
 
 def per_molecule_rr(truth: dict[str, str], preds: dict[str, list[str]]) -> list[tuple[str, float]]:
     M = _mrr25()
+    if not truth:
+        raise ValueError("truth が空です")
     out = []
     for mid, t in truth.items():
         cands = preds.get(mid, [])
@@ -41,7 +43,8 @@ def per_molecule_rr(truth: dict[str, str], preds: dict[str, list[str]]) -> list[
         out.append((mid, M.reciprocal_rank(M.truth_keys(t), cands, M.TOP_K)))
     mean = sum(r for _, r in out) / len(out)
     ref = M.calculate_mrr25(truth, preds)
-    assert abs(mean - ref) < 1e-12, (mean, ref)
+    if abs(mean - ref) >= 1e-12:
+        raise RuntimeError(f"rr の平均 {mean} が calculate_mrr25 {ref} と一致しない")
     return out
 
 
@@ -55,7 +58,8 @@ def main() -> None:
     truth = M.read_truth(a.truth)
     preds = M.read_submission(a.pred)
     extra = set(preds) - set(truth)
-    assert not extra, f"truth に無い molecule_id が {len(extra)} 件"
+    if extra:
+        raise SystemExit(f"truth に無い molecule_id が {len(extra)} 件")
     rows = per_molecule_rr(truth, preds)
     out = Path(a.out)
     out.parent.mkdir(parents=True, exist_ok=True)
