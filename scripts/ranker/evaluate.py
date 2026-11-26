@@ -87,25 +87,85 @@ def evaluate_types(per_mol: pd.DataFrame, required=TYPES) -> dict:
     return out
 
 
-def build_per_molecule(oof: pd.DataFrame, eval_root: Path) -> pd.DataFrame:
-    """OOF の点と対照の CSV から、分子ごとの rr と rr_ctrl。正解の分子の一覧と OOF の分子の一覧が違えば止める。"""
+def build_per_molecule(oof: pd.DataFrame, eval_root: Path, rows_mode: str = "all", eval_ids: set | None = None,
+                       sets: dict | None = None) -> pd.DataFrame:
+    """OOF の点と対照の CSV から、分子ごとの rr と rr_ctrl（列 has_rows: OOF に行があるか）。
+
+    - 評価の一覧（eval_ids: "set\tmolecule_id" の集合、#255）が無ければ、評価の分子 = 各集合の truth の全分子
+    - rows_mode = "all": OOF の分子 ⊇ 評価の分子でなければ止める（一覧が無ければ今までどおり一致を求める）
+    - rows_mode = "pool": 行の無い分子は rr = 0（外れ）として数える（評価から消さない）
+    - OOF の分子 ⊆ truth でなければ止める。eval_ids ⊆ truth でなければ止める
+    sets（集合 → 型、meta.json の sets）があれば、その集合を全部評価する（OOF に行の無い集合も）。"""
     from mrr25 import read_submission, read_truth
+    if rows_mode not in ("all", "pool"):
+        raise HarnessError(f"rows_mode が不明: {rows_mode}")
     lists = ranked_lists(oof)
-    rows = []
-    for s, sub in oof.groupby("set", sort=True):
-        types = sub["type"].unique()
-        if len(types) != 1:
+    oof_types = oof.groupby("set", sort=True)["type"].unique()
+    for s, ts in oof_types.items():
+        if len(ts) != 1:
             raise HarnessError(f"{s}: 型が 1 つでない")
+    if sets is None:
+        sets = {str(s): str(ts[0]) for s, ts in oof_types.items()}
+    for s, ts in oof_types.items():
+        if str(s) not in sets or sets[str(s)] != str(ts[0]):
+            raise HarnessError(f"{s}: OOF の集合・型が meta の sets と一致しない")
+    oof_ids = set((oof["set"].astype(str) + "\t" + oof["molecule_id"].astype(str)).unique())
+    all_truth: set = set()
+    rows = []
+    for s in sorted(sets):
         f = set_files(eval_root, s)
         truth = read_truth(f["truth"])
-        if set(truth) != set(sub["molecule_id"].astype(str)):
+        all_truth |= {f"{s}\t{m}" for m in truth}
+        have = {m for m in truth if f"{s}\t{m}" in oof_ids}
+        targets = [m for m in truth if eval_ids is None or f"{s}\t{m}" in eval_ids]
+        if eval_ids is None and rows_mode == "all" and have != set(truth):
             raise HarnessError(f"{s}: 正解の分子の一覧と OOF の分子の一覧が一致しない")
+        missing = [m for m in targets if m not in have]
+        if missing and rows_mode != "pool":
+            raise HarnessError(f"{s}: 評価する分子のうち OOF に行の無い分子が {len(missing)}（pool のときだけ rr = 0 で数える）")
         ctrl = read_submission(f["control"])
-        rr = per_molecule_rr(lists, {(s, m): t for m, t in truth.items()})
-        rr_c = per_molecule_rr({(s, m): c for m, c in ctrl.items()}, {(s, m): t for m, t in truth.items()})
-        for m in truth:
-            rows.append(dict(set=s, molecule_id=m, type=str(types[0]), rr=rr[(s, m)], rr_ctrl=rr_c[(s, m)]))
+        tt = {(s, m): truth[m] for m in targets}
+        rr = per_molecule_rr(lists, tt)   # 行の無い分子は lists に無い → rr = 0
+        rr_c = per_molecule_rr({(s, m): c for m, c in ctrl.items()}, tt)
+        for m in targets:
+            rows.append(dict(set=s, molecule_id=m, type=sets[s], rr=rr[(s, m)], rr_ctrl=rr_c[(s, m)],
+                             has_rows=bool(m in have)))
+    if oof_ids - all_truth:
+        raise HarnessError(f"OOF に truth に無い分子が {len(oof_ids - all_truth)}")
+    if eval_ids is not None:
+        if eval_ids - all_truth:
+            raise HarnessError(f"評価の一覧に truth に無い分子が {len(eval_ids - all_truth)}")
+        if len(rows) != len(eval_ids):
+            raise HarnessError("評価の分子の数が一覧と一致しない")
     return pd.DataFrame(rows)
+
+
+LEDGER_REL = "docs/experiments/experiments.csv"
+
+
+def git_commit_mark(root: Path = ROOT) -> str:
+    """HEAD の sha。作業ツリーに台帳以外の変更（未追跡を含む）があれば末尾に -dirty（#255、#248 の minor 6）。"""
+    sha = subprocess.run(["git", "-C", str(root), "rev-parse", "HEAD"], capture_output=True, text=True,
+                         check=True).stdout.strip()
+    st = subprocess.run(["git", "-C", str(root), "status", "--porcelain"], capture_output=True, text=True,
+                        check=True).stdout
+    changed = [ln[3:] for ln in st.splitlines() if ln.strip()]
+    dirty = [c for c in changed if c.strip('"') != LEDGER_REL]
+    return sha + ("-dirty" if dirty else "")
+
+
+def auto_note(meta: dict) -> str:
+    """台帳の note に足す実験の条件（#255）。"""
+    parts = [f"rows={meta.get('rows', 'all')}"]
+    if meta.get("exclude_features"):
+        parts.append("exclude=" + ",".join(meta["exclude_features"]))
+    if meta.get("extra_features"):
+        parts.append("extra=" + ",".join(meta["extra_features"]))
+    for k in ("exclude_train_molecules", "eval_molecules"):
+        r = meta.get(k)
+        if r:
+            parts.append(f"{k}_sha256={r['sha256']}(n={r['n']})")
+    return "; ".join(parts)
 
 
 def experiment_row(exp_id: str, meta: dict, res: dict, note: str, git_commit: str, n_molecules: int) -> dict:
@@ -136,7 +196,7 @@ def append_experiment(path: Path, row: dict) -> None:
     else:
         mode = "w"
     with open(path, mode, newline="") as f:
-        w = csv.DictWriter(f, fieldnames=EXP_COLUMNS)
+        w = csv.DictWriter(f, fieldnames=EXP_COLUMNS, lineterminator="\n")   # #255: 行末は LF
         if mode == "w":
             w.writeheader()
         w.writerow({c: row.get(c, "") for c in EXP_COLUMNS})
@@ -154,12 +214,23 @@ def main(argv=None) -> int:
     oof = pd.read_parquet(d / "oof.parquet")
     if not np.isfinite(oof["score"].to_numpy()).all():
         raise HarnessError("OOF の点に NaN/inf がある")
-    per_mol = build_per_molecule(oof, Path(a.eval_root))
+    eval_ids = None
+    if meta.get("eval_molecules"):
+        m = pd.read_csv(meta["eval_molecules"]["path"], dtype=str)
+        eval_ids = set(m["set"] + "\t" + m["molecule_id"])
+        from lambdarank_oof import sha256_file
+        if sha256_file(Path(meta["eval_molecules"]["path"])) != meta["eval_molecules"]["sha256"]:
+            raise HarnessError("評価の一覧のファイルが当てはめの時と違う（sha256）")
+    rows_mode = meta.get("rows", "all")
+    per_mol = build_per_molecule(oof, Path(a.eval_root), rows_mode=rows_mode, eval_ids=eval_ids, sets=meta.get("sets"))
     res = evaluate_types(per_mol)
-    commit = subprocess.run(["git", "-C", str(ROOT), "rev-parse", "HEAD"], capture_output=True, text=True).stdout.strip()
-    row = experiment_row(d.name, meta, res, a.note, commit, int(len(per_mol)))
+    commit = git_commit_mark()
+    note = "; ".join(x for x in (a.note, auto_note(meta)) if x)
+    row = experiment_row(d.name, meta, res, note, commit, int(len(per_mol)))
+    no_rows = {t: int((~per_mol.loc[per_mol.type == t, "has_rows"]).sum()) for t in TYPES}
     (d / "eval.json").write_text(json.dumps(dict(exp_id=d.name, by_type=res, n_molecules=int(len(per_mol)),
-                                                 n_boot=N_BOOT, boot_seed=BOOT_SEED, git_commit=commit),
+                                                 n_boot=N_BOOT, boot_seed=BOOT_SEED, git_commit=commit,
+                                                 rows=rows_mode, n_molecules_without_rows=no_rows, note=note),
                                             indent=2, ensure_ascii=False))
     per_mol.to_csv(d / "per_molecule.csv", index=False)
     append_experiment(Path(a.experiments_csv), row)
