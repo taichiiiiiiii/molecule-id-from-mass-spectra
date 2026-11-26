@@ -1,0 +1,23 @@
+{
+ "issue": 82,
+ "frozen_sha_old": "d1e757c2b71b46e6e8a5777f14302a4737d0fdbcd56d8365093c039b93c5fd88",
+ "frozen_sha_new": "96d2cea7b8b04ff085cd888713067f32ff14a1a2067119bf84401a49244c259f",
+ "changed_frozen_cell": 37,
+ "changed_outer_cells": [
+  5,
+  12
+ ],
+ "changed_metadata": [
+  "casmi.frozen_source_sha256",
+  "casmi.upstream_casmi_metadata.frozen_source_sha256"
+ ],
+ "own_fpnet_sha256": "3b653e76c457885af6824b4ea2f5f0a225ca608f840259807c68f45066aee332",
+ "own_fpnet_path": "/kaggle/input/notebooks/taichiiiii/casmi26-fpnet-full-train-s2/fpnet_final.pt",
+ "own_fpnet_glob": "/kaggle/input/**/casmi26-fpnet-full-train-s2/**/fpnet_final.pt",
+ "kernel_sources": [
+  "popwenman/casmi26-scorer-train-v80",
+  "taichiiiii/casmi26-fpnet-full-train-s2"
+ ],
+ "source_notebook_sha256": "380e2c820c2a47cfad268b75cdd0dfc564350b599b9b052a1915d292987113c5",
+ "push_source_bytes": 826400
+}
