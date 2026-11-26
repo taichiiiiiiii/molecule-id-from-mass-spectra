@@ -78,6 +78,9 @@
 - (a) 指紋のロジットは、その分子の fold のモデル（`fpnet_fold{k}`）で作る（`outputs/holdout_eval/rk_f{1..4}_*_fold{k}/pc_logits.npz` は既にこの形）
 - (b) ライブラリ照合は、dev の正解の参照行を hide_rule で隠す。C1 型は `enveda_libs`、**C2 型の dev 集合は `hide_rule=all`** で作る
 - (c) 事前の点・人気度・近傍の特徴は、dev の分子を除いた train から作る
+  - 読み方（11/27 追記、#261）: **参照スペクトルを使う特徴（`lib_max_sim`・群 N1 の `nbr_ms_mean`・`nbr_tani_mean` など）は (b) の hide_rule に従う**（その集合の `hide_rule.json` と `drop_keys.txt`。N1 は raw の inchikey14 と正準の鍵の両方で隠すので `lib_max_sim` と同じか厳しい側）。(c) の「dev の分子を除いた train」は、事前の点・人気度など **train の統計（数え上げ・頻度・学習した表）** に当てる
+  - 理由: 型 a・e の dev 集合は「正解の参照が他の装置にある」型（隠れテスト class 1 の写し）として作ってあり、`lib_max_sim` が既に同じ hide_rule の参照を読んでいる。N1 は同じ参照のライブラリを読むので、新しく使える情報は増えない。型 b・c・d は hide_rule `all`（b・c は `hide_rule.json` に `all`、d は `hide_rule.json` が無く `library.hide_rule` の既定 `all`。B8 の 20 集合で確かめた）なので、正解の構造の参照は近傍にも入らない
+  - 比べの行（型 a・e で正解の構造の参照をすべて隠す `--mode all_truth`）は作らない（dev の値で読み方を選ぶ余地を残さないため。dev の 40 本の枠も使わない）。この読み方は文書の PR で元に戻せる
 - (d) 予測スペクトル（ICEBERG / GLACIER）は、dev の分子で学習していない重みのものだけを使う。ローカルで使えるのは事前計算のある分子だけなので、**先に被覆（dev の分子と PubChem 層の候補がどこまで含まれるか）を確かめ、足りなければ必要な GPU の時間を計画に書く**（11/28 09:00 のリセットまで残り約 11 h）
 - (e) ランカーの学習と評価は分子単位の GroupKFold で行い、fold の境界は FPNet の分割と同じにする
 - fold-0 の holdout の特徴は fold-0 のモデルで作るので、dev（fold-k のモデル）と目盛りが揃うよう、窓の中での z 値を特徴に含める
