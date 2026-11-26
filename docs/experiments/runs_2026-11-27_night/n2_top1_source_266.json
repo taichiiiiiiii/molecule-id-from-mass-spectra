@@ -1,0 +1,76 @@
+{
+ "exp003": {
+  "a": {
+   "n_molecules_with_rows": 789,
+   "top1_tier": 39,
+   "top1_pool": 750,
+   "top1_tier_correct": 0,
+   "top1_pool_correct": 667
+  },
+  "b": {
+   "n_molecules_with_rows": 787,
+   "top1_tier": 24,
+   "top1_pool": 763,
+   "top1_tier_correct": 0,
+   "top1_pool_correct": 526
+  },
+  "c": {
+   "n_molecules_with_rows": 788,
+   "top1_tier": 570,
+   "top1_pool": 218,
+   "top1_tier_correct": 266,
+   "top1_pool_correct": 0
+  },
+  "d": {
+   "n_molecules_with_rows": 745,
+   "top1_tier": 6,
+   "top1_pool": 739,
+   "top1_tier_correct": 0,
+   "top1_pool_correct": 717
+  },
+  "e": {
+   "n_molecules_with_rows": 792,
+   "top1_tier": 545,
+   "top1_pool": 247,
+   "top1_tier_correct": 223,
+   "top1_pool_correct": 0
+  }
+ },
+ "exp009": {
+  "a": {
+   "n_molecules_with_rows": 789,
+   "top1_tier": 39,
+   "top1_pool": 750,
+   "top1_tier_correct": 0,
+   "top1_pool_correct": 665
+  },
+  "b": {
+   "n_molecules_with_rows": 787,
+   "top1_tier": 22,
+   "top1_pool": 765,
+   "top1_tier_correct": 0,
+   "top1_pool_correct": 526
+  },
+  "c": {
+   "n_molecules_with_rows": 788,
+   "top1_tier": 565,
+   "top1_pool": 223,
+   "top1_tier_correct": 252,
+   "top1_pool_correct": 0
+  },
+  "d": {
+   "n_molecules_with_rows": 745,
+   "top1_tier": 5,
+   "top1_pool": 740,
+   "top1_tier_correct": 0,
+   "top1_pool_correct": 721
+  },
+  "e": {
+   "n_molecules_with_rows": 792,
+   "top1_tier": 543,
+   "top1_pool": 249,
+   "top1_tier_correct": 182,
+   "top1_pool_correct": 0
+  }
+ }
+}
