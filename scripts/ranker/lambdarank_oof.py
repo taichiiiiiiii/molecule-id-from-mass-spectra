@@ -48,10 +48,11 @@ FEATURES = (
 # 追加してよい列の登録表（#255）。群 → (出典の Issue, 列)。`--extra-features` で求めた列だけを学習に足す。
 # 登録済みで求めていない列は表にあっても止めず、学習にも使わない。
 _GL_SIM = ("gl_cos_mean", "gl_cos_max", "gl_ent_mean", "gl_ent_max")
+_GL_REL = ("gl_cos_mean", "gl_ent_mean")   # 式 (8) の相対化を付けるのは平均の 2 列だけ（#259 の定義）
 EXTRA_ALLOWED = {
     "cc": ("#253", ("cc", "cc_z")),
-    # GLACIER（#242、計画 2026-11-26 昼の項目 3）。名前は仮の登録: 項目 3 の Issue で定義を固定し、違えばその PR で直す
-    "glacier": ("#242", _GL_SIM + ("has_gl",) + tuple(f"{v}_{r}" for v in _GL_SIM for r in _REL)),
+    # GLACIER（#242 の予測、#259 で定義を固定）: 4 列・has_gl・相対化 10 列 = 15 列
+    "glacier": ("#259", _GL_SIM + ("has_gl",) + tuple(f"{v}_{r}" for v in _GL_REL for r in _REL)),
 }
 EXTRA_ALL = tuple(c for _iss, cols in EXTRA_ALLOWED.values() for c in cols)
 ROWS_MODES = ("all", "pool")
