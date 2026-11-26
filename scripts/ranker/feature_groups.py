@@ -57,11 +57,35 @@ def check() -> dict:
     return {k: dict(n=len(v), sha256=list_sha256(v)) for k, v in GROUPS.items()} | {"n_exp003": len(base)}
 
 
+def compare(base_dir: Path, exp_dirs) -> dict:
+    """型ごとの (exp − base) の MRR@25 の差と 95% 区間（evaluate.py と同じ対応のある bootstrap、2,000 回、seed 0）。
+    per_molecule.csv の分子の一覧が同じでなければ止める。記述だけ（採否・群の組み替えには使わない）。"""
+    import pandas as pd
+    from evaluate import TYPES, paired_bootstrap
+    b = pd.read_csv(base_dir / "per_molecule.csv", dtype={"molecule_id": str}).set_index(["set", "molecule_id"])
+    out = {}
+    for d in exp_dirs:
+        e = pd.read_csv(Path(d) / "per_molecule.csv", dtype={"molecule_id": str}).set_index(["set", "molecule_id"])
+        if set(e.index) != set(b.index):
+            raise RuntimeError(f"{d}: 分子の一覧が土台と違う")
+        e = e.loc[b.index]
+        r = {}
+        for t in TYPES:
+            m = (b["type"] == t).to_numpy()
+            lo, hi = paired_bootstrap(e["rr"].to_numpy()[m], b["rr"].to_numpy()[m])
+            r[t] = dict(n=int(m.sum()), delta=float((e["rr"].to_numpy()[m] - b["rr"].to_numpy()[m]).mean()), lo=lo, hi=hi)
+        out[Path(d).name] = r
+    return out
+
+
 def main(argv=None) -> int:
     ap = argparse.ArgumentParser()
     ap.add_argument("--check", action="store_true")
     ap.add_argument("--args", choices=sorted(EXPS))
+    ap.add_argument("--compare", nargs="+", help="土台の exp dir に続けて比べる exp dir（型ごとの exp − 土台）")
     a = ap.parse_args(argv)
+    if a.compare:
+        print(json.dumps(compare(Path(a.compare[0]), a.compare[1:]), indent=1))
     if a.check:
         print(json.dumps(check(), indent=1))
     if a.args:
