@@ -1,0 +1,109 @@
+{
+ "issue": 274,
+ "n_molecules": 400,
+ "n_logits": 400,
+ "stages": {
+  "prepare": 0.98,
+  "logits": 123.84,
+  "pubchem": 5119.26,
+  "qrows": 44.17,
+  "features": 408.0,
+  "cc": 40.1,
+  "rank": 0.25
+ },
+ "total": 5736.6,
+ "wall": 5736.6,
+ "within_features": {
+  "NPScorer.__call__": {
+   "secs": 36.16,
+   "calls": 400
+  },
+  "dump_features.build": {
+   "secs": 275.22,
+   "calls": 1
+  },
+  "frag_rescore.score_molecule": {
+   "secs": 57.35,
+   "calls": 800
+  },
+  "library.lib_scores": {
+   "secs": 2.61,
+   "calls": 400
+  },
+  "library.load_refs": {
+   "secs": 14.51,
+   "calls": 1
+  },
+  "mass_feasibility.group_features": {
+   "secs": 101.19,
+   "calls": 400
+  },
+  "run.frag_rerank": {
+   "secs": 19.01,
+   "calls": 400
+  },
+  "run.load_pool": {
+   "secs": 1.51,
+   "calls": 1
+  },
+  "run.rerank_with_prior": {
+   "secs": 0.08,
+   "calls": 400
+  },
+  "run.score_window": {
+   "secs": 105.32,
+   "calls": 400
+  }
+ },
+ "extrapolation": {
+  "target_n": 1200,
+  "factor": 3.0,
+  "limit_secs": 16200.0,
+  "stages": {
+   "prepare": 2.9,
+   "logits": 371.5,
+   "pubchem": 15357.8,
+   "qrows": 132.5,
+   "features": 1224.0,
+   "cc": 120.3,
+   "rank": 0.8
+  },
+  "total": 17209.8,
+  "over": [
+   {
+    "stage": "total",
+    "secs": 17209.8,
+    "over_by": 1009.8
+   }
+  ]
+ },
+ "counts": {
+  "ranker": 400,
+  "fallback_cco": 0
+ },
+ "n_cand_min": 25,
+ "n_cand_max": 25,
+ "ranker_sha256": "54cb7d8d31632430f269a245559583660d7a9286d4f7cbe1635562202734ac84",
+ "features_sha256": "e0b73e5cd9e46e0b11c89dea8aa4b0a03c4182efabc3c45daa0f61880c9ed303",
+ "submission_sha256": "7cb2df2478b891f87e80f4c4ee9b62390f5b7e369fbd33835aa32c10d0127575",
+ "table_rows": 45173,
+ "cpu_count": 4,
+ "python": "3.12.13",
+ "lightgbm": "4.6.0",
+ "kaggle": {
+  "kernel": "taichiiiii/casmi26-e2e-timing-274",
+  "version": 1,
+  "status": "COMPLETE",
+  "setup_secs": 31.46,
+  "submission_check": {
+   "n_rows": 400,
+   "ids_equal_sample": true,
+   "n_unique": 400,
+   "n_cand_min": 25,
+   "n_cand_max": 25,
+   "all_1_to_25": true
+  },
+  "pubchem_tier_mount": "/kaggle/input/datasets/ahmedberatozer/casmi26-pubchem-tier",
+  "note": "setup_secs はノートのセルの TAG（展開・リンク・import）。提出していない"
+ }
+}
