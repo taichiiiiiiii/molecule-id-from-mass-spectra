@@ -41,6 +41,8 @@ def test_hidden_refs_not_used():
     canon = rows.raw.map(raw2canon).to_numpy()
     hidden = NR.drop_canon({"R0"}, raw2canon)
     assert hidden == {"C0"}
+    assert NR.drop_canon({"C0"}, raw2canon) == {"C0"}       # 正準の鍵で書いた drop_keys も受ける
+    assert NR.drop_canon({"R0b", "XX"}, raw2canon) == {"C0"}  # 別名の raw の鍵からも、知らない鍵は無視
     cand = np.array([fp([0, 1, 2, 3])])
     q = [0.95]
 
@@ -57,6 +59,10 @@ def test_hidden_refs_not_used():
     # 行はすべて渡し、隠す行は keep で落とす（流し読みと同じ形）
     NR.accumulate(acc, [sidx[c] for c in canon], keep, rows.spec.tolist(), need, {"m": q}, dot_sim)
     assert all(j != 0 for (_m, j) in acc)
+    # 隠した構造 0 を need_map に入れても、keep = False の行は数えない
+    acc0 = {}
+    NR.accumulate(acc0, [sidx[c] for c in canon], keep, rows.spec.tolist(), {0: {"m"}, 1: {"m"}}, {"m": q}, dot_sim)
+    assert ("m", 0) not in acc0 and acc0[("m", 1)][1] == 2
     f = NR.molecule_features(idx, tani, True, NR.struct_scores(acc, "m"))
     exp_ms = np.mean([np.mean([dot_sim(0.95, 0.2), dot_sim(0.95, 0.9)]), dot_sim(0.95, 0.4), dot_sim(0.95, 0.0)])
     assert f.nbr_ms_mean[0] == pytest.approx(exp_ms)
@@ -118,3 +124,15 @@ def test_topk_matches_brute_force_with_ties():
         assert idx[i].tolist() == order
         assert tani[i] == pytest.approx(t[order])
     assert idx[0][:2].tolist() == [3, 10]
+
+
+def test_topk_all_ties_across_chunks():
+    # 参照がすべて同じ指紋: 同点は番号の小さい順。塊の境目をまたいでも崩れない。使えない構造は飛ばす
+    lib = np.tile(fp([0, 1, 2]), (23, 1))
+    avail = np.ones(23, bool)
+    avail[[1, 5]] = False
+    cand = np.array([fp([0, 1, 2]), fp([0, 1, 2, 3, 4, 5])])
+    for chunk, block in [(1, 1), (3, 2), (5, 1), (100, 100)]:
+        idx, tani = NR.topk_neighbours(cand, packed(lib), avail, k=10, nbits=NB, ref_chunk=chunk, cand_block=block)
+        assert idx[0].tolist() == [0, 2, 3, 4, 6, 7, 8, 9, 10, 11] == idx[1].tolist()
+        assert tani[0] == pytest.approx(np.ones(10)) and tani[1] == pytest.approx(np.full(10, 0.5))

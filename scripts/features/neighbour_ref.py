@@ -63,7 +63,7 @@ def topk_neighbours(cand: np.ndarray, ref_packed: np.ndarray, avail: np.ndarray,
                     nbits: int = NBITS, ref_chunk: int = 8192, cand_block: int = 1024):
     """cand: (n, nbits) の 0/1、ref_packed: (m, ceil(nbits/8)) の packbits、avail: (m,) bool（参照の残る構造）。
     返り値 idx (n, k) int64（足りない所は -1）、tani (n, k) float64（足りない所は NaN）。
-    順は Tanimoto の大きい順、同点は参照の番号の小さい順（合成の鍵 tani − j·1e-13 で決める）。"""
+    順は Tanimoto の大きい順、同点は参照の番号の小さい順（厳密。Tanimoto は整数の比を float64 で割った値で比べる）。"""
     n, m = len(cand), len(ref_packed)
     ca = cand.sum(1, dtype=np.float64)      # cand は 0/1 の uint8 のまま持ち、塊ごとに float32 にする（メモリ）
     best_key = np.full((n, k), -np.inf)
@@ -73,26 +73,34 @@ def topk_neighbours(cand: np.ndarray, ref_packed: np.ndarray, avail: np.ndarray,
         R = np.unpackbits(ref_packed[r0:r1], axis=1)[:, :nbits].astype(np.float32)
         rb = R.sum(1, dtype=np.float64)
         ok = avail[r0:r1]
-        jj = np.arange(r0, r1)
+        w = r1 - r0
+        kk = min(k, w)
         for c0 in range(0, n, cand_block):
             c1 = min(n, c0 + cand_block)
             inter = (cand[c0:c1].astype(np.float32) @ R.T).astype(np.float64)
             uni = ca[c0:c1, None] + rb[None, :] - inter
             with np.errstate(invalid="ignore", divide="ignore"):
-                t = np.where(uni > 0, inter / uni, 0.0)
-            key = t - jj[None, :] * 1e-13
-            key[:, ~ok] = -np.inf
-            kk = min(k, key.shape[1])
-            part = np.argpartition(-key, kk - 1, axis=1)[:, :kk]
-            pk = np.take_along_axis(key, part, 1)
+                t = np.where(uni > 0, inter / uni, 0.0)   # 整数の比を float64 で 1 回割るだけなので、同じ比は同じ値
+            t[:, ~ok] = -np.inf
+            # 行ごとに (Tanimoto 降順, 番号 昇順) の上位 kk を厳密に選ぶ: kk 番目の値 v より大きいものすべて + v に等しいもの
+            # のうち番号の小さい順に残りの数だけ（列は番号の昇順なので cumsum で数える）
+            v = np.partition(t, w - kk, axis=1)[:, w - kk][:, None]
+            gt = t > v
+            eq = t == v
+            need = kk - gt.sum(1, keepdims=True)
+            sel = gt | (eq & (np.cumsum(eq, axis=1) <= need))
+            _rr, cols = np.nonzero(sel)
+            cols = cols.reshape(c1 - c0, kk)
+            pk = np.take_along_axis(t, cols, 1)
             allk = np.concatenate([best_key[c0:c1], pk], 1)
-            alli = np.concatenate([best_idx[c0:c1], part + r0], 1)
-            o = np.argsort(-allk, axis=1, kind="stable")[:, :k]
+            alli = np.concatenate([best_idx[c0:c1], cols + r0], 1)
+            # 番号 -1（まだ無い）は -inf と組なので並びの後ろに行く
+            o = np.lexsort((np.where(alli < 0, np.iinfo(np.int64).max, alli), -allk), axis=-1)[:, :k]
             best_key[c0:c1] = np.take_along_axis(allk, o, 1)
             best_idx[c0:c1] = np.take_along_axis(alli, o, 1)
     valid = np.isfinite(best_key)
     idx = np.where(valid, best_idx, -1)
-    # Tanimoto は合成の鍵からでなく作り直す（1e-13 のずれを残さない）
+    # 返す Tanimoto は選んだ近傍について float64 で作り直す（選ぶときの値と同じ式。点検を兼ねる）
     tani = np.full((n, k), np.nan)
     for i in range(n):
         js = idx[i][valid[i]]
@@ -173,6 +181,7 @@ def load_library(cache_dir: Path):
         ref_packed = np.asarray(np.load(POOL / "pool_fp.npy", mmap_mode="r")[np.sort(rows)])
         ref_packed = ref_packed[np.argsort(np.argsort(rows))]   # skeys の順に戻す
         np.save(fp_c, ref_packed)
+    assert ref_packed.shape == (len(skeys), (NBITS + 7) // 8), "キャッシュの指紋の形が構造の数と合わない"
     rm_c = cache_dir / "nbr_train_rows.parquet"
     if rm_c.is_file():
         rm = pd.read_parquet(rm_c)
@@ -181,6 +190,7 @@ def load_library(cache_dir: Path):
         rm = pd.concat([b.to_pandas() for b in pf.iter_batches(batch_size=65536, columns=["inchikey14", "ingest_lib"])],
                        ignore_index=True)
         rm.to_parquet(rm_c, index=False)
+    assert len(rm) == pq.ParquetFile(ROOT / "data/train.parquet").metadata.num_rows, "キャッシュの train の行数が違う"
     return skeys, sidx, raw2canon, ref_packed, rm
 
 
