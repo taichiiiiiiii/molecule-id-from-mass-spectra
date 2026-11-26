@@ -1,0 +1,3 @@
+      602.32 real       604.38 user        12.27 sys
+          6966247424  maximum resident set size
+          4627714296  peak memory footprint

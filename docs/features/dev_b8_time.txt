@@ -1,0 +1,4 @@
+          4050403328  maximum resident set size
+          3271856400  peak memory footprint
+     2490.63 real      2432.47 user        44.00 sys
+qrows: 227386 keys -> 14221 train rows
