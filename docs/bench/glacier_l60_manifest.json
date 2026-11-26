@@ -1,0 +1,51 @@
+{
+ "n_mols": 3901,
+ "n_L": 197170,
+ "n_jobs": 544886,
+ "n_jobs_unique_smiles_cat": 448211,
+ "n_query_spectra": 20117,
+ "n_mols_no_cov": 350,
+ "n_mols_no_L": 11,
+ "shard_size": 20000,
+ "n_shards": 28,
+ "msg_overlap": {
+  "n1": 528,
+  "n1_all": 557,
+  "by_type": {
+   "a": {
+    "n": 789,
+    "n1": 13
+   },
+   "b": {
+    "n": 787,
+    "n1": 508
+   },
+   "c": {
+    "n": 788,
+    "n1": 0
+   },
+   "d": {
+    "n": 745,
+    "n1": 0
+   },
+   "e": {
+    "n": 792,
+    "n1": 7
+   }
+  },
+  "msg_rows": 231104,
+  "msg_smiles": 31602,
+  "msg_key_none": 0
+ },
+ "inputs": {
+  "outputs/local_eval/features/dev_b8.parquet": "609de98873176e87c5e28cedf8cf6bdef93fcf6fc1c6b7753c8664c330e6e6c7",
+  "outputs/local_eval/i236_recall/per_molecule.parquet": "ab9f301875713e9cdf54d503cfaa48cc4eb2d6f8e8b033d5737340ba78e9f838",
+  "docs/bench/dev_list.csv.gz": "7a69f073fb94049440bd7fc52a4f3f9a116dd45e76a97498de94976ae2943b79",
+  "data/ext/msg/MassSpecGym.tsv": "0c9cc50450def3f0d4fe2dc09dea1105fc15e635db8c6656bc3e3be37a3bcd95"
+ },
+ "outputs": {
+  "jobs.parquet": "7417992e1cc5100113002743f66799568eeb0b4ffa56b8386e3810b94465171b",
+  "molecules.parquet": "c6be5bfea00e18f203144248d375bea940fa9dc96eda0b31223cb6abcd201178"
+ },
+ "seconds": 55.2
+}
