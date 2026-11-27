@@ -16,6 +16,10 @@ Issue #284: 提出用の LambdaRank を lightgbm の 2 つの版で読んだと�
 
     .venv/bin/python scripts/kaggle/lgbm_version_check.py compare --a <pred_470.npz> --b <pred_460.npz> \
         --table <dev_b8_cc.parquet> --out <report.json>
+
+補足 `replay`（Issue #284 のコメントで事前登録。本体の判定は変えない）: Kaggle のカーネルが出した特徴の表
+  （features.parquet + parts_cc/sub_test.parquet）で手元の版の予測を出し、e2e_timing.py と同じ並べ方
+  （ranked_lists → write_submission）の上位 25 を、同じ版の Kaggle の submission.csv と id ごとに比べる。
 """
 from __future__ import annotations
 
@@ -94,6 +98,68 @@ def compare_scores(keys: pd.DataFrame, sa: np.ndarray, sb: np.ndarray, k: int = 
     )
 
 
+def read_submission(p: Path) -> dict[str, list[str]]:
+    import csv
+    with open(p, newline="") as f:
+        rows = list(csv.reader(f))
+    if rows[0] != ["molecule_id", "smiles"]:
+        raise ValueError(f"submission の見出しが違う: {rows[0]}")
+    out = {}
+    for mid, smi in rows[1:]:
+        if mid in out:
+            raise ValueError(f"id が重複: {mid}")
+        out[mid] = smi.split(";")
+    return out
+
+
+def compare_submissions(a: dict[str, list[str]], b: dict[str, list[str]]) -> dict:
+    """id ごとに上位の SMILES の並びが完全一致か（補足の点検、Issue #284 のコメントで事前登録）。"""
+    if set(a) != set(b):
+        raise ValueError("id の集合が違う")
+    diff = sorted(m for m in a if a[m] != b[m])
+    first_pos = {}
+    for m in diff[:50]:
+        la, lb = a[m], b[m]
+        first_pos[m] = next((i for i in range(max(len(la), len(lb))) if la[i:i + 1] != lb[i:i + 1]), None)
+    n = len(a)
+    return dict(n_ids=n, n_ids_identical=n - len(diff), frac_ids_identical=(n - len(diff)) / n if n else 1.0,
+                differing_ids_first_pos=first_pos, verdict="同じ" if not diff else "違う")
+
+
+def cmd_replay(a) -> int:
+    """Kaggle が出した特徴の表で手元の版の予測を出し、e2e_timing.py と同じ並べ方の上位 25 を Kaggle の submission と比べる。"""
+    import importlib.util
+    import lightgbm as lgb
+    if lgb.__version__ != a.expect_version:
+        raise SystemExit(f"lightgbm の版が {a.expect_version} でない: {lgb.__version__}")
+    spec = importlib.util.spec_from_file_location("e2e_timing", ROOT / "scripts/kaggle/e2e_timing.py")
+    E2E = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(E2E)
+    from evaluate import ranked_lists
+    feats = json.loads(Path(a.features).read_text())
+    tab = pd.concat([pd.read_parquet(a.table), pd.read_parquet(a.parts)], axis=1)
+    sc = predict_scores(Path(a.model), feats, tab)
+    oof = tab[KEY_COLS].copy()
+    oof.insert(0, "row", np.arange(len(tab)))
+    oof["score"] = sc
+    lists = {mid: lst for (_s, mid), lst in ranked_lists(oof, E2E.K).items()}
+    kag = read_submission(Path(a.submission))
+    ids = list(kag)
+    out = Path(a.out)
+    if out.exists():
+        raise SystemExit(f"出力先が既にある（上書きしない）: {out}")
+    out.mkdir(parents=True)
+    counts = E2E.write_submission(out / "submission_local.csv", ids, lists)
+    rep = compare_submissions(read_submission(out / "submission_local.csv"), kag)
+    rep.update(lightgbm_local=lgb.__version__, counts=counts, n_rows=int(len(tab)),
+               model_sha256=sha256_file(Path(a.model)), kaggle_submission_sha256=sha256_file(Path(a.submission)),
+               local_submission_sha256=sha256_file(out / "submission_local.csv"),
+               table_sha256=sha256_file(Path(a.table)), parts_sha256=sha256_file(Path(a.parts)))
+    (out / "replay.json").write_text(json.dumps(rep, indent=1, ensure_ascii=False))
+    print(json.dumps(rep, ensure_ascii=False))
+    return 0
+
+
 def cmd_predict(a) -> int:
     import lightgbm as lgb
     if lgb.__version__ != a.expect_version:
@@ -149,8 +215,16 @@ def main(argv=None) -> int:
     c.add_argument("--b", required=True)
     c.add_argument("--table", required=True)
     c.add_argument("--out", required=True)
+    r = sub.add_parser("replay")
+    r.add_argument("--expect-version", required=True)
+    r.add_argument("--model", required=True)
+    r.add_argument("--features", required=True)
+    r.add_argument("--table", required=True, help="Kaggle の features.parquet")
+    r.add_argument("--parts", required=True, help="Kaggle の parts_cc/sub_test.parquet")
+    r.add_argument("--submission", required=True, help="同じカーネルの版の submission.csv")
+    r.add_argument("--out", required=True)
     a = ap.parse_args(argv)
-    return cmd_predict(a) if a.cmd == "predict" else cmd_compare(a)
+    return dict(predict=cmd_predict, compare=cmd_compare, replay=cmd_replay)[a.cmd](a)
 
 
 if __name__ == "__main__":

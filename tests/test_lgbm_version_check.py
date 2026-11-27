@@ -135,3 +135,26 @@ def test_predict_and_compare_cli(tmp_path):
     with pytest.raises(ValueError):
         VC.main(["predict", "--expect-version", lgb.__version__, "--model", str(model), "--features",
                  str(tmp_path / "g.json"), "--table", str(tab), "--out", str(tmp_path / "d.npz")])
+
+
+def test_compare_submissions():
+    a = {"x": ["A", "B", "C"], "y": ["D"]}
+    assert VC.compare_submissions(a, {"x": ["A", "B", "C"], "y": ["D"]})["verdict"] == "同じ"
+    r = VC.compare_submissions(a, {"x": ["A", "C", "B"], "y": ["D"]})
+    assert r["verdict"] == "違う" and r["n_ids_identical"] == 1 and r["differing_ids_first_pos"] == {"x": 1}
+    r = VC.compare_submissions(a, {"x": ["A", "B"], "y": ["D"]})
+    assert r["differing_ids_first_pos"] == {"x": 2}
+    with pytest.raises(ValueError):
+        VC.compare_submissions(a, {"x": ["A"]})
+
+
+def test_read_submission(tmp_path):
+    p = tmp_path / "s.csv"
+    p.write_text("molecule_id,smiles\nm1,CCO;CCC\nm2,C\n")
+    assert VC.read_submission(p) == {"m1": ["CCO", "CCC"], "m2": ["C"]}
+    p.write_text("molecule_id,smiles\nm1,CCO\nm1,C\n")
+    with pytest.raises(ValueError):
+        VC.read_submission(p)
+    p.write_text("id,smiles\nm1,CCO\n")
+    with pytest.raises(ValueError):
+        VC.read_submission(p)
