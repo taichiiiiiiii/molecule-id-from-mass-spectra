@@ -25,7 +25,6 @@
  "total_secs_400": 4149.5,
  "wall_secs_400_incl_check": 5259.6,
  "notebook_setup_secs": 35.72,
- "notebook_last_log_time_secs": 5319.19,
  "extrapolation_1200": {
   "formula": "stage_secs x 1200/400 (#274 / #278 pre-registered; pubchem_check excluded)",
   "stages": {
@@ -45,7 +44,7 @@
   "margin_frac": 0.2316
  },
  "sensitivity_not_gate": {
-  "note": "pubchem_check warms the first 40 windows (optimistic direction, review minor in #278). Bound: add the 40-molecule parallel check secs x3 back",
+  "note": "heuristic reference, not a proven bound: pubchem_check warms the first 40 windows (optimistic direction, review minor in #278); adds the 40-molecule parallel check secs x3 back",
   "total_plus_check_parallel_x3": 13416.72,
   "total_plus_setup": 12484.22
  },
@@ -76,7 +75,8 @@
   "v2_secs_per_mol": 8.147,
   "v1_secs_per_mol": 12.798,
   "v2_over_v1": 0.6366,
-  "check_speedup_serial_over_parallel": 2.439
+  "check_speedup_serial_over_parallel": 2.439,
+  "note": "v1 and v2 ran on different machines (non-parallel stages slower in v2: features 1.61x, cc 1.56x, logits 1.11x), so v2_over_v1 is confounded by hardware"
  },
  "v1_stages_secs_400": {
   "prepare": 0.98,
@@ -111,5 +111,6 @@
  "features_sha256": "e0b73e5cd9e46e0b11c89dea8aa4b0a03c4182efabc3c45daa0f61880c9ed303",
  "ranker_sha256": "54cb7d8d31632430f269a245559583660d7a9286d4f7cbe1635562202734ac84",
  "table_rows": 45173,
- "submissions_made": 0
+ "submissions_made": 0,
+ "script_last_stdout_secs": 5311.78
 }
