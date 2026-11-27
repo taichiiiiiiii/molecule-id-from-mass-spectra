@@ -1,0 +1,89 @@
+{
+  "source": "outputs/local_eval/features/parts_pfs_dev_sub5000/b8_f1_b_t10.json",
+  "source_record": {
+    "set": "b8_f1_b_t10",
+    "rule": "all",
+    "query_fold": 1,
+    "subset": 5000,
+    "n_train_spectra_counted": 34027,
+    "n_unparsable_train": 0,
+    "n_records": 334686,
+    "n_records_kept": 269074,
+    "n_keys_kept": 176011,
+    "n_bins_kept": 13132,
+    "n_fragment_names": 490209,
+    "n_rows": 19315,
+    "n_molecules": 196,
+    "n_unique_cand": 18944,
+    "n_unparsable_cand": 0,
+    "n_mol_without_peaks": 0,
+    "n_rows_with_own": 20,
+    "counts": {
+      "pfs_ll": {
+        "nan": 0,
+        "inf": 0,
+        "zero": 0
+      },
+      "pfs_ll_per_peak": {
+        "nan": 0,
+        "inf": 0,
+        "zero": 0
+      },
+      "pfs_seen_frac": {
+        "nan": 0,
+        "inf": 0,
+        "zero": 2814
+      },
+      "pfs_ll_fdmax": {
+        "nan": 0,
+        "inf": 0,
+        "zero": 2693
+      }
+    },
+    "secs": {
+      "load": 0.5,
+      "train_enumerate": 29.9,
+      "train_stream_io": 4.0,
+      "train_match_count": 1.9,
+      "set_counts": 0.1,
+      "cand_enumerate": 182.9,
+      "features": 11.6
+    },
+    "secs_total": 232.5,
+    "peak_rss_gb": 1.729,
+    "out_sha256": "d723fcd477bcb0f59b3fea5ea1f0766008a11899fad2efd8479c3d035da2db49",
+    "table_sha256": "609de98873176e87c5e28cedf8cf6bdef93fcf6fc1c6b7753c8664c330e6e6c7",
+    "alpha": 0.0001,
+    "beta": 0.0025,
+    "bin_width": 0.01,
+    "note": "数は部分の数（全 train では違う）"
+  },
+  "inputs": {
+    "n_train_structures": 275810,
+    "n_train_spectra_capped16": 1883758,
+    "subset_structures": 5000,
+    "subset_spectra": 34027,
+    "records_full_est": 18461949.132,
+    "dev_unique_cand": 371391,
+    "dev_rows": 430979
+  },
+  "extrapolation_secs_1core": {
+    "train": {
+      "train_enumerate": 1649.3,
+      "train_match_count": 105.2,
+      "train_stream_io_full_pass_measured": 7.1,
+      "records_unique_synthetic_18p46M": 9.7,
+      "train_total": 1771.3
+    },
+    "dev20": {
+      "cand_enumerate_cached": 3585.7,
+      "features": 258.8,
+      "set_counts_20_sets_assumed": 200.0,
+      "dev20_total": 4044.5
+    }
+  },
+  "grand_total_h": 1.616,
+  "gate_h": 3.0,
+  "peak_rss_gb_time_l": 1.737,
+  "within_gate": true
+}
