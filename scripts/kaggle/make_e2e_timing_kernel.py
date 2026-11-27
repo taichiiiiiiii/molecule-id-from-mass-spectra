@@ -9,6 +9,7 @@ Issue #274: Kaggle 上の端から端の時間測定のノートブック（CPU�
   出力を空にし source をつないだ json.dumps）が 1,000,000 B 未満であることを assert する
 
     python scripts/kaggle/make_e2e_timing_kernel.py                       # kernels/e2e_timing/ にノートと metadata
+    python scripts/kaggle/make_e2e_timing_kernel.py --workers auto --check 40   # #278: PubChem 層の並列と一致の確かめ
     python scripts/kaggle/make_e2e_timing_kernel.py --inputs-dir <dir> \\
         --ranker-dir outputs/local_eval/ranker/submit_e2e_274            # 入力データセットのディレクトリも作る
 """
@@ -111,13 +112,17 @@ print("TAG " + json.dumps(dict(stage="setup", secs=round(time.time() - T0, 2))),
 '''
 
 RUN = r'''
-# #274: 段ごとの秒を測る（提出はしない。submission.csv は形式の点検用）
+# #274: 段ごとの秒を測る（提出はしない。submission.csv は形式の点検用）。#278: PubChem 層の段の worker の数と一致の確かめ
 OUT = Path("/kaggle/working")
+CODE_COMMIT = "__COMMIT__"
+print("TAG " + json.dumps(dict(stage="code", commit=CODE_COMMIT)), flush=True)
 cmd = [sys.executable, "-u", "scripts/kaggle/e2e_timing.py", "--test", str(COMP / "test.parquet"),
        "--sample", str(COMP / "sample_submission.csv"), "--ranker", str(INP / "ranker_submit.txt"),
-       "--features", str(INP / "features.json"), "--out-dir", str(OUT)]
+       "--features", str(INP / "features.json"), "--out-dir", str(OUT),
+       "--pubchem-workers", "__WORKERS__", "--pubchem-check", "__CHECK__"]
 with open(OUT / "e2e.log", "w") as log:
-    p = subprocess.Popen(cmd, cwd=R, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True)
+    p = subprocess.Popen(cmd, cwd=R, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True,
+                         env=dict(os.environ, CASMI_CODE_COMMIT=CODE_COMMIT))
     for line in p.stdout:
         print(line, end="", flush=True)
         log.write(line)
@@ -165,14 +170,33 @@ def push_bytes(nb: dict) -> int:
     return len(json.dumps(nb2).encode("utf-8"))
 
 
-def build_notebook(root: Path = ROOT) -> tuple[dict, dict]:
+def code_commit(root: Path = ROOT) -> str:
+    """埋め込むコードの commit（未コミットの変更があれば +dirty）。git が無ければ unknown。"""
+    import subprocess
+    try:
+        h = subprocess.run(["git", "rev-parse", "HEAD"], cwd=root, capture_output=True, text=True, check=True).stdout.strip()
+        tracked = [f for f in CODE_FILES if not f.startswith("data/")]   # data/ext はリンクの先で git の外
+        dirty = subprocess.run(["git", "status", "--porcelain", "--", *tracked], cwd=root, capture_output=True,
+                               text=True, check=True).stdout.strip()
+        return h + ("+dirty" if dirty else "")
+    except (OSError, subprocess.CalledProcessError):
+        return "unknown"
+
+
+def build_notebook(root: Path = ROOT, workers: str = "1", check: int = 0, commit: str | None = None) -> tuple[dict, dict]:
+    """#278: workers（整数か auto）と check（直列と並列の一致を確かめる分子の数）を e2e_timing.py に渡す。"""
+    assert workers == "auto" or int(workers) >= 1
+    assert int(check) >= 0
+    commit = commit if commit is not None else code_commit(root)
+    assert '"' not in commit and "\\" not in commit
     blob, manifest = pack(CODE_FILES, root)
     setup = SETUP.replace("__MANIFEST__", json.dumps(manifest, indent=0)).replace("__BLOB__", blob)
+    run = RUN.replace("__COMMIT__", commit).replace("__WORKERS__", str(workers)).replace("__CHECK__", str(int(check)))
     md = ("# casmi26 e2e timing (#274)\n自前の最小版（プール＋PubChem 層 → exp003 の 64 列 → LambdaRank）の段ごとの秒を Kaggle の CPU で測る。"
           "提出しない。LambdaRank は dev の全行で学習した時間測定用の 1 本で、評価には使わない。")
     nb = dict(nbformat=4, nbformat_minor=5,
               metadata=dict(kernelspec=dict(name="python3", display_name="Python 3", language="python")),
-              cells=[cell(md, "markdown"), cell(setup), cell(RUN)])
+              cells=[cell(md, "markdown"), cell(setup), cell(run)])
     for c in nb["cells"]:
         if c["cell_type"] == "code":
             compile("".join(c["source"]), "<cell>", "exec")
@@ -182,7 +206,18 @@ def build_notebook(root: Path = ROOT) -> tuple[dict, dict]:
             compile(b.decode("utf-8"), n, "exec")
     size = push_bytes(nb)
     assert size < MAX_PUSH_BYTES, f"送信サイズ {size} B が 1 MB 以上"
-    return nb, dict(push_bytes=size, blob_chars=len(blob), n_files=len(manifest), manifest=manifest)
+    return nb, dict(push_bytes=size, blob_chars=len(blob), n_files=len(manifest), manifest=manifest, commit=commit,
+                    workers=str(workers), check=int(check))
+
+
+def run_params(nb: dict) -> dict:
+    """生成したノートの RUN のセルから commit・workers・check を読み戻す（コミットしたノートの点検用）。"""
+    import re
+    src = "".join(nb["cells"][-1]["source"])
+    commit = re.search(r'CODE_COMMIT = "([^"]*)"', src).group(1)
+    workers = re.search(r'"--pubchem-workers", "([^"]*)"', src).group(1)
+    check = int(re.search(r'"--pubchem-check", "([^"]*)"', src).group(1))
+    return dict(commit=commit, workers=workers, check=check)
 
 
 def kernel_metadata() -> dict:
@@ -223,8 +258,10 @@ def main(argv=None) -> int:
     ap.add_argument("--out-dir", type=Path, default=ROOT / "kernels/e2e_timing")
     ap.add_argument("--inputs-dir", type=Path, default=None)
     ap.add_argument("--ranker-dir", type=Path, default=ROOT / "outputs/local_eval/ranker/submit_e2e_274")
+    ap.add_argument("--workers", default="1", help="#278: PubChem 層の段の worker の数（整数か auto）")
+    ap.add_argument("--check", type=int, default=0, help="#278: 直列と並列の一致を確かめる分子の数")
     a = ap.parse_args(argv)
-    nb, info = build_notebook()
+    nb, info = build_notebook(workers=a.workers, check=a.check)
     a.out_dir.mkdir(parents=True, exist_ok=True)
     (a.out_dir / "notebook.ipynb").write_text(json.dumps(nb, indent=1, ensure_ascii=False))
     (a.out_dir / "kernel-metadata.json").write_text(json.dumps(kernel_metadata(), indent=2))

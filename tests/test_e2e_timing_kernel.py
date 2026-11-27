@@ -98,7 +98,59 @@ def test_committed_kernel_matches_generator():
     nb = json.loads((d / "notebook.ipynb").read_text())
     assert MK.push_bytes(nb) < MK.MAX_PUSH_BYTES
     if (ROOT / FRAG).is_file():
-        assert nb == MK.build_notebook()[0]
+        assert nb == MK.build_notebook(**MK.run_params(nb))[0]
+
+
+def test_workers_and_check_reach_run_cell(tmp_path):
+    """#278: workers・check・commit が RUN のセルの e2e_timing.py の引数に入る。"""
+    r = _root(tmp_path)
+    nb, info = MK.build_notebook(r, workers="auto", check=40, commit="abc123")
+    run = "".join(nb["cells"][-1]["source"])
+    assert '"--pubchem-workers", "auto", "--pubchem-check", "40"' in run
+    assert 'CODE_COMMIT = "abc123"' in run and "CASMI_CODE_COMMIT=CODE_COMMIT" in run
+    assert MK.run_params(nb) == dict(commit="abc123", workers="auto", check=40)
+    assert info["push_bytes"] < MK.MAX_PUSH_BYTES and info["workers"] == "auto" and info["check"] == 40
+    for c in nb["cells"]:
+        if c["cell_type"] == "code":
+            compile("".join(c["source"]), "<cell>", "exec")
+    nb1, _ = MK.build_notebook(r, commit="abc123")
+    assert MK.run_params(nb1) == dict(commit="abc123", workers="1", check=0)
+    with pytest.raises(AssertionError):
+        MK.build_notebook(r, workers="0", commit="x")
+
+
+def test_e2e_pubchem_args_parse():
+    ap_src = (ROOT / "scripts/kaggle/e2e_timing.py").read_text()
+    assert '"--pubchem-workers", default="1"' in ap_src and '"--pubchem-check", type=int, default=0' in ap_src
+
+
+def test_auto_workers_formula():
+    G = 1 << 30
+    # max(1, min(cpu, floor(0.8 × (avail − shared) / private)))
+    assert E2E.auto_workers(8 * G, 2 * G, 30 * G, 4) == 4            # 0.8×22/2 = 8.8 → 4
+    assert E2E.auto_workers(8 * G, 2 * G, 13 * G, 4) == 2            # 0.8×5/2 = 2.0 → 2
+    assert E2E.auto_workers(8 * G, 2 * G, 12 * G, 4) == 1            # 0.8×4/2 = 1.6 → 1
+    assert E2E.auto_workers(8 * G, 2 * G, 5 * G, 4) == 1             # 負でも 1
+    assert E2E.auto_workers(8 * G, 2 * G, None, 4) == 1              # 読めなければ直列
+    assert E2E.auto_workers(1 * G, 1 * G, 100 * G, None) == 1        # cpu_count 不明 → 1
+
+
+def test_mem_available(tmp_path):
+    p = tmp_path / "meminfo"
+    p.write_text("MemTotal:       32000000 kB\nMemFree:  100 kB\nMemAvailable:   30000000 kB\n")
+    assert E2E.mem_available(str(p)) == 30000000 * 1024
+    assert E2E.mem_available(str(tmp_path / "none")) is None
+
+
+def test_same_results_exact():
+    a = {"m1": [["C", 1.0, "k1"], ["CC", 0.5, "k2"]], "m2": []}
+    b = {"m1": [("C", 1.0, "k1"), ("CC", 0.5, "k2")], "m2": []}
+    assert E2E.same_results(a, b, ["m1", "m2"]) == dict(n=2, identical=True, first_diff=None)
+    c = {"m1": [["C", 1.0, "k1"], ["CC", 0.5 + 1e-12, "k2"]], "m2": []}
+    assert E2E.same_results(a, c, ["m1", "m2"])["first_diff"] == "m1"     # f·z は float の == で比べる
+    d = {"m1": [["CC", 0.5, "k2"], ["C", 1.0, "k1"]], "m2": []}
+    assert E2E.same_results(a, d, ["m1", "m2"])["identical"] is False      # 順位
+    assert E2E.same_results(a, {"m1": a["m1"]}, ["m1", "m2"])["first_diff"] == "m2"   # 欠け
 
 
 def test_extrapolate_factor_and_over():

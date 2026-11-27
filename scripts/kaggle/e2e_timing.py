@@ -13,6 +13,11 @@ dev の表と同じコードの経路に通し、段ごとの秒を測る（Kagg
   rank      LambdaRank（dev の全行で学習した 1 本、64 列）→ cand_key で重複を除いた上位 25 → submission.csv
 features の中の部品の秒（重なりを含み、足し算にならない）は `within` に書く。
 
+#278: `--pubchem-workers N|auto` で pubchem の段を fork した N プロセスに分ける（既定 1 = 今までと同じ）。auto は
+auto_workers() の式（Issue #278 に事前に固定）。`--pubchem-check M` を付けると pubchem の段の前に、先頭 M 分子を
+workers=1 と workers=N で別々のキャッシュに採点して完全一致（鍵・順位・f·z）を確かめる段 pubchem_check を足し、
+本番の段の先頭 M 分子も直列の結果と完全一致を確かめる。違えば記録して止める。pubchem_check の秒は外挿に入れない。
+
 外挿（事前に固定）: 1,200 分子（見える test の 3 倍）の秒 = 段の秒 × 1,200 / 分子数（固定費も比例させる上側の見積もり）。
 上限 = 9 h の 50% = 16,200 s。1 段でも、または全段の合計が超えれば over に名前と超過分を書く。
 
@@ -44,6 +49,41 @@ K = 25
 ENVEDA = ["enveda-180", "enveda-np-examples"]
 EXPECT_FEATURES_SHA = "e0b73e5cd9e46e0b11c89dea8aa4b0a03c4182efabc3c45daa0f61880c9ed303"   # exp003
 STAGE_NAMES = ("prepare", "logits", "pubchem", "qrows", "features", "cc", "rank")
+# #278: auto_workers の共有・専用（手元の v3_c1u_t10 の 1 worker × 20 分子の測定、Issue #278）
+#   共有 = vmmap --summary の mapped file の RESIDENT の最大、専用 = footprint（phys_footprint）の最大
+PC_SHARED_BYTES = 18_454_937
+PC_PRIVATE_BYTES = 840_501_240
+
+
+def mem_available(meminfo: str = "/proc/meminfo") -> int | None:
+    """/proc/meminfo の MemAvailable（B）。読めなければ None。"""
+    try:
+        for line in Path(meminfo).read_text().splitlines():
+            if line.startswith("MemAvailable:"):
+                return int(line.split()[1]) * 1024
+    except OSError:
+        return None
+    return None
+
+
+def auto_workers(shared: int, private: int, avail: int | None, cpu: int | None) -> int:
+    """#278 に事前に固定した式: max(1, min(cpu_count, floor(0.8 × (MemAvailable − 共有) / 専用)))。
+    MemAvailable が読めないときは 1（直列）。"""
+    cpu = cpu or 1
+    if avail is None or private <= 0:
+        return 1
+    return max(1, min(cpu, int(0.8 * (avail - shared) // private)))
+
+
+def same_results(a: dict, b: dict, mids: list) -> dict:
+    """鍵の列・SMILES の順・f·z の値（float の ==）が分子ごとに完全一致か。最初に違う分子も返す。"""
+    first = None
+    for m in mids:
+        ra, rb = a.get(m), b.get(m)
+        if ra is None or rb is None or [tuple(r) for r in ra] != [tuple(r) for r in rb]:
+            first = m
+            break
+    return dict(n=len(mids), identical=first is None, first_diff=first)
 
 
 def tag(stage: str, **kw) -> None:
@@ -139,6 +179,8 @@ def main(argv=None) -> int:
     ap.add_argument("--features", type=Path, required=True)
     ap.add_argument("--out-dir", type=Path, required=True)
     ap.add_argument("--limit", type=int, default=None, help="手元の試し用: 先頭 N 分子だけ")
+    ap.add_argument("--pubchem-workers", default="1", help="#278: pubchem の段の worker の数（整数か auto）")
+    ap.add_argument("--pubchem-check", type=int, default=0, help="#278: 直列と並列の一致を確かめる分子の数（0 = しない）")
     a = ap.parse_args(argv)
     a.out_dir.mkdir(parents=True, exist_ok=True)
     secs: dict = {}
@@ -168,9 +210,44 @@ def main(argv=None) -> int:
     pool = R.load_pool()
     bits = np.load(ROOT / "data/ext/v4g/casmi26-v2-pool/fp_bits.npy")
     t_pool = round(time.time() - t0, 2)
-    pcres = PC.run_holdout(NAME, targets, zf, bits, set(pool.key))
+    pool_keys = set(pool.key)
+    avail = mem_available()
+    if a.pubchem_workers == "auto":
+        assert PC_SHARED_BYTES is not None and PC_PRIVATE_BYTES is not None, "auto の共有・専用が未設定"
+        workers = auto_workers(PC_SHARED_BYTES, PC_PRIVATE_BYTES, avail, os.cpu_count())
+    else:
+        workers = int(a.pubchem_workers)
+    wrec = dict(workers=workers, mode=a.pubchem_workers, mem_available=avail, cpu_count=os.cpu_count(),
+                shared=PC_SHARED_BYTES, private=PC_PRIVATE_BYTES)
+    tag("pubchem_workers", **wrec)
+    check = None
+    if a.pubchem_check:
+        tc = time.time()
+        cm = list(targets)[:a.pubchem_check]
+        sub_t = {m: targets[m] for m in cm}
+        ts = time.time()
+        ser = PC.run_holdout(NAME, sub_t, zf, bits, pool_keys, workers=1, cache=ed / "pc_check_serial.json")
+        t_ser = round(time.time() - ts, 2)
+        tp = time.time()
+        par = PC.run_holdout(NAME, sub_t, zf, bits, pool_keys, workers=workers, cache=ed / "pc_check_parallel.json")
+        t_par = round(time.time() - tp, 2)
+        cmp_ = same_results(ser, par, cm)
+        check = dict(secs=round(time.time() - tc, 2), serial_secs=t_ser, parallel_secs=t_par, workers=workers, **cmp_)
+        tag("pubchem_check", **check)
+        (a.out_dir / "pubchem_check.json").write_text(json.dumps(check, indent=1))
+        if not cmp_["identical"]:
+            raise SystemExit(f"#278: 直列と並列の結果が違う（最初の分子 {cmp_['first_diff']}）。記録して止める")
+        t0 = time.time() - t_pool   # 一致の確かめの秒は pubchem の段に入れない（プールの読み込みは今までどおり入れる）
+    pcres = PC.run_holdout(NAME, targets, zf, bits, pool_keys, workers=workers)
     (ed / "pubchem_fold0.logits_sha256").write_text(sha256_file(ed / "pc_logits.npz"))
-    done("pubchem", t0, n=len(pcres), load_pool_secs=t_pool, n_q=int(sum(len(v or []) for v in pcres.values())))
+    if check is not None:
+        cmp2 = same_results(ser, pcres, cm)
+        check["main_vs_serial"] = cmp2
+        (a.out_dir / "pubchem_check.json").write_text(json.dumps(check, indent=1))
+        if not cmp2["identical"]:
+            raise SystemExit(f"#278: 本番の段の結果が直列と違う（最初の分子 {cmp2['first_diff']}）。記録して止める")
+    done("pubchem", t0, n=len(pcres), load_pool_secs=t_pool, n_q=int(sum(len(v or []) for v in pcres.values())),
+         workers=workers, main_vs_serial=(check or {}).get("main_vs_serial"))
     del pool
 
     t0 = time.time()
@@ -236,12 +313,13 @@ def main(argv=None) -> int:
     done("rank", t0, **counts, n_cand_min=min(n_cands), n_cand_max=max(n_cands))
 
     n = len(ids)
-    rep = dict(issue=274, n_molecules=n, n_logits=len(targets), stages=secs, total=round(sum(secs.values()), 1),
+    rep = dict(issue=278 if workers > 1 or check else 274, n_molecules=n, n_logits=len(targets), stages=secs, total=round(sum(secs.values()), 1),
                wall=round(time.time() - t_all, 1), within_features=within.report(),
                extrapolation=extrapolate(secs, n), counts=counts, n_cand_min=min(n_cands), n_cand_max=max(n_cands),
                ranker_sha256=sha256_file(a.ranker), features_sha256=LR.features_sha256(feats),
                submission_sha256=sha256_file(sub), table_rows=int(len(tab)), cpu_count=os.cpu_count(),
-               python=sys.version.split()[0], lightgbm=lgb.__version__)
+               python=sys.version.split()[0], lightgbm=lgb.__version__, pubchem_workers=wrec, pubchem_check=check,
+               code_commit=os.environ.get("CASMI_CODE_COMMIT"))
     (a.out_dir / "timing.json").write_text(json.dumps(rep, indent=1, ensure_ascii=False))
     tag("end", **{k: rep[k] for k in ("n_molecules", "total", "wall")}, over=rep["extrapolation"]["over"])
     return 0
