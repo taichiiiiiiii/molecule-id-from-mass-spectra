@@ -4,7 +4,7 @@
  "version": 1,
  "kaggle_status": "COMPLETE",
  "poller_done": "DONE COMPLETE code_commit=0493ea593757b4f9e9026d7c8a2e94aa5e1f0f35",
- "poller_complete_at": "2026-11-28 03:43:37",
+ "poller_complete_at": "2026-11-28 03:43:27",
  "code_commit": "0493ea593757b4f9e9026d7c8a2e94aa5e1f0f35",
  "output_sha256": {
   "base.log": "96780418f85e65e7ddbd1a76c7911c18d79b2852736f71726d1719b9bb5b4627",
@@ -118,7 +118,10 @@
   "a_pool_share_of_unique_cands": 0.4499,
   "a_n1_1200": 6835.2,
   "ab_total": 27055.1,
-  "n1_topk_share": 0.7624
+  "n1_topk_share": 0.7624,
+  "note_fixed": "b_* と ab_total は GLACIER の固定費（39.8 s）を含まない（#242 の T4 値と同じ扱い）。含めると b_total 30,663.7・ab_total 27,094.9 で帯は同じ"
  },
- "submissions": 0
+ "submissions": 0,
+ "poller_done_written_at": "2026-11-28 03:43:37",
+ "poller_ppid_check": "ps -o pid,ppid -p 75974 → PPID 1（起動 3 秒後、2026-11-28 03:19）"
 }
