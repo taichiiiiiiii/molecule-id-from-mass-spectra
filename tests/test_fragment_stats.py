@@ -168,3 +168,11 @@ def test_fdmax_same_formula_only():
     v = np.array([-3.0, -1.0, -5.0, -2.0])
     got = P.fdmax(v, ["C2H6O", "C2H6O", "C3H8", None])
     assert got.tolist() == [-2.0, 0.0, 0.0, 0.0]
+
+
+def test_subset_keys_deterministic():
+    import add_fragment_stats as AF
+    keys = np.array([f"K{i:05d}" for i in range(100)])
+    a, b = AF.subset_keys(keys, 10), AF.subset_keys(keys, 10)
+    assert a.tolist() == b.tolist() and len(set(a)) == 10 and list(a) == sorted(a)
+    assert AF.subset_keys(keys, 0).tolist() == keys.tolist()
