@@ -1,0 +1,15 @@
+{
+ "holdout": "v3_c2_t10",
+ "type": "c2",
+ "fold": 0,
+ "n_molecules": 197,
+ "n_rows": 22148,
+ "n_L": 10328,
+ "n_Q": 11820,
+ "control_csv_identical": true,
+ "logits_sha256": "d0d441fd450d2b833f31fe0871a4d050a280a367b1b059b7e6368466ac82a618",
+ "n_nan": 0,
+ "n_inf": 0,
+ "secs": 57.0,
+ "path": "/Users/taichi/work/molecule-id-dev/outputs/local_eval/features/parts_holdout/v3_c2_t10.parquet"
+}
