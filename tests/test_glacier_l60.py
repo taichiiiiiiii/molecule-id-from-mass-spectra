@@ -111,3 +111,72 @@ def test_jobs_sha_change_invalidates_shards(tmp_path):
     assert G.shard_done(tmp_path, 0, 0, 10, "aaa") and not G.shard_done(tmp_path, 0, 0, 10, "bbb")
     r = G.run_shards(tmp_path, jobs, _fake(calls), shard_size=10, log=lambda *x: None, jobs_sha256="bbb")
     assert r["ran"] == [0, 1] and calls == [10, 5, 10, 5]
+
+
+# ---------------------------------------------------------------- #268: --part tier
+def _dev():
+    return pd.DataFrame(dict(
+        set=["s1"] * 5 + ["s2"] * 3, type=["a"] * 5 + ["c"] * 3, molecule_id=["1"] * 5 + ["2"] * 3,
+        cand_key=["K1", "K2", "K3", "K4", "K5", "K6", "K7", "K8"],
+        cand_smiles=["C", "CC", "CCC", "CCCC", "CO", "CCO", "N", "CN"],
+        is_tier=np.array([0, 1, 0, 1, 1, 0, 1, 1], np.int8),
+        ctrl_rank=np.array([2, 9, 1, 3, 5, 0, 7, 4], np.int16)))
+
+
+def test_select_rows_pool_and_tier():
+    d = _dev()
+    pool = G.select_rows(d, "pool")
+    tier = G.select_rows(d, "tier")
+    assert (pool.is_tier == 0).all() and (tier.is_tier == 1).all()
+    assert len(pool) + len(tier) == len(d)                   # 層は全行（上位の切り出しをしない）
+    # 分子ごとに ctrl_rank の順、cand_rank は 0 始まり
+    assert tier.cand_smiles.tolist() == ["CCCC", "CO", "CC", "CN", "N"]
+    assert tier.cand_rank.tolist() == [0, 1, 2, 0, 1]
+    assert pool.cand_smiles.tolist() == ["CCC", "C", "CCO"]
+    with pytest.raises(ValueError):
+        G.select_rows(d, "all")
+
+
+def test_select_rows_rejects_duplicate_smiles():
+    d = _dev()
+    d.loc[3, "cand_smiles"] = "CC"                           # 分子 1 の層の行で重複
+    with pytest.raises(AssertionError):
+        G.select_rows(d, "tier")
+
+
+def test_expected_counts_tier():
+    assert G.EXPECTED["pool"] == dict(n_jobs=544_886, n_L=197_170)
+    assert G.EXPECTED["tier"] == dict(n_jobs=673_214, n_L=233_809)
+    b = G.shard_bounds(G.EXPECTED["tier"]["n_jobs"], G.SHARD_SIZE)
+    assert len(b) == 34 and b[-1] == (660_000, 673_214)
+
+
+def test_cand_msg_overlap_counts_decoys_only_by_key():
+    d = _dev()
+    tier = G.select_rows(d, "tier")
+    mols = pd.DataFrame(dict(set=["s1", "s2"], molecule_id=["1", "2"], key=["K2", "K9"]))
+    r = G.cand_msg_overlap(tier, mols, {"K2", "K4", "K7"})
+    assert r["n_rows"] == 5 and r["n_hit"] == 3
+    assert r["n_truth_rows"] == 1                            # 分子 1 の K2 が正解の行
+    assert r["n_hit_decoy"] == 2                             # K4・K7（正解の K2 は除く）
+    assert r["by_type"]["a"] == dict(n_rows=3, n_hit=2, n_hit_decoy=1)
+    assert r["by_type"]["c"] == dict(n_rows=2, n_hit=1, n_hit_decoy=1)
+
+
+def test_check_shards(tmp_path, monkeypatch):
+    sys.path.insert(0, str(ROOT / "scripts/bench"))
+    import glacier_check_shards as CS
+    jobs = _jobs(25)
+    jobs.to_parquet(tmp_path / "jobs.parquet", index=False)
+    jsha = G.sha256(tmp_path / "jobs.parquet")
+    man = dict(part="tier", n_jobs=25, shard_size=10, outputs={"jobs.parquet": jsha})
+    (tmp_path / "manifest.json").write_text(json.dumps(man))
+    monkeypatch.setitem(G.EXPECTED, "tier", dict(n_jobs=25, n_L=5))
+    G.run_shards(tmp_path, jobs, _fake([]), shard_size=10, max_shards=2, log=lambda *x: None, jobs_sha256=jsha)
+    r = CS.check(tmp_path)
+    assert not r["ok"] and r["n_done"] == 2 and r["n_rows_done"] == 20
+    G.run_shards(tmp_path, jobs, _fake([]), shard_size=10, log=lambda *x: None, jobs_sha256=jsha)
+    r = CS.check(tmp_path)
+    assert r["ok"] and r["n_done"] == 3 and r["n_rows_done"] == 25
+    monkeypatch.setitem(G.EXPECTED, "tier", dict(n_jobs=26, n_L=5))   # 期待の本数と違えば通さない
+    assert not CS.check(tmp_path)["ok"]

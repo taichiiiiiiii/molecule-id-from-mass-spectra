@@ -1,0 +1,81 @@
+{
+ "exp013": {
+  "a_model_fold_eq_query_fold": true,
+  "oof_rows_eq_table_rows": true,
+  "b_leave_one_fold_out": {
+   "1": {
+    "overlap": 0,
+    "n_train_mol": 1939,
+    "excluded_in_train": 0,
+    "meta_n_train_mol": 1939,
+    "train_folds": [
+     2,
+     3,
+     4
+    ]
+   },
+   "2": {
+    "overlap": 0,
+    "n_train_mol": 1941,
+    "excluded_in_train": 0,
+    "meta_n_train_mol": 1941,
+    "train_folds": [
+     1,
+     3,
+     4
+    ]
+   },
+   "3": {
+    "overlap": 0,
+    "n_train_mol": 1937,
+    "excluded_in_train": 0,
+    "meta_n_train_mol": 1937,
+    "train_folds": [
+     1,
+     2,
+     4
+    ]
+   },
+   "4": {
+    "overlap": 0,
+    "n_train_mol": 1947,
+    "excluded_in_train": 0,
+    "meta_n_train_mol": 1947,
+    "train_folds": [
+     1,
+     2,
+     3
+    ]
+   }
+  },
+  "b_ok": true,
+  "f_eval_molecules": {
+   "n_eval": 3373,
+   "eq_list": true,
+   "overlap_excluded": 0
+  },
+  "c_type_e_rows_in_train": {
+   "1": 0,
+   "2": 0,
+   "3": 0,
+   "4": 0
+  },
+  "c_ok": true,
+  "d_excluded_not_in_features": {
+   "bad": [],
+   "excluded": [
+    "prior_unverified_pop"
+   ],
+   "features_eq_expected": true,
+   "models_eq_meta": true,
+   "n_features": 79,
+   "features_sha256": "b0043814dea6b9599116e87725cc309e98df1c1f812b07b94511b9f7bf5d72af",
+   "sha_ok": true
+  },
+  "d_ok": true,
+  "e_tables": "outputs/local_eval/features/dev_b8_cc_gl2.parquet",
+  "e_ok": true,
+  "table_sha256_ok": true,
+  "all_ok": true
+ }
+}

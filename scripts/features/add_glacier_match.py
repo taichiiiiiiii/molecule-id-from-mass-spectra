@@ -18,6 +18,9 @@ dev 表に GLACIER L60 の予測と観測の一致の列（Issue #259）を足�
 配線の点検: 観測の m/z・強度が run.py の query_spectra と一致、先頭 16 本の区分 ⊆ jobs の区分、jobs の候補 = 表の
 プールの行（被覆のある分子）、has_gl = 1 の行に NaN/inf 無し、元の列は値も順序も同じ。
 集合ごとに <out の親>/parts_gl_dev/<set>.parquet に書くので途中から再開できる。
+
+Issue #268: `--gl-dir-tier <glacier_tier>`（glacier_l60.py list --part tier の出力）を渡すと、PubChem 層の行
+（is_tier = 1）にも同じ関数・同じ定義で列を埋める（parts は parts_gl_dev_tier/）。渡さなければ #259 と同じ動き。
 """
 from __future__ import annotations
 
@@ -96,17 +99,59 @@ def load_preds(gl_dir: Path, jobs: pd.DataFrame) -> dict:
     return out
 
 
+def check_jobs(holdout, mid, jc, job_cands, cats_first, cand_smis) -> bool:
+    """1 分子の配線の点検（pool・tier 共通）。被覆のある分子なら True。
+    候補の行が無い分子（n_L = 0）は jobs に行が無い。それ以外は先頭 16 本の区分 ⊆ jobs の区分。"""
+    assert cats_first <= jc or not cand_smis, f"{holdout}/{mid}: 先頭 16 本の区分が jobs に無い"
+    if jc:
+        assert job_cands.get(mid, set()) == cand_smis, f"{holdout}/{mid}: jobs の候補と表の行が違う"
+        return True
+    assert mid not in job_cands
+    return False
+
+
+def fill_rows(pos, smis, mid, qprep, preds, tol, cols, has) -> tuple[int, int]:
+    """行 pos（同じ分子）に一致の列を埋める。preds = {(molecule_id, smiles, 区分): prep 済み予測}。
+    返り値 = (使った (観測, 予測) の対の数, 値のあるスペクトルの数)。"""
+    n_pairs = n_spec_used = 0
+    for p in pos:
+        vals = []
+        for q, cs in qprep:
+            ps = [preds[k] for k in ((mid, smis[p], c) for c in sorted(cs)) if k in preds]
+            n_pairs += len(ps)
+            vals.append(GM.spectrum_value(q, ps, tol))
+        a = GM.aggregate(vals)
+        n_spec_used += sum(v is not None for v in vals)
+        for c in GM.SIM_COLS:
+            cols[c][p] = a[c]
+        has[p] = a["has_gl"]
+    return n_pairs, n_spec_used
+
+
+def _set_jobs(gl_dir: Path, holdout: str):
+    jobs = pd.read_parquet(gl_dir / "jobs.parquet", filters=[("set", "==", holdout)])
+    jobs = jobs.sort_values("row").reset_index(drop=True)
+    if len(jobs) == 0:
+        return jobs, {}, {}, {}
+    preds = load_preds(gl_dir, jobs)
+    job_cats = jobs.groupby("molecule_id")[["adduct", "instr", "ce"]].apply(
+        lambda g: set(zip(g.adduct, g.instr, g.ce.astype(float)))).to_dict()
+    job_cands = jobs.groupby("molecule_id")["smiles"].apply(set).to_dict()
+    return jobs, preds, job_cats, job_cands
+
+
 def run_set(args) -> str:
-    holdout, sub_path, parts, gl_dir, tol = args
+    holdout, sub_path, parts, gl_dir, tol = args[:5]
+    gl_dir_tier = args[5] if len(args) > 5 else None
     out, rec_p = parts / f"{holdout}.parquet", parts / f"{holdout}.json"
     if out.is_file() and rec_p.is_file():
         return str(rec_p)
     t0 = time.time()
     from run import query_spectra
     sub = pd.read_parquet(sub_path)
-    jobs = pd.read_parquet(gl_dir / "jobs.parquet", filters=[("set", "==", holdout)])
-    jobs = jobs.sort_values("row").reset_index(drop=True)
-    preds = load_preds(gl_dir, jobs)
+    jobs, preds, job_cats, job_cands = _set_jobs(gl_dir, holdout)
+    if gl_dir_tier is not None:
+        jobs_t, preds_t, job_cats_t, job_cands_t = _set_jobs(gl_dir_tier, holdout)
     obs = observed(holdout)
     qs = query_spectra(holdout)
     assert set(qs) == set(obs)
@@ -114,9 +159,6 @@ def run_set(args) -> str:
         assert len(lst) == len(qs[mid])
         for (mz, it, _), q in zip(lst, qs[mid]):
             assert np.array_equal(mz, q["mz"]) and np.array_equal(it, q["it"]), f"{holdout}/{mid}: 観測が違う"
-    job_cats = jobs.groupby("molecule_id")[["adduct", "instr", "ce"]].apply(
-        lambda g: set(zip(g.adduct, g.instr, g.ce.astype(float)))).to_dict()
-    job_cands = jobs.groupby("molecule_id")["smiles"].apply(set).to_dict()
     n = len(sub)
     cols = {c: np.full(n, np.nan) for c in GM.SIM_COLS}
     has = np.zeros(n, np.int8)
@@ -124,38 +166,29 @@ def run_set(args) -> str:
     smis = sub.cand_smiles.astype(str).to_numpy()
     tier = sub.is_tier.to_numpy()
     n_pairs = n_spec_used = 0
-    n_mol_cov = 0
+    n_mol_cov = n_mol_cov_t = n_pairs_t = n_spec_used_t = 0
     for mid in pd.unique(mids):
         pos = np.flatnonzero(mids == mid)
         lst = obs.get(mid, [])
         cats_first = set().union(*[c for _, _, c in lst]) if lst else set()
-        jc = job_cats.get(mid, set())
-        pool_smis = set(smis[pos][tier[pos] == 0])
-        # プールの行が無い分子（n_L = 0）は jobs に行が無い。それ以外は先頭 16 本の区分 ⊆ jobs の区分
-        assert cats_first <= jc or not pool_smis, f"{holdout}/{mid}: 先頭 16 本の区分が jobs に無い"
-        if jc:
-            assert job_cands.get(mid, set()) == pool_smis, f"{holdout}/{mid}: jobs の候補と表のプールの行が違う"
-            n_mol_cov += 1
-        else:
-            assert mid not in job_cands
         qprep = [(GM.prep(mz, it), c) for mz, it, c in lst]
-        for p in pos:
-            if tier[p] != 0:
-                continue
-            vals = []
-            for q, cs in qprep:
-                ps = [preds[k] for k in ((mid, smis[p], c) for c in sorted(cs)) if k in preds]
-                n_pairs += len(ps)
-                vals.append(GM.spectrum_value(q, ps, tol))
-            a = GM.aggregate(vals)
-            n_spec_used += sum(v is not None for v in vals)
-            for c in GM.SIM_COLS:
-                cols[c][p] = a[c]
-            has[p] = a["has_gl"]
+        pos_pool = pos[tier[pos] == 0]
+        n_mol_cov += check_jobs(holdout, mid, job_cats.get(mid, set()), job_cands, cats_first, set(smis[pos_pool]))
+        a, b = fill_rows(pos_pool, smis, mid, qprep, preds, tol, cols, has)
+        n_pairs += a
+        n_spec_used += b
+        if gl_dir_tier is not None:
+            pos_t = pos[tier[pos] != 0]
+            n_mol_cov_t += check_jobs(holdout, mid, job_cats_t.get(mid, set()), job_cands_t, cats_first,
+                                      set(smis[pos_t]))
+            a, b = fill_rows(pos_t, smis, mid, qprep, preds_t, tol, cols, has)
+            n_pairs_t += a
+            n_spec_used_t += b
     h1 = has == 1
     for c in GM.SIM_COLS:
         assert np.isfinite(cols[c][h1]).all() and np.isnan(cols[c][~h1]).all(), f"{holdout}: {c} の欠け"
-    assert (has[tier != 0] == 0).all()
+    if gl_dir_tier is None:
+        assert (has[tier != 0] == 0).all()
     df = pd.DataFrame({**cols, "has_gl": has})
     tmp = out.with_suffix(".tmp.parquet")
     df.to_parquet(tmp, index=False)
@@ -163,6 +196,11 @@ def run_set(args) -> str:
     rec = dict(set=holdout, n_rows=n, n_molecules=int(len(pd.unique(mids))), n_molecules_covered=n_mol_cov,
                n_has_gl=int(h1.sum()), n_has_gl0=int((~h1).sum()), n_has_gl0_pool=int(((~h1) & (tier == 0)).sum()),
                n_jobs=int(len(jobs)), n_preds_ok=len(preds), n_pairs=int(n_pairs), n_spectrum_values=int(n_spec_used),
+               **({} if gl_dir_tier is None else dict(
+                   n_molecules_covered_tier=n_mol_cov_t, n_has_gl_tier=int((h1 & (tier != 0)).sum()),
+                   n_has_gl0_tier=int(((~h1) & (tier != 0)).sum()), n_jobs_tier=int(len(jobs_t)),
+                   n_preds_ok_tier=len(preds_t), n_pairs_tier=int(n_pairs_t),
+                   n_spectrum_values_tier=int(n_spec_used_t))),
                secs=round(time.time() - t0, 1),
                maxrss_bytes=int(resource.getrusage(resource.RUSAGE_SELF).ru_maxrss))
     rec_p.write_text(json.dumps(rec, ensure_ascii=False, indent=1))
@@ -175,14 +213,17 @@ def main():
     ap.add_argument("--in", dest="inp", type=Path, required=True)
     ap.add_argument("--out", type=Path, required=True)
     ap.add_argument("--gl-dir", type=Path, required=True)
+    ap.add_argument("--gl-dir-tier", type=Path, default=None,
+                    help="#268: PubChem 層の予測（glacier_l60.py list --part tier の out-dir）。渡すと層の行も埋める")
     ap.add_argument("--workers", type=int, default=4)
     ap.add_argument("--sets", default="", help="試しに一部の集合だけ（parts だけ書いて表は書かない）")
     a = ap.parse_args()
     assert a.inp.is_absolute() and a.out.is_absolute() and a.gl_dir.is_absolute(), "絶対パスで渡す"
+    assert a.gl_dir_tier is None or a.gl_dir_tier.is_absolute(), "絶対パスで渡す"
     assert a.inp.resolve() != a.out.resolve(), "入力と同じ名前には書かない"
     t0 = time.time()
     tol = mz_tol()
-    parts = a.out.parent / "parts_gl_dev"
+    parts = a.out.parent / ("parts_gl_dev" if a.gl_dir_tier is None else "parts_gl_dev_tier")
     parts.mkdir(parents=True, exist_ok=True)
     key = pd.read_parquet(a.inp, columns=KEY_COLS)
     key["molecule_id"] = key.molecule_id.astype(str)
@@ -193,7 +234,7 @@ def main():
         sp = parts / f"{s}.in.parquet"
         if not sp.is_file():
             key[key.set == s].reset_index(drop=True).to_parquet(sp, index=False)
-        jobs.append((s, sp, parts, a.gl_dir, tol))
+        jobs.append((s, sp, parts, a.gl_dir, tol, a.gl_dir_tier))
     with ProcessPoolExecutor(max_workers=a.workers) as ex:
         recs = [json.loads(Path(p).read_text()) for p in ex.map(run_set, jobs)]
     if a.sets:
@@ -225,13 +266,16 @@ def main():
     pd.testing.assert_frame_equal(back[tab.columns.tolist()], tab)   # 元の列は値も順序も同じ
     old = tab.select_dtypes(include=[np.number]).to_numpy(np.float64)
     tier = out.is_tier.to_numpy()
-    rep = dict(issue=259, input=str(a.inp), input_sha256=sha256_file(a.inp), output=str(a.out),
+    rep = dict(issue=259 if a.gl_dir_tier is None else 268, input=str(a.inp), input_sha256=sha256_file(a.inp), output=str(a.out),
                output_sha256=sha256_file(a.out), gl_dir=str(a.gl_dir),
                jobs_sha256=sha256_file(a.gl_dir / "jobs.parquet"), mz_tol=tol,
+               **({} if a.gl_dir_tier is None else dict(
+                   gl_dir_tier=str(a.gl_dir_tier), jobs_tier_sha256=sha256_file(a.gl_dir_tier / "jobs.parquet"))),
                n_rows=int(len(out)), n_molecules=int(out[["set", "molecule_id"]].drop_duplicates().shape[0]),
                n_cols_in=int(tab.shape[1]), n_cols_out=int(out.shape[1]), added=added,
                n_has_gl1=int(h1.sum()), n_has_gl0=int((~h1).sum()), n_has_gl0_pool=int(((~h1) & (tier == 0)).sum()),
-               n_has_gl0_tier=int(((~h1) & (tier != 0)).sum()), n_nonfinite_has_gl1=n_bad_h1,
+               n_has_gl0_tier=int(((~h1) & (tier != 0)).sum()), n_has_gl1_tier=int((h1 & (tier != 0)).sum()),
+               n_nonfinite_has_gl1=n_bad_h1,
                n_nan_old_cols=int(np.isnan(old).sum()), n_inf_old_cols=int(np.isinf(old).sum()),
                n_molecules_has_gl1=int(out.loc[h1, ["set", "molecule_id"]].drop_duplicates().shape[0]),
                secs=round(time.time() - t0, 1), per_set=recs)

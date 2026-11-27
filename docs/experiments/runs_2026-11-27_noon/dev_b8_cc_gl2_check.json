@@ -1,0 +1,23 @@
+{
+ "gl2_sha256": "8769bb50f997dd49004c066021ade1a531fc0f4bcb27afacbb348251b27783e6",
+ "gl_sha256": "954c165f55cc01d3c63f74884e0ea9f2edf18a0a2292e553e0e0cbdd17898b71",
+ "cc_sha256": "304f50c3f763f8da360b050f903ea300b9ad3bc6465d9fff45f99d6f501a9628",
+ "n_rows": {
+  "gl2": 430979,
+  "gl": 430979,
+  "cc": 430979
+ },
+ "has_gl1_tier": 212864,
+ "has_gl1_pool": 181047,
+ "has_gl0_tier": 20945,
+ "has_gl0_pool": 16123,
+ "n_tier_rows": 233809,
+ "inf_new_cols": 0,
+ "nan_new_cols_has_gl1": 0,
+ "nan_new_cols_has_gl0": 518952,
+ "cc_cols_identical_in_gl2": true,
+ "gl_vs_gl2_non_gl_identical": true,
+ "gl_vs_gl2_cols": [],
+ "pool_rows_gl_identical_to_gl": false,
+ "gl_table_tier_has_gl1": 0
+}
