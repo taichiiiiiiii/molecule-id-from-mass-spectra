@@ -1,0 +1,127 @@
+{
+ "issue": 294,
+ "kernel": "taichiiiii/casmi26-e2e-timing-v3",
+ "version": 1,
+ "kaggle_status": "COMPLETE",
+ "poller_done": "DONE COMPLETE code_commit=0493ea593757b4f9e9026d7c8a2e94aa5e1f0f35",
+ "poller_complete_at": "2026-11-28 03:43:27",
+ "code_commit": "0493ea593757b4f9e9026d7c8a2e94aa5e1f0f35",
+ "output_sha256": {
+  "base.log": "96780418f85e65e7ddbd1a76c7911c18d79b2852736f71726d1719b9bb5b4627",
+  "casmi26-e2e-timing-v3.log": "ae407680f7db0a833d46611a98a1c38b1e44e5501bd9833c162f73e85ab81733",
+  "e2e_v3.log": "f94a1fcdbed2b295add097ad0a18cc6a41fef4f6181d785d3ab699e18ef66ec2",
+  "glcount.log": "9697ba6ba23b3f75924ba2acc9aec13c4be1ecb524e90c1514cec92e2af52eb4",
+  "glpred.log": "ccd4a639e61208e9484d2ea81e955c2adb14a79c161bfb633be9f29dfb6ed00a",
+  "n1.log": "8d5b5b579fc8f07c60d3684dcedd6ef0cfc273554ba022d8ed4232bc3859aba5",
+  "timing_v3.json": "0a358e4ff216b9c0a7fb76239e11c1bcb14e9a566bcac4f63aa33c9b4de381bc"
+ },
+ "cpu_count": 4,
+ "python": "3.12.13",
+ "wall_secs": 1305.6,
+ "base_40": {
+  "rc": 0,
+  "wall": 510.23,
+  "stages": {
+   "prepare": 0.85,
+   "logits": 25.75,
+   "pubchem": 342.16,
+   "qrows": 39.59,
+   "features": 93.81,
+   "cc": 5.65,
+   "rank": 0.08
+  },
+  "n_molecules": 40,
+  "table_rows": 4363
+ },
+ "n1": {
+  "secs": {
+   "load_library": 16.6,
+   "cand_fp": 8.3,
+   "topk": 264.4,
+   "refs_and_sims": 56.2,
+   "features": 0.2
+  },
+  "secs_total": 346.8,
+  "n_molecules": 40,
+  "n_unique_cand": 4363,
+  "n_need_structures": 30412,
+  "n_ref_spectra_used": 253764
+ },
+ "glcount": {
+  "n_mol_table": 40,
+  "n_mol": 40,
+  "n_jobs": 9259,
+  "jobs_per_mol": 231.475,
+  "parts": {
+   "pool": {
+    "n_L": 1963,
+    "n_jobs": 4279,
+    "n_unique": 4279,
+    "n_mols_no_cov": 1,
+    "n_query_spectra": 123
+   },
+   "tier": {
+    "n_L": 2400,
+    "n_jobs": 4980,
+    "n_unique": 4980,
+    "n_mols_no_cov": 1,
+    "n_query_spectra": 123
+   }
+  },
+  "stage_wall": 0.65
+ },
+ "glpred": {
+  "n_jobs": 4000,
+  "n_unique": 4000,
+  "n_ok": 4000,
+  "n_fail_smiles": 0,
+  "install_secs": 8.44,
+  "load_secs": 31.38,
+  "pred_secs": 401.67,
+  "ms_per_job": 100.417,
+  "threads": 4,
+  "rdkit": "2025.03.6",
+  "torch": "2.10.0+cu128",
+  "pkg": "/kaggle/input/datasets/ahmedberatozer/casmi26-glacier",
+  "jobs_file_sha256": "b2ff507c45adee482afbd03af725928edc05a7bdfe07bece3fcdbbed7a502622",
+  "gl_runner_sha256": "5c4f74313ac54263d05d987c39d012d81ec57c5f35e1095ecd49a5bcb6440fca",
+  "ckpt_sha256": "9192e4c2eeafe83317d5a2c2641e1fc4d68934488757a4faafeb66f2ab397a12",
+  "bs_final": 32
+ },
+ "extrapolation": {
+  "gl_ms_per_job": 100.418,
+  "jobs_per_mol_dev": 312.25,
+  "jobs_per_mol_test": 231.47,
+  "jobs_per_mol_used": 312.25,
+  "gl_fixed_secs": 39.8,
+  "gl_1200": 37666.7,
+  "n1_secs_per_mol": 8.67,
+  "n1_1200": 10404.0,
+  "v2_total": 12448.5,
+  "total": 60519.2,
+  "gate": 16200.0,
+  "limit": 32400.0,
+  "margin_to_gate": -44319.2,
+  "verdict": "上限外",
+  "main_cause": "glacier",
+  "target_n": 1200,
+  "n_mol_measured": 40,
+  "n1_secs_measured": 346.8
+ },
+ "estimates_for_recommendation": {
+  "note": "推定（未測定）。#294 の事前の推奨の決め方に沿った数字の並べ",
+  "gl_cpu_with_test_jobs_per_mol": 27932.8,
+  "total_with_test_jobs_per_mol": 50785.3,
+  "b_gl_t4_ms_per_job": 20.74,
+  "b_gl_t4_1200": 7771.4,
+  "b_total": 30623.9,
+  "a_pool_share_of_unique_cands": 0.4499,
+  "a_n1_1200": 6835.2,
+  "ab_total": 27055.1,
+  "n1_topk_share": 0.7624,
+  "note_fixed": "b_* と ab_total は GLACIER の固定費（39.8 s）を含まない（#242 の T4 値と同じ扱い）。含めると b_total 30,663.7・ab_total 27,094.9 で帯は同じ"
+ },
+ "submissions": 0,
+ "poller_done_written_at": "2026-11-28 03:43:37",
+ "poller_ppid_check": "ps -o pid,ppid -p 75974 → PPID 1（起動 3 秒後、2026-11-28 03:19）"
+}
