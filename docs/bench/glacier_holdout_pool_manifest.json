@@ -1,0 +1,104 @@
+{
+ "part": "holdout",
+ "n_mols": 1358,
+ "n_L": 66234,
+ "n_jobs": 181120,
+ "n_jobs_unique_smiles_cat": 170301,
+ "n_jobs_counted_at_list": true,
+ "n_query_spectra": 6990,
+ "n_mols_no_cov": 160,
+ "n_mols_no_L": 3,
+ "shard_size": 20000,
+ "n_shards": 10,
+ "by_set": {
+  "enveda_v1u_t10": {
+   "n_mols": 373,
+   "n_L": 19660,
+   "n_jobs": 31098,
+   "n_msg1": 0
+  },
+  "v3_c1u_t10": {
+   "n_mols": 394,
+   "n_L": 21034,
+   "n_jobs": 49888,
+   "n_msg1": 3
+  },
+  "v3_c2_t10": {
+   "n_mols": 197,
+   "n_L": 10328,
+   "n_jobs": 25900,
+   "n_msg1": 0
+  },
+  "v3_c2nu_t10": {
+   "n_mols": 394,
+   "n_L": 15212,
+   "n_jobs": 74234,
+   "n_msg1": 227
+  }
+ },
+ "msg_overlap": {
+  "n1": 230,
+  "n1_all": 251,
+  "n_truth_key_none": 0,
+  "n1_raw_truthcsv": 216,
+  "n1_raw_rdkit": 216,
+  "n1_key": 230,
+  "by_type": {
+   "c1": {
+    "n": 394,
+    "n1": 3
+   },
+   "c2": {
+    "n": 197,
+    "n1": 0
+   },
+   "c2n": {
+    "n": 394,
+    "n1": 227
+   },
+   "enveda_v1": {
+    "n": 373,
+    "n1": 0
+   }
+  },
+  "msg_rows": 231104,
+  "msg_smiles": 31602,
+  "msg_key_none": 0
+ },
+ "cand_msg_overlap_tv": {
+  "n_rows": 66234,
+  "n_hit": 2171,
+  "by_type": {
+   "c1": {
+    "n_rows": 21034,
+    "n_hit": 458
+   },
+   "c2": {
+    "n_rows": 10328,
+    "n_hit": 220
+   },
+   "c2n": {
+    "n_rows": 15212,
+    "n_hit": 1119
+   },
+   "enveda_v1": {
+    "n_rows": 19660,
+    "n_hit": 374
+   }
+  }
+ },
+ "inputs": {
+  "outputs/local_eval/features/holdout_v3.parquet": "6adcfae996be2711c54e8d4d83c067e5f64bfa6d92c5147580a3d41bdbc12c39",
+  "docs/bench/holdout_list.csv": "c59f057e7526ee8e6af472fdcc35b02f310f97a7cd73a53f2075f8c2cdab2065",
+  "data/ext/msg/MassSpecGym.tsv": "0c9cc50450def3f0d4fe2dc09dea1105fc15e635db8c6656bc3e3be37a3bcd95",
+  "outputs/local_eval/enveda_v1u_t10/truth.csv": "5da732d895ecf5675c0aa060b2cc43b1d4b968c6eb3f2e95277ec320e5e99fc6",
+  "outputs/local_eval/v3_c1u_t10/truth.csv": "5aec3356eac67c7f1bb8cd8870baca0517b3c14b1623de124c4b03207629d789",
+  "outputs/local_eval/v3_c2_t10/truth.csv": "99f2bdd68b2af31d3d76b9007666b50069fd48022c567e2d7d9f3f7e1266e83d",
+  "outputs/local_eval/v3_c2nu_t10/truth.csv": "8fdb00687e57d82c2863ebc80c6b74e00ec93bf47d229d10aeef0892bf55be69"
+ },
+ "outputs": {
+  "jobs.parquet": "204f92b063dc20b701bd6f79ce0e727033f4300e27ae730a597b04b2b8085702",
+  "molecules.parquet": "29cf6c8b00e793f1327798d94418e5f2a35e301706f5cb9fa5116809806da8cb"
+ },
+ "seconds": 68.6
+}

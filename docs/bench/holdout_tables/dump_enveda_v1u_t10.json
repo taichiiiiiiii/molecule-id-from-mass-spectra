@@ -1,0 +1,15 @@
+{
+ "holdout": "enveda_v1u_t10",
+ "type": "enveda_v1",
+ "fold": 0,
+ "n_molecules": 373,
+ "n_rows": 42040,
+ "n_L": 19660,
+ "n_Q": 22380,
+ "control_csv_identical": true,
+ "logits_sha256": "e390b72829b669336a2a9d1656309185e558d6d50c638003da4e89b53dd50158",
+ "n_nan": 0,
+ "n_inf": 0,
+ "secs": 93.5,
+ "path": "/Users/taichi/work/molecule-id-dev/outputs/local_eval/features/parts_holdout/enveda_v1u_t10.parquet"
+}

@@ -17,6 +17,15 @@ nbr_n は件数の点検にだけ使い、表には入れない（#261 の台帳
   out_sha256 = part の parquet の sha256、NaN の数が part の値と一致する
 - NaN の決まり: nbr_n = 0 の行は両方 NaN、nbr_tani_mean はそれ以外で NaN なし（nbr_ms_mean は問い合わせの無い分子でも NaN）
 - 元の列は値も順も同じ、inf は 0、行数 430,979・分子 3,901
+
+Issue #290: `--which holdout` で判定用 4 集合（holdout_v3、分子 1,358。行数は dump_dev の記録の n_rows の和）に同じ点検で足す。
+holdout では隠す規則の点検（part の rule = 集合の hide_rule、隠した正準の鍵の数 = drop_keys から作った数 > 0）も report に書く。
+値は開かない（記録は行数・sha256・NaN/inf・件数だけ）。
+
+    $PY scripts/features/add_neighbour_ref.py --which holdout \
+        --in    /Users/taichi/work/molecule-id-dev/outputs/local_eval/features/holdout_v3_cc.parquet \
+        --parts /Users/taichi/work/molecule-id-dev/outputs/local_eval/features/parts_nbr_holdout \
+        --out   /Users/taichi/work/molecule-id-dev/outputs/local_eval/features/holdout_v3_cc_n1.parquet
 """
 from __future__ import annotations
 
@@ -41,6 +50,19 @@ KEY = ["set", "molecule_id", "cand_key"]
 MOL = ["set", "molecule_id"]
 EXPECT = dict(n_mol=3901, n_rows=430979)
 DEV_SETS = tuple(f"b8_f{f}_{t}_t10" for f in (1, 2, 3, 4) for t in "abcde")
+HOLDOUT_SETS = ("v3_c1u_t10", "enveda_v1u_t10", "v3_c2_t10", "v3_c2nu_t10")   # dump_dev.HOLDOUT_SETS と同じ
+N_HOLD = 1358
+HOLD_PARTS = ROOT / "outputs/local_eval/features/parts_holdout"              # dump_dev.py --which holdout の記録
+
+
+def expect_for(which: str, parts_dir: Path = HOLD_PARTS) -> dict:
+    """集合の並びと期待の数。holdout の行数は dump_dev の集合ごとの記録（parts_holdout/<set>.json の n_rows）の和。"""
+    if which == "dev":
+        return dict(sets=DEV_SETS, **EXPECT)
+    if which != "holdout":
+        raise ValueError(which)
+    n_rows = sum(int(json.loads((parts_dir / f"{h}.json").read_text())["n_rows"]) for h in HOLDOUT_SETS)
+    return dict(sets=HOLDOUT_SETS, n_mol=N_HOLD, n_rows=n_rows)
 
 
 def sha256_file(p: Path) -> str:
@@ -94,21 +116,47 @@ def add_columns(df: pd.DataFrame, parts: dict) -> tuple[pd.DataFrame, list]:
     return out, checks
 
 
+def hide_rule_check(metas: dict) -> dict:
+    """#290: holdout の N1 の part が集合の隠す規則どおりに作られたか。mode = hide_rule、rule = library.hide_rule(h)、
+    隠した正準の鍵の数 n_hidden_canon が drop_keys（raw と正準の両方を受ける neighbour_ref.drop_canon）から作り直した数と同じで 0 より大きい、
+    隠した train の行がある（rule = all のとき。enveda_libs は enveda 系の行が無い構造もあるので数だけ記録）。
+    neighbour_ref.py 自身も「隠した構造が近傍に入った」なら止まる（assert）。"""
+    import library as L
+    from neighbour_ref import drop_canon, load_library
+    cd = Path("/Users/taichi/.hermes/profiles/massspec/cache/scratch/nbr_cache")
+    _sk, _si, raw2canon, _rp, _rm = load_library(cd)
+    out = {}
+    for h, m in metas.items():
+        rule = L.hide_rule(h)["rule"]
+        n_hid = len(drop_canon(L.drop_keys(h), raw2canon))
+        r = dict(mode=m["mode"], rule=m["rule"], expected_rule=rule, n_hidden_canon=m["n_hidden_canon"],
+                 expected_n_hidden_canon=n_hid, n_rows_hidden=m["n_rows_hidden"], n_avail=m["n_avail"])
+        r["ok"] = bool(m["mode"] == "hide_rule" and m["rule"] == rule and m["n_hidden_canon"] == n_hid > 0
+                       and (rule != "all" or m["n_rows_hidden"] > 0))
+        out[h] = r
+    out["all_ok"] = all(v["ok"] for v in out.values())
+    return out
+
+
 def main(argv=None) -> int:
     import library as L
     ap = argparse.ArgumentParser()
     ap.add_argument("--in", dest="inp", required=True)
     ap.add_argument("--parts", required=True)
     ap.add_argument("--out", required=True)
+    ap.add_argument("--which", choices=["dev", "holdout"], default="dev")
+    ap.add_argument("--dump-parts", default=str(HOLD_PARTS), help="holdout の行数の記録（dump_dev の parts_holdout）")
     a = ap.parse_args(argv)
+    exp = expect_for(a.which, Path(a.dump_parts))
+    SETS = exp["sets"]
     t0 = time.time()
     inp, out, pdir = Path(a.inp), Path(a.out), Path(a.parts)
     in_sha = sha256_file(inp)
     df = pd.read_parquet(inp)
-    if sorted(pd.unique(df["set"].astype(str))) != sorted(DEV_SETS):
-        raise ValueError("表の集合が dev の 20 集合と違う")
+    if sorted(pd.unique(df["set"].astype(str))) != sorted(SETS):
+        raise ValueError(f"表の集合が {a.which} の {len(SETS)} 集合と違う")
     parts, metas = {}, {}
-    for h in DEV_SETS:
+    for h in SETS:
         pp, pj = pdir / f"{h}.parquet", pdir / f"{h}.json"
         meta = json.loads(pj.read_text())
         exp_rule = L.hide_rule(h)["rule"]
@@ -133,8 +181,9 @@ def main(argv=None) -> int:
     rep = dict(issue=261, input=str(inp), input_sha256=in_sha, parts=str(pdir), output=str(out),
                output_sha256=sha256_file(out), output_is_symlink=out.is_symlink(),
                output_realpath=str(out.resolve()), parent_is_symlink=out.parent.is_symlink(),
-               n_rows=int(len(new)), n_molecules=n_mol, n_rows_ok=len(new) == EXPECT["n_rows"],
-               n_molecules_ok=n_mol == EXPECT["n_mol"], added=list(NEW_COLS), original_columns_identical=bool(same),
+               which=a.which, expect=dict(n_mol=exp["n_mol"], n_rows=exp["n_rows"]),
+               n_rows=int(len(new)), n_molecules=n_mol, n_rows_ok=len(new) == exp["n_rows"],
+               n_molecules_ok=n_mol == exp["n_mol"], added=list(NEW_COLS), original_columns_identical=bool(same),
                n_inf=int(np.isinf(num).sum()), nan={c: int(np.isnan(num[:, j]).sum()) for j, c in enumerate(NEW_COLS)},
                n_nbr0_rows=sum(c["n_nbr0"] for c in checks),
                part_checks=checks, part_meta={h: dict(rule=m["rule"], secs_total=m["secs_total"], n_lt_k=m["n_lt_k"],
@@ -142,6 +191,9 @@ def main(argv=None) -> int:
                secs=round(time.time() - t0, 1))
     rep["all_ok"] = bool(rep["n_rows_ok"] and rep["n_molecules_ok"] and same and rep["n_inf"] == 0
                          and not rep["output_is_symlink"] and not rep["parent_is_symlink"])
+    if a.which == "holdout":   # #290: 隠す規則の点検（leak_check）
+        rep["leak_check_hide_rule"] = hide_rule_check(metas)
+        rep["all_ok"] = rep["all_ok"] and rep["leak_check_hide_rule"]["all_ok"]
     rp = out.with_name(out.stem + "_report.json")
     rp.write_text(json.dumps(rep, ensure_ascii=False, indent=1))
     print(json.dumps({k: v for k, v in rep.items() if k not in ("part_checks", "part_meta")}, ensure_ascii=False),

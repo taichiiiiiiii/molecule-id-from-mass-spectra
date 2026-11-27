@@ -1,0 +1,148 @@
+{
+ "issue": 261,
+ "input": "/Users/taichi/work/molecule-id-dev/outputs/local_eval/features/holdout_v3_cc.parquet",
+ "input_sha256": "038b41e81ce1ca34ddc119b8d27cc91aacf29514b914977f047629da26f794ec",
+ "parts": "/Users/taichi/work/molecule-id-dev/outputs/local_eval/features/parts_nbr_holdout",
+ "output": "/Users/taichi/work/molecule-id-dev/outputs/local_eval/features/holdout_v3_cc_n1.parquet",
+ "output_sha256": "0b11ffcbab4af49f308e919f92f5f9d707c913dd37aa9888b0ee6c52854e6636",
+ "output_is_symlink": false,
+ "output_realpath": "/Users/taichi/work/molecule-id-dev/outputs/local_eval/features/holdout_v3_cc_n1.parquet",
+ "parent_is_symlink": false,
+ "which": "holdout",
+ "expect": {
+  "n_mol": 1358,
+  "n_rows": 147532
+ },
+ "n_rows": 147532,
+ "n_molecules": 1358,
+ "n_rows_ok": true,
+ "n_molecules_ok": true,
+ "added": [
+  "nbr_ms_mean",
+  "nbr_tani_mean"
+ ],
+ "original_columns_identical": true,
+ "n_inf": 0,
+ "nan": {
+  "nbr_ms_mean": 0,
+  "nbr_tani_mean": 0
+ },
+ "n_nbr0_rows": 0,
+ "part_checks": [
+  {
+   "set": "v3_c1u_t10",
+   "n_rows": 44674,
+   "n_nbr0": 0,
+   "n_lt_k": 0,
+   "n_nan": {
+    "nbr_ms_mean": 0,
+    "nbr_tani_mean": 0
+   },
+   "n_ms_nan_with_nbr": 0
+  },
+  {
+   "set": "enveda_v1u_t10",
+   "n_rows": 42040,
+   "n_nbr0": 0,
+   "n_lt_k": 0,
+   "n_nan": {
+    "nbr_ms_mean": 0,
+    "nbr_tani_mean": 0
+   },
+   "n_ms_nan_with_nbr": 0
+  },
+  {
+   "set": "v3_c2_t10",
+   "n_rows": 22148,
+   "n_nbr0": 0,
+   "n_lt_k": 0,
+   "n_nan": {
+    "nbr_ms_mean": 0,
+    "nbr_tani_mean": 0
+   },
+   "n_ms_nan_with_nbr": 0
+  },
+  {
+   "set": "v3_c2nu_t10",
+   "n_rows": 38670,
+   "n_nbr0": 0,
+   "n_lt_k": 0,
+   "n_nan": {
+    "nbr_ms_mean": 0,
+    "nbr_tani_mean": 0
+   },
+   "n_ms_nan_with_nbr": 0
+  }
+ ],
+ "part_meta": {
+  "v3_c1u_t10": {
+   "rule": "enveda_libs",
+   "secs_total": 351.4,
+   "n_lt_k": 0,
+   "out_sha256": "5cd45e75d37df6d6326cb870c7eac8148134219c418e9f8a170fe744347e8a6b"
+  },
+  "enveda_v1u_t10": {
+   "rule": "all",
+   "secs_total": 291.8,
+   "n_lt_k": 0,
+   "out_sha256": "ad5c10a142e4cfcfb097866b60b5766972c37b711d71ae72e29f484022c0c3bf"
+  },
+  "v3_c2_t10": {
+   "rule": "all",
+   "secs_total": 169.4,
+   "n_lt_k": 0,
+   "out_sha256": "f24468cfba2fb8092a0ad57a2bb4be9683763177986334b43b4390eae4e57a5c"
+  },
+  "v3_c2nu_t10": {
+   "rule": "all",
+   "secs_total": 305.4,
+   "n_lt_k": 0,
+   "out_sha256": "717ef4a2728de4e18d091692c2e219f287efe1eab9776df40dfd8c56fefc2828"
+  }
+ },
+ "secs": 0.5,
+ "all_ok": true,
+ "leak_check_hide_rule": {
+  "v3_c1u_t10": {
+   "mode": "hide_rule",
+   "rule": "enveda_libs",
+   "expected_rule": "enveda_libs",
+   "n_hidden_canon": 400,
+   "expected_n_hidden_canon": 400,
+   "n_rows_hidden": 2522,
+   "n_avail": 274186,
+   "ok": true
+  },
+  "enveda_v1u_t10": {
+   "mode": "hide_rule",
+   "rule": "all",
+   "expected_rule": "all",
+   "n_hidden_canon": 400,
+   "expected_n_hidden_canon": 400,
+   "n_rows_hidden": 2521,
+   "n_avail": 273786,
+   "ok": true
+  },
+  "v3_c2_t10": {
+   "mode": "hide_rule",
+   "rule": "all",
+   "expected_rule": "all",
+   "n_hidden_canon": 200,
+   "expected_n_hidden_canon": 200,
+   "n_rows_hidden": 1215,
+   "n_avail": 273986,
+   "ok": true
+  },
+  "v3_c2nu_t10": {
+   "mode": "hide_rule",
+   "rule": "all",
+   "expected_rule": "all",
+   "n_hidden_canon": 400,
+   "expected_n_hidden_canon": 400,
+   "n_rows_hidden": 11914,
+   "n_avail": 273786,
+   "ok": true
+  },
+  "all_ok": true
+ }
+}

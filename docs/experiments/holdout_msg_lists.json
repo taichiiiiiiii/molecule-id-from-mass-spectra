@@ -1,0 +1,39 @@
+{
+ "issue": 290,
+ "min_remain": 150,
+ "holdout_msg1_exclude.csv": {
+  "n": 230,
+  "sha256": "5bd180b8851af95b0dbe60eb4eae6ca1eed167c593e8fb58fa1db5ed8b218340"
+ },
+ "holdout_msg0_eval.csv": {
+  "n": 1128,
+  "sha256": "2834ef555aa09d2ff83ed6532b5849edd726261ad03d90ee6ee03a25bc01fcd1"
+ },
+ "by_set": {
+  "v3_c1u_t10": {
+   "n": 394,
+   "n_msg1": 3,
+   "n_remain": 391,
+   "judge_on": "subset"
+  },
+  "enveda_v1u_t10": {
+   "n": 373,
+   "n_msg1": 0,
+   "n_remain": 373,
+   "judge_on": "subset"
+  },
+  "v3_c2_t10": {
+   "n": 197,
+   "n_msg1": 0,
+   "n_remain": 197,
+   "judge_on": "subset"
+  },
+  "v3_c2nu_t10": {
+   "n": 394,
+   "n_msg1": 227,
+   "n_remain": 167,
+   "judge_on": "subset"
+  }
+ },
+ "molecules_sha256": "29cf6c8b00e793f1327798d94418e5f2a35e301706f5cb9fa5116809806da8cb"
+}

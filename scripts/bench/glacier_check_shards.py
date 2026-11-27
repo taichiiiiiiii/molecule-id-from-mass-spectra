@@ -4,7 +4,7 @@
     .venv/bin/python scripts/bench/glacier_check_shards.py --out-dir outputs/local_eval/glacier_tier
 
 点検: jobs.parquet の sha256 が manifest と一致、shard がすべて shard_done（npz の sha256・区間・jobs の sha256）、
-shard の n_rows の合計 = manifest の n_jobs = glacier_l60.EXPECTED[part]["n_jobs"]。
+shard の n_rows の合計 = manifest の n_jobs = glacier_l60.EXPECTED[part]["n_jobs"]（holdout の part は manifest の値）。
 予測の値は見ない（数えるのは本数・失敗の数・秒・peak だけ）。すべて通れば exit 0、どれかが駄目なら exit 1。
 """
 from __future__ import annotations
@@ -34,7 +34,7 @@ def check(out_dir: Path) -> dict:
     secs = [m["seconds"] for m in metas if "seconds" in m]
     rep = dict(out_dir=str(out_dir), part=part, jobs_sha_ok=jsha == man["outputs"]["jobs.parquet"],
                n_shards=len(bounds), n_done=int(sum(done)), n_rows_done=int(n_rows), n_jobs=man["n_jobs"],
-               expected_n_jobs=G.EXPECTED[part]["n_jobs"],
+               expected_n_jobs=G.expected_n_jobs(man),   # #290: holdout の part は manifest の本数
                n_ok=int(sum(m.get("n_ok", 0) for m in metas)),
                n_fail_pred=int(sum(m.get("n_fail_pred", 0) for m in metas)),
                n_fail_smiles=int(sum(m.get("n_fail_smiles", 0) for m in metas)),
