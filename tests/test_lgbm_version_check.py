@@ -1,0 +1,200 @@
+"""Issue #284: lightgbm の版の点検（scripts/kaggle/lgbm_version_check.py）の比べる段。"""
+import importlib.util
+import json
+import sys
+from pathlib import Path
+
+import numpy as np
+import pandas as pd
+import pytest
+
+ROOT = Path(__file__).resolve().parents[1]
+
+
+def _load(name, rel):
+    spec = importlib.util.spec_from_file_location(name, ROOT / rel)
+    mod = importlib.util.module_from_spec(spec)
+    sys.modules[name] = mod
+    spec.loader.exec_module(mod)
+    return mod
+
+
+VC = _load("lgbm_version_check", "scripts/kaggle/lgbm_version_check.py")
+
+
+def _keys(n_mol=3, n_cand=30, dup_every=0):
+    rows = []
+    for m in range(n_mol):
+        for c in range(n_cand):
+            key = f"K{m}_{c // 2}" if dup_every and c % dup_every == 1 else f"K{m}_{c}"
+            rows.append(dict(set="s1", molecule_id=f"m{m}", cand_key=key, cand_smiles=f"S{m}_{c}"))
+    return pd.DataFrame(rows)
+
+
+def test_identical_scores_are_same():
+    k = _keys()
+    s = np.random.default_rng(0).normal(size=len(k))
+    r = VC.compare_scores(k, s, s.copy())
+    assert r["verdict"] == "同じ"
+    assert r["max_abs_diff"] == 0.0
+    assert r["frac_rows_exact_equal"] == 1.0
+    assert r["n_molecules"] == 3 and r["n_molecules_topk_identical"] == 3
+    assert r["frac_molecules_topk_identical"] == 1.0
+
+
+def test_small_diff_without_order_change_is_same():
+    k = _keys()
+    s = np.arange(len(k), dtype=float)
+    r = VC.compare_scores(k, s, s + 1e-9)
+    assert r["verdict"] == "同じ"
+    assert r["max_abs_diff"] > 0
+    assert r["n_rows_exact_equal"] == 0
+
+
+def test_swap_in_one_molecule_is_different():
+    k = _keys()
+    s = -np.arange(len(k), dtype=float)   # 各分子で行の順が上位
+    t = s.copy()
+    t[[31, 32]] = t[[32, 31]]   # 分子 m1 の 2 位と 3 位を入れ替える
+    r = VC.compare_scores(k, s, t)
+    assert r["verdict"] == "違う"
+    assert r["n_molecules_topk_identical"] == 2
+    assert r["differing_molecules"] == [["s1", "m1"]]
+    assert r["n_molecules_top1_differs"] == 0
+    assert r["frac_molecules_topk_identical"] == pytest.approx(2 / 3)
+
+
+def test_change_outside_top25_is_same():
+    k = _keys(n_cand=30)
+    s = -np.arange(len(k), dtype=float)
+    t = s.copy()
+    t[[27, 28]] = t[[28, 27]]   # 分子 m0 の 28 位と 29 位だけ入れ替え（上位 25 の外）
+    assert VC.compare_scores(k, s, t)["verdict"] == "同じ"
+
+
+def test_tie_broken_by_row_order_in_both():
+    k = _keys(n_mol=1, n_cand=5)
+    s = np.zeros(5)
+    r = VC.compare_scores(k, s, s.copy())
+    assert r["verdict"] == "同じ"
+    t = s.copy()
+    t[4] = 1e-12   # 同点が崩れると順が変わる
+    assert VC.compare_scores(k, s, t)["verdict"] == "違う"
+
+
+def test_dedup_by_cand_key_same_as_submission():
+    from evaluate import ranked_lists
+    k = _keys(n_mol=1, n_cand=30, dup_every=2)
+    s = -np.arange(len(k), dtype=float)
+    base = k.copy()
+    base.insert(0, "row", np.arange(len(k)))
+    lst = ranked_lists(base.assign(score=s), 25)[("s1", "m0")]
+    assert len(lst) == len(set(lst))
+    assert VC.compare_scores(k, s, s.copy())["verdict"] == "同じ"
+
+
+def test_rejects_length_mismatch_and_nonfinite():
+    k = _keys()
+    s = np.zeros(len(k))
+    with pytest.raises(ValueError):
+        VC.compare_scores(k, s, s[:-1])
+    bad = s.copy()
+    bad[0] = np.nan
+    with pytest.raises(ValueError):
+        VC.compare_scores(k, s, bad)
+    with pytest.raises(ValueError):
+        VC.compare_scores(k.drop(columns=["cand_key"]), s, s)
+
+
+def test_predict_and_compare_cli(tmp_path):
+    lgb = pytest.importorskip("lightgbm")
+    rng = np.random.default_rng(0)
+    k = _keys(n_mol=4, n_cand=30)
+    feats = ["f0", "f1", "f2"]
+    for f in feats:
+        k[f] = rng.normal(size=len(k))
+    y = (rng.random(len(k)) < 0.05).astype(int)
+    ds = lgb.Dataset(k[feats].to_numpy(np.float64), label=y, group=[30] * 4, feature_name=feats)
+    bst = lgb.train(dict(objective="lambdarank", verbose=-1, seed=0, min_data_in_leaf=5), ds, num_boost_round=5)
+    model = tmp_path / "m.txt"
+    bst.save_model(str(model))
+    (tmp_path / "f.json").write_text(json.dumps(feats))
+    tab = tmp_path / "t.parquet"
+    k.to_parquet(tab, index=False)
+    for name in ("a", "b"):
+        VC.main(["predict", "--expect-version", lgb.__version__, "--model", str(model), "--features",
+                 str(tmp_path / "f.json"), "--table", str(tab), "--out", str(tmp_path / f"{name}.npz")])
+    VC.main(["compare", "--a", str(tmp_path / "a.npz"), "--b", str(tmp_path / "b.npz"), "--table", str(tab),
+             "--out", str(tmp_path / "r.json")])
+    r = json.loads((tmp_path / "r.json").read_text())
+    assert r["verdict"] == "同じ" and r["n_molecules"] == 4 and r["max_abs_diff"] == 0.0
+    with pytest.raises(SystemExit):
+        VC.main(["predict", "--expect-version", "0.0.0", "--model", str(model), "--features",
+                 str(tmp_path / "f.json"), "--table", str(tab), "--out", str(tmp_path / "c.npz")])
+    (tmp_path / "g.json").write_text(json.dumps(["f1", "f0", "f2"]))
+    with pytest.raises(ValueError):
+        VC.main(["predict", "--expect-version", lgb.__version__, "--model", str(model), "--features",
+                 str(tmp_path / "g.json"), "--table", str(tab), "--out", str(tmp_path / "d.npz")])
+
+
+def test_compare_submissions():
+    a = {"x": ["A", "B", "C"], "y": ["D"]}
+    assert VC.compare_submissions(a, {"x": ["A", "B", "C"], "y": ["D"]})["verdict"] == "同じ"
+    r = VC.compare_submissions(a, {"x": ["A", "C", "B"], "y": ["D"]})
+    assert r["verdict"] == "違う" and r["n_ids_identical"] == 1 and r["differing_ids_first_pos"] == {"x": 1}
+    r = VC.compare_submissions(a, {"x": ["A", "B"], "y": ["D"]})
+    assert r["differing_ids_first_pos"] == {"x": 2}
+    with pytest.raises(ValueError):
+        VC.compare_submissions(a, {"x": ["A"]})
+
+
+def test_read_submission(tmp_path):
+    p = tmp_path / "s.csv"
+    p.write_text("molecule_id,smiles\nm1,CCO;CCC\nm2,C\n")
+    assert VC.read_submission(p) == {"m1": ["CCO", "CCC"], "m2": ["C"]}
+    p.write_text("molecule_id,smiles\nm1,CCO\nm1,C\n")
+    with pytest.raises(ValueError):
+        VC.read_submission(p)
+    p.write_text("id,smiles\nm1,CCO\n")
+    with pytest.raises(ValueError):
+        VC.read_submission(p)
+
+
+def test_replay_end_to_end(tmp_path):
+    lgb = pytest.importorskip("lightgbm")
+    rng = np.random.default_rng(1)
+    k = _keys(n_mol=4, n_cand=30, dup_every=3)
+    feats = ["f0", "f1", "f2"]
+    for f in feats:
+        k[f] = rng.normal(size=len(k))
+    y = (rng.random(len(k)) < 0.05).astype(int)
+    ds = lgb.Dataset(k[feats].to_numpy(np.float64), label=y, group=[30] * 4, feature_name=feats)
+    bst = lgb.train(dict(objective="lambdarank", verbose=-1, seed=0, min_data_in_leaf=5), ds, num_boost_round=5)
+    model = tmp_path / "m.txt"
+    bst.save_model(str(model))
+    (tmp_path / "f.json").write_text(json.dumps(feats))
+    k.drop(columns=["f2"]).to_parquet(tmp_path / "t.parquet", index=False)   # features.parquet 相当
+    k[["f2"]].to_parquet(tmp_path / "p.parquet", index=False)                # parts_cc 相当（列方向に結合）
+    # 「Kaggle の submission」を e2e_timing.py の rank の段と同じ手順で作る（id の順は逆にしておく）
+    from evaluate import ranked_lists
+    E2E = _load("e2e_timing", "scripts/kaggle/e2e_timing.py")
+    oof = k[VC.KEY_COLS].copy()
+    oof.insert(0, "row", np.arange(len(k)))
+    oof["score"] = bst.predict(k[feats].to_numpy(np.float64))
+    lists = {mid: lst for (_s, mid), lst in ranked_lists(oof, 25).items()}
+    ids = [f"m{i}" for i in (3, 2, 1, 0)]
+    E2E.write_submission(tmp_path / "kag.csv", ids, lists)
+    args = ["replay", "--expect-version", lgb.__version__, "--model", str(model), "--features", str(tmp_path / "f.json"),
+            "--table", str(tmp_path / "t.parquet"), "--parts", str(tmp_path / "p.parquet")]
+    VC.main(args + ["--submission", str(tmp_path / "kag.csv"), "--out", str(tmp_path / "r1")])
+    r = json.loads((tmp_path / "r1/replay.json").read_text())
+    assert r["verdict"] == "同じ" and r["n_ids"] == 4 and r["counts"] == {"ranker": 4, "fallback_cco": 0}
+    assert r["local_submission_sha256"] == r["kaggle_submission_sha256"]
+    # 1 id の 2 位と 3 位を入れ替えた submission では「違う」
+    sub = VC.read_submission(tmp_path / "kag.csv")
+    sub["m1"][1], sub["m1"][2] = sub["m1"][2], sub["m1"][1]
+    with open(tmp_path / "kag2.csv", "w") as f:
+        f.write("molecule_id,smiles\n" + "".join(f"{m},{';'.join(v)}\n" for m, v in sub.items()))
+    VC.main(args + ["--submission", str(tmp_path / "kag2.csv"), "--out", str(tmp_path / "r2")])
+    r = json.loads((tmp_path / "r2/replay.json").read_text())
+    assert r["verdict"] == "違う" and r["differing_ids_first_pos"] == {"m1": 1}

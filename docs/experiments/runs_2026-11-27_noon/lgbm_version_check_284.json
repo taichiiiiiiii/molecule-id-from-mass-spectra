@@ -1,0 +1,35 @@
+{
+ "n_rows": 430979,
+ "n_molecules": 3901,
+ "k": 25,
+ "max_abs_diff": 0.0,
+ "n_rows_exact_equal": 430979,
+ "frac_rows_exact_equal": 1.0,
+ "n_molecules_topk_identical": 3901,
+ "frac_molecules_topk_identical": 1.0,
+ "n_molecules_top1_differs": 0,
+ "differing_molecules": [],
+ "verdict": "同じ",
+ "a": {
+  "path": "/Users/taichi/.hermes/profiles/massspec/cache/scratch/lgbm_vc/pred_470.npz",
+  "lightgbm": "4.7.0",
+  "lightgbm_file": "/Users/taichi/work/molecule-id-dev/.venv/lib/python3.12/site-packages/lightgbm/__init__.py",
+  "model_sha256": "54cb7d8d31632430f269a245559583660d7a9286d4f7cbe1635562202734ac84",
+  "table_sha256": "304f50c3f763f8da360b050f903ea300b9ad3bc6465d9fff45f99d6f501a9628",
+  "features_json_sha256": "701b396a9e5b49b0490f0d3c333018a8828ed95aefdc3fae12686b0d9272c237",
+  "n_rows": 430979,
+  "n_features": 64,
+  "secs": 0.3
+ },
+ "b": {
+  "path": "/Users/taichi/.hermes/profiles/massspec/cache/scratch/lgbm_vc/pred_460.npz",
+  "lightgbm": "4.6.0",
+  "lightgbm_file": "/Users/taichi/.hermes/profiles/massspec/cache/scratch/lgbm_vc/lgbm460/lightgbm/__init__.py",
+  "model_sha256": "54cb7d8d31632430f269a245559583660d7a9286d4f7cbe1635562202734ac84",
+  "table_sha256": "304f50c3f763f8da360b050f903ea300b9ad3bc6465d9fff45f99d6f501a9628",
+  "features_json_sha256": "701b396a9e5b49b0490f0d3c333018a8828ed95aefdc3fae12686b0d9272c237",
+  "n_rows": 430979,
+  "n_features": 64,
+  "secs": 0.3
+ }
+}
