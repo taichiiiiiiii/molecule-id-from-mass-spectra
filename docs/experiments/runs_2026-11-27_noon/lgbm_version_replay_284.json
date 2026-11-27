@@ -1,0 +1,18 @@
+{
+ "n_ids": 400,
+ "n_ids_identical": 400,
+ "frac_ids_identical": 1.0,
+ "differing_ids_first_pos": {},
+ "verdict": "同じ",
+ "lightgbm_local": "4.7.0",
+ "counts": {
+  "ranker": 400,
+  "fallback_cco": 0
+ },
+ "n_rows": 45173,
+ "model_sha256": "54cb7d8d31632430f269a245559583660d7a9286d4f7cbe1635562202734ac84",
+ "kaggle_submission_sha256": "6fcc3353bad23751938dcc0dc60dfa54665a9b138179d522523c70620ec717d3",
+ "local_submission_sha256": "6fcc3353bad23751938dcc0dc60dfa54665a9b138179d522523c70620ec717d3",
+ "table_sha256": "e5a5f48f6b478da454163ee5b2e4afcd0e13d446ee604767f72cdaed2ebbaede",
+ "parts_sha256": "8383314392777fc2aa2b54d65d4d660ce7a94a5f7f018d45f9657498443ca02b"
+}
