@@ -128,7 +128,7 @@ def check_columns(columns, extra=(), exclude=()) -> dict:
                and c not in exclude]
     ignored = [c for c in cols if c in EXTRA_ALL and c not in extra]
     dup = sorted({c for c in cols if cols.count(c) > 1})
-    rep = dict(n_columns=len(cols), n_expected=len(expected), n_features=len(FEATURES) + len(extra), missing=missing,
+    rep = dict(n_columns=len(cols), n_expected=len(expected), n_features=len(expected) - len(ID_COLS), missing=missing,
                extra=unknown, ignored_registered=ignored, requested_extra=list(extra), forbidden=forbidden,
                duplicated=dup)
     if forbidden:

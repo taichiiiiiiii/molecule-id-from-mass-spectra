@@ -179,7 +179,7 @@ def test_harness_h2_registered_and_exclude_absent():
     with pytest.raises(LR.HarnessError):            # 既定（exclude なし）では外した列の欠けで止める（今と同じ）
         LR.check_columns(cols, h2)
     rep = LR.check_columns(cols, h2, drop)
-    assert rep["missing"] == [] and rep["extra"] == []
+    assert rep["missing"] == [] and rep["extra"] == [] and rep["n_features"] == 63 - 7 + 8
     # 外した列が表にあっても止めない
     LR.check_columns(list(LR.ID_COLS) + list(LR.FEATURES) + list(h2), h2, drop)
     with pytest.raises(LR.HarnessError):
