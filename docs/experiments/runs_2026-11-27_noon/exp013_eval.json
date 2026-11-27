@@ -1,0 +1,58 @@
+{
+  "exp_id": "exp013",
+  "by_type": {
+    "a": {
+      "n": 776,
+      "mrr": 0.9101065189821631,
+      "ctrl": 0.8959798094946291,
+      "delta": 0.014126709487534228,
+      "delta_lo": -0.0011237873488195644,
+      "delta_hi": 0.02899163810487908
+    },
+    "b": {
+      "n": 279,
+      "mrr": 0.6708268424128638,
+      "ctrl": 0.580638432131075,
+      "delta": 0.09018841028178891,
+      "delta_lo": 0.06419393727748283,
+      "delta_hi": 0.11658316729383503
+    },
+    "c": {
+      "n": 788,
+      "mrr": 0.5139884888751891,
+      "ctrl": 0.0,
+      "delta": 0.5139884888751891,
+      "delta_lo": 0.48457444539749767,
+      "delta_hi": 0.5423706281893746
+    },
+    "d": {
+      "n": 745,
+      "mrr": 0.9748581184504885,
+      "ctrl": 0.852329914678908,
+      "delta": 0.12252820377158069,
+      "delta_lo": 0.10592080554752756,
+      "delta_hi": 0.14018411928743965
+    },
+    "e": {
+      "n": 785,
+      "mrr": 0.4903423606218562,
+      "ctrl": 0.0,
+      "delta": 0.4903423606218562,
+      "delta_lo": 0.45940454823357024,
+      "delta_hi": 0.519060068287466
+    }
+  },
+  "n_molecules": 3373,
+  "n_boot": 2000,
+  "boot_seed": 0,
+  "git_commit": "a4435028411d7e82e398579918ae095adc0e2f03",
+  "rows": "all",
+  "n_molecules_without_rows": {
+    "a": 0,
+    "b": 0,
+    "c": 0,
+    "d": 0,
+    "e": 0
+  },
+  "note": "exp013: exp008 と同じ設定（exp003 の列 + GLACIER の 15 列、rows all、msg1_exclude の 528 分子を学習から外し msg0_eval の 3,373 分子で評価、seed 0）で、表だけ dev_b8_cc_gl2（層の行にも同じ定義の GLACIER の一致、層の行の has_gl = 1 が 212,864、#268）に替えた。特徴の一覧は exp008 と同じ（features_sha256 同じ）、プールの行の生の 5 列は exp008 の表と同じ値で、相対化の 10 列は分子の中の層の行が加わった分だけ変わる; 群の効果は exp013 − exp008（feature_groups.py --compare、2,000 回 seed 0）: a +0.0016 [-0.0098, +0.0135], b -0.0034 [-0.0230, +0.0165], c +0.0591 [+0.0417, +0.0769], d -0.0034 [-0.0094, +0.0019], e +0.0701 [+0.0522, +0.0883]; exp007 との累計の差 exp013 − exp007: a +0.0049 [-0.0079, +0.0181], b -0.0044 [-0.0210, +0.0119], c +0.0626 [+0.0456, +0.0806], d +0.0046 [-0.0026, +0.0119], e +0.0660 [+0.0475, +0.0845]; 項目 4 の分岐（11/27 昼の計画、点推定が 5 型すべてで −0.02 以上、累計も同じ）: 満たす → 層の列（dev_b8_cc_gl2）を使う; 型 b は n = 279 で揺れが大きい; 1 seed の差で、|Δ| ≲ 0.015 は seed の揺れ（#272）と区別できない; 表を作った commit 88142b2（載せ直し前）、当てはめ・評価の commit a443502（載せ直し後、表を作るコードは 88142b2 と差分 0）; 対照 = score,prior,frag の出力（12/6 の判定の基準 score,prior とは別物、混ぜない）; 定義 #247 issuecomment-7180686869; rows=all; exclude=prior_unverified_pop; extra=cc,cc_z,gl_cos_mean,gl_cos_max,gl_ent_mean,gl_ent_max,has_gl,gl_cos_mean_dmean,gl_cos_mean_z,gl_cos_mean_dmax,gl_cos_mean_softmax,gl_cos_mean_sd,gl_ent_mean_dmean,gl_ent_mean_z,gl_ent_mean_dmax,gl_ent_mean_softmax,gl_ent_mean_sd; exclude_train_molecules_sha256=e6c375414026f39fa986d3758d23ac28a880620afd03591b4425d133f6ac65c3(n=528); eval_molecules_sha256=c57f458418746f3b6452d0826268e7c4f07aeb2c9610057e20a321e0323d278c(n=3373)"
+}
