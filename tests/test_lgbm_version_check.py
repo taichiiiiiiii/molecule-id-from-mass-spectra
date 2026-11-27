@@ -158,3 +158,43 @@ def test_read_submission(tmp_path):
     p.write_text("id,smiles\nm1,CCO\n")
     with pytest.raises(ValueError):
         VC.read_submission(p)
+
+
+def test_replay_end_to_end(tmp_path):
+    lgb = pytest.importorskip("lightgbm")
+    rng = np.random.default_rng(1)
+    k = _keys(n_mol=4, n_cand=30, dup_every=3)
+    feats = ["f0", "f1", "f2"]
+    for f in feats:
+        k[f] = rng.normal(size=len(k))
+    y = (rng.random(len(k)) < 0.05).astype(int)
+    ds = lgb.Dataset(k[feats].to_numpy(np.float64), label=y, group=[30] * 4, feature_name=feats)
+    bst = lgb.train(dict(objective="lambdarank", verbose=-1, seed=0, min_data_in_leaf=5), ds, num_boost_round=5)
+    model = tmp_path / "m.txt"
+    bst.save_model(str(model))
+    (tmp_path / "f.json").write_text(json.dumps(feats))
+    k.drop(columns=["f2"]).to_parquet(tmp_path / "t.parquet", index=False)   # features.parquet 相当
+    k[["f2"]].to_parquet(tmp_path / "p.parquet", index=False)                # parts_cc 相当（列方向に結合）
+    # 「Kaggle の submission」を e2e_timing.py の rank の段と同じ手順で作る（id の順は逆にしておく）
+    from evaluate import ranked_lists
+    E2E = _load("e2e_timing", "scripts/kaggle/e2e_timing.py")
+    oof = k[VC.KEY_COLS].copy()
+    oof.insert(0, "row", np.arange(len(k)))
+    oof["score"] = bst.predict(k[feats].to_numpy(np.float64))
+    lists = {mid: lst for (_s, mid), lst in ranked_lists(oof, 25).items()}
+    ids = [f"m{i}" for i in (3, 2, 1, 0)]
+    E2E.write_submission(tmp_path / "kag.csv", ids, lists)
+    args = ["replay", "--expect-version", lgb.__version__, "--model", str(model), "--features", str(tmp_path / "f.json"),
+            "--table", str(tmp_path / "t.parquet"), "--parts", str(tmp_path / "p.parquet")]
+    VC.main(args + ["--submission", str(tmp_path / "kag.csv"), "--out", str(tmp_path / "r1")])
+    r = json.loads((tmp_path / "r1/replay.json").read_text())
+    assert r["verdict"] == "同じ" and r["n_ids"] == 4 and r["counts"] == {"ranker": 4, "fallback_cco": 0}
+    assert r["local_submission_sha256"] == r["kaggle_submission_sha256"]
+    # 1 id の 2 位と 3 位を入れ替えた submission では「違う」
+    sub = VC.read_submission(tmp_path / "kag.csv")
+    sub["m1"][1], sub["m1"][2] = sub["m1"][2], sub["m1"][1]
+    with open(tmp_path / "kag2.csv", "w") as f:
+        f.write("molecule_id,smiles\n" + "".join(f"{m},{';'.join(v)}\n" for m, v in sub.items()))
+    VC.main(args + ["--submission", str(tmp_path / "kag2.csv"), "--out", str(tmp_path / "r2")])
+    r = json.loads((tmp_path / "r2/replay.json").read_text())
+    assert r["verdict"] == "違う" and r["differing_ids_first_pos"] == {"m1": 1}
