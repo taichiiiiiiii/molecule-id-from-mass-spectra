@@ -1,0 +1,260 @@
+{
+ "exp019": {
+  "a_model_fold_eq_query_fold": true,
+  "oof_rows_eq_table_rows": true,
+  "b_leave_one_fold_out": {
+   "1": {
+    "overlap": 0,
+    "n_train_mol": 1939,
+    "excluded_in_train": 0,
+    "meta_n_train_mol": 1939,
+    "train_folds": [
+     2,
+     3,
+     4
+    ]
+   },
+   "2": {
+    "overlap": 0,
+    "n_train_mol": 1941,
+    "excluded_in_train": 0,
+    "meta_n_train_mol": 1941,
+    "train_folds": [
+     1,
+     3,
+     4
+    ]
+   },
+   "3": {
+    "overlap": 0,
+    "n_train_mol": 1937,
+    "excluded_in_train": 0,
+    "meta_n_train_mol": 1937,
+    "train_folds": [
+     1,
+     2,
+     4
+    ]
+   },
+   "4": {
+    "overlap": 0,
+    "n_train_mol": 1947,
+    "excluded_in_train": 0,
+    "meta_n_train_mol": 1947,
+    "train_folds": [
+     1,
+     2,
+     3
+    ]
+   }
+  },
+  "b_ok": true,
+  "f_eval_molecules": {
+   "n_eval": 3373,
+   "eq_list": true,
+   "overlap_excluded": 0
+  },
+  "c_type_e_rows_in_train": {
+   "1": 0,
+   "2": 0,
+   "3": 0,
+   "4": 0
+  },
+  "c_ok": true,
+  "d_excluded_not_in_features": {
+   "bad": [],
+   "excluded": [
+    "prior_unverified_pop",
+    "lib_max_sim",
+    "has_ref",
+    "lib_max_sim_dmean",
+    "lib_max_sim_z",
+    "lib_max_sim_dmax",
+    "lib_max_sim_softmax",
+    "lib_max_sim_sd"
+   ],
+   "features_eq_expected": true,
+   "models_eq_meta": true,
+   "n_features": 82,
+   "features_sha256": "eac3e94621e0acd3d3570585cf97a99715340077b5869c17a9aa8b6bd3158a0c",
+   "sha_ok": true
+  },
+  "d_ok": true,
+  "e_tables": "/Users/taichi/work/molecule-id-dev/outputs/local_eval/features/dev_b8_cc_gl2_n1_h2.parquet",
+  "e_ok": true,
+  "table_sha256_ok": true,
+  "all_ok": true
+ },
+ "exp020": {
+  "a_model_fold_eq_query_fold": true,
+  "oof_rows_eq_table_rows": true,
+  "b_leave_one_fold_out": {
+   "1": {
+    "overlap": 0,
+    "n_train_mol": 1939,
+    "excluded_in_train": 0,
+    "meta_n_train_mol": 1939,
+    "train_folds": [
+     2,
+     3,
+     4
+    ]
+   },
+   "2": {
+    "overlap": 0,
+    "n_train_mol": 1941,
+    "excluded_in_train": 0,
+    "meta_n_train_mol": 1941,
+    "train_folds": [
+     1,
+     3,
+     4
+    ]
+   },
+   "3": {
+    "overlap": 0,
+    "n_train_mol": 1937,
+    "excluded_in_train": 0,
+    "meta_n_train_mol": 1937,
+    "train_folds": [
+     1,
+     2,
+     4
+    ]
+   },
+   "4": {
+    "overlap": 0,
+    "n_train_mol": 1947,
+    "excluded_in_train": 0,
+    "meta_n_train_mol": 1947,
+    "train_folds": [
+     1,
+     2,
+     3
+    ]
+   }
+  },
+  "b_ok": true,
+  "f_eval_molecules": {
+   "n_eval": 3373,
+   "eq_list": true,
+   "overlap_excluded": 0
+  },
+  "c_type_e_rows_in_train": {
+   "1": 0,
+   "2": 0,
+   "3": 0,
+   "4": 0
+  },
+  "c_ok": true,
+  "d_excluded_not_in_features": {
+   "bad": [],
+   "excluded": [
+    "prior_unverified_pop",
+    "lib_max_sim",
+    "has_ref",
+    "lib_max_sim_dmean",
+    "lib_max_sim_z",
+    "lib_max_sim_dmax",
+    "lib_max_sim_softmax",
+    "lib_max_sim_sd"
+   ],
+   "features_eq_expected": true,
+   "models_eq_meta": true,
+   "n_features": 82,
+   "features_sha256": "eac3e94621e0acd3d3570585cf97a99715340077b5869c17a9aa8b6bd3158a0c",
+   "sha_ok": true
+  },
+  "d_ok": true,
+  "e_tables": "/Users/taichi/work/molecule-id-dev/outputs/local_eval/features/dev_b8_cc_gl2_n1_h2.parquet",
+  "e_ok": true,
+  "table_sha256_ok": true,
+  "all_ok": true
+ },
+ "exp021": {
+  "a_model_fold_eq_query_fold": true,
+  "oof_rows_eq_table_rows": true,
+  "b_leave_one_fold_out": {
+   "1": {
+    "overlap": 0,
+    "n_train_mol": 1939,
+    "excluded_in_train": 0,
+    "meta_n_train_mol": 1939,
+    "train_folds": [
+     2,
+     3,
+     4
+    ]
+   },
+   "2": {
+    "overlap": 0,
+    "n_train_mol": 1941,
+    "excluded_in_train": 0,
+    "meta_n_train_mol": 1941,
+    "train_folds": [
+     1,
+     3,
+     4
+    ]
+   },
+   "3": {
+    "overlap": 0,
+    "n_train_mol": 1937,
+    "excluded_in_train": 0,
+    "meta_n_train_mol": 1937,
+    "train_folds": [
+     1,
+     2,
+     4
+    ]
+   },
+   "4": {
+    "overlap": 0,
+    "n_train_mol": 1947,
+    "excluded_in_train": 0,
+    "meta_n_train_mol": 1947,
+    "train_folds": [
+     1,
+     2,
+     3
+    ]
+   }
+  },
+  "b_ok": true,
+  "f_eval_molecules": {
+   "n_eval": 3373,
+   "eq_list": true,
+   "overlap_excluded": 0
+  },
+  "c_type_e_rows_in_train": {
+   "1": 0,
+   "2": 0,
+   "3": 0,
+   "4": 0
+  },
+  "c_ok": true,
+  "d_excluded_not_in_features": {
+   "bad": [],
+   "excluded": [
+    "prior_unverified_pop",
+    "lib_max_sim",
+    "has_ref",
+    "lib_max_sim_dmean",
+    "lib_max_sim_z",
+    "lib_max_sim_dmax",
+    "lib_max_sim_softmax",
+    "lib_max_sim_sd"
+   ],
+   "features_eq_expected": true,
+   "models_eq_meta": true,
+   "n_features": 82,
+   "features_sha256": "eac3e94621e0acd3d3570585cf97a99715340077b5869c17a9aa8b6bd3158a0c",
+   "sha_ok": true
+  },
+  "d_ok": true,
+  "e_tables": "/Users/taichi/work/molecule-id-dev/outputs/local_eval/features/dev_b8_cc_gl2_n1_h2.parquet",
+  "e_ok": true,
+  "table_sha256_ok": true,
+  "all_ok": true
+ }
+}

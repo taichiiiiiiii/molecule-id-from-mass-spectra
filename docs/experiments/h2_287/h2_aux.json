@@ -1,0 +1,225 @@
+{
+ "issue": 287,
+ "exp_dir": "outputs/local_eval/ranker/lambdarank/exp019",
+ "table": "/Users/taichi/work/molecule-id-dev/outputs/local_eval/features/dev_b8_cc_gl2_n1_h2.parquet",
+ "table_sha256": "a2696994b872604c98b9c57665200e9fae0b23b03c1e542cf1e8d00121709a63",
+ "features_sha256": "eac3e94621e0acd3d3570585cf97a99715340077b5869c17a9aa8b6bd3158a0c",
+ "old_table": "outputs/local_eval/features/dev_b8_cc_gl2_n1.parquet",
+ "oof_reproduced": true,
+ "cf_value": 0.816,
+ "quantiles_eval_rows": {
+  "a": {
+   "truth": {
+    "n_rows": 773,
+    "lib_max_sim_xi": {
+     "q10": 0.6555002142884863,
+     "q50": 0.8211971858220494,
+     "q90": 0.8815685417303349
+    },
+    "lib_max_sim_xi_sa": {
+     "q10": 0.6543671451517009,
+     "q50": 0.818327782229484,
+     "q90": 0.8812526538797975
+    },
+    "has_ref_xi_rate": 0.9922380336351876
+   },
+   "decoy": {
+    "n_rows": 86814,
+    "lib_max_sim_xi": {
+     "q10": 0.0,
+     "q50": 0.0,
+     "q90": 0.0
+    },
+    "lib_max_sim_xi_sa": {
+     "q10": 0.0,
+     "q50": 0.0,
+     "q90": 0.0
+    },
+    "has_ref_xi_rate": 0.05712212315985901
+   },
+   "no_truth_range": null
+  },
+  "b": {
+   "truth": {
+    "n_rows": 248,
+    "lib_max_sim_xi": {
+     "q10": 0.0,
+     "q50": 0.0,
+     "q90": 0.0
+    },
+    "lib_max_sim_xi_sa": {
+     "q10": 0.0,
+     "q50": 0.0,
+     "q90": 0.0
+    },
+    "has_ref_xi_rate": 0.0
+   },
+   "decoy": {
+    "n_rows": 26374,
+    "lib_max_sim_xi": {
+     "q10": 0.0,
+     "q50": 0.0,
+     "q90": 0.0
+    },
+    "lib_max_sim_xi_sa": {
+     "q10": 0.0,
+     "q50": 0.0,
+     "q90": 0.0
+    },
+    "has_ref_xi_rate": 0.07219231060893304
+   },
+   "no_truth_range": {
+    "lo_exclusive": 0.0,
+    "hi": 0.9866880590399945,
+    "n_decoy_rows": 1863
+   }
+  },
+  "c": {
+   "truth": {
+    "n_rows": 587,
+    "lib_max_sim_xi": {
+     "q10": 0.0,
+     "q50": 0.0,
+     "q90": 0.0
+    },
+    "lib_max_sim_xi_sa": {
+     "q10": 0.0,
+     "q50": 0.0,
+     "q90": 0.0
+    },
+    "has_ref_xi_rate": 0.0
+   },
+   "decoy": {
+    "n_rows": 88740,
+    "lib_max_sim_xi": {
+     "q10": 0.0,
+     "q50": 0.0,
+     "q90": 0.0
+    },
+    "lib_max_sim_xi_sa": {
+     "q10": 0.0,
+     "q50": 0.0,
+     "q90": 0.0
+    },
+    "has_ref_xi_rate": 0.05459770114942529
+   },
+   "no_truth_range": {
+    "lo_exclusive": 0.0,
+    "hi": 0.7970728988859201,
+    "n_decoy_rows": 4833
+   }
+  },
+  "d": {
+   "truth": {
+    "n_rows": 740,
+    "lib_max_sim_xi": {
+     "q10": 0.0,
+     "q50": 0.0,
+     "q90": 0.0
+    },
+    "lib_max_sim_xi_sa": {
+     "q10": 0.0,
+     "q50": 0.0,
+     "q90": 0.0
+    },
+    "has_ref_xi_rate": 0.0
+   },
+   "decoy": {
+    "n_rows": 83700,
+    "lib_max_sim_xi": {
+     "q10": 0.0,
+     "q50": 0.0,
+     "q90": 0.0
+    },
+    "lib_max_sim_xi_sa": {
+     "q10": 0.0,
+     "q50": 0.0,
+     "q90": 0.0
+    },
+    "has_ref_xi_rate": 0.05700119474313023
+   },
+   "no_truth_range": {
+    "lo_exclusive": 0.0,
+    "hi": 0.8556137054299793,
+    "n_decoy_rows": 4715
+   }
+  },
+  "e": {
+   "truth": {
+    "n_rows": 556,
+    "lib_max_sim_xi": {
+     "q10": 0.7028154757379623,
+     "q50": 0.8160255934299048,
+     "q90": 0.8793922422625302
+    },
+    "lib_max_sim_xi_sa": {
+     "q10": 0.6995842228412221,
+     "q50": 0.8158501743690718,
+     "q90": 0.8791594745534743
+    },
+    "has_ref_xi_rate": 0.9982014388489209
+   },
+   "decoy": {
+    "n_rows": 88688,
+    "lib_max_sim_xi": {
+     "q10": 0.0,
+     "q50": 0.0,
+     "q90": 0.0
+    },
+    "lib_max_sim_xi_sa": {
+     "q10": 0.0,
+     "q50": 0.0,
+     "q90": 0.0
+    },
+    "has_ref_xi_rate": 0.05954582356124842
+   },
+   "no_truth_range": null
+  }
+ },
+ "lost_signal_eval_rows": {
+  "a": {
+   "n_decoy": 86814,
+   "n_decoy_has_ref": 33377,
+   "frac_all": 0.3300389338125187,
+   "frac_has_ref": 0.858435449561075
+  },
+  "b": {
+   "n_decoy": 26374,
+   "n_decoy_has_ref": 2286,
+   "frac_all": 0.03325244559035414,
+   "frac_has_ref": 0.38363954505686787
+  },
+  "c": {
+   "n_decoy": 88740,
+   "n_decoy_has_ref": 34774,
+   "frac_all": 0.3404214559386973,
+   "frac_has_ref": 0.8687237591303848
+  },
+  "d": {
+   "n_decoy": 83700,
+   "n_decoy_has_ref": 32275,
+   "frac_all": 0.3300716845878136,
+   "frac_has_ref": 0.855987606506584
+  },
+  "e": {
+   "n_decoy": 88688,
+   "n_decoy_has_ref": 34634,
+   "frac_all": 0.33416020205664804,
+   "frac_has_ref": 0.8556909395391812
+  }
+ },
+ "counterfactual_type_a": {
+  "n_molecules": 776,
+  "n_with_truth_row": 773,
+  "n_truth_rows_set": 773,
+  "top1_all_before": 0.9639175257731959,
+  "top1_all_after": 0.9755154639175257,
+  "top1_with_truth_before": 0.9676584734799483,
+  "top1_with_truth_after": 0.9793014230271668,
+  "mrr_all_before": 0.9757087628865979,
+  "mrr_all_after": 0.9837843642611684,
+  "n_top1_lost": 1,
+  "n_top1_gained": 10
+ },
+ "note": "補助の数。採否に使わない（#287 の事前の決まり）"
+}
