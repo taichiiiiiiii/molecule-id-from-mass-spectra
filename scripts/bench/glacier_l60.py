@@ -10,6 +10,14 @@
     # Issue #268: PubChem 層の行（is_tier = 1 の全行 233,809、673,214 本）は --part tier で list し、別の out-dir に
     .venv/bin/python scripts/bench/glacier_l60.py list --part tier --out-dir outputs/local_eval/glacier_tier
 
+    # Issue #290: 判定用 4 集合（holdout_v3、1,358 分子）。プールの行 = holdout、層の行 = holdout_tier（dev の
+    # glacier_l60 / glacier_tier と同じ分け方。add_glacier_match.py の --gl-dir / --gl-dir-tier にそのまま渡せる）
+    .venv/bin/python scripts/bench/glacier_l60.py list --part holdout --out-dir outputs/local_eval/glacier_holdout/pool
+    .venv/bin/python scripts/bench/glacier_l60.py list --part holdout_tier --out-dir outputs/local_eval/glacier_holdout/tier
+    holdout の本数は固定しない: list の段で数えた本数を manifest に書き、run の段・点検は manifest との一致を確かめる。
+    holdout は値を開かない: 正解の鍵は MSG との重なりの印（分子の表）にだけ使い、候補の行を「正解か偽物か」で
+    分けた数（n_truth_rows・n_hit_decoy）は出さない（正解のラベルを付けた集計になるため）。
+
 定義（#242 の定義のコメントと同じ。数え直さない）:
   - 候補 L = 対照 score,prior,frag の重複除去した上位 60（#244 の dev 表 `outputs/local_eval/features/dev_b8.parquet`
     の is_tier = 0 の行、ctrl_rank の順）。分子ごとに |L| = min(60, n_i)（#236 の n_i）であることを確かめる
@@ -53,7 +61,14 @@ EXPECTED_N_MOLS = 3_901
 EXPECTED_N_L = 197_170
 # part ごとの本数（pool = #242 の L60 版、tier = #268 の PubChem 層の全行。#259 手順 5 の数え）
 EXPECTED = {"pool": dict(n_jobs=EXPECTED_N_JOBS, n_L=EXPECTED_N_L),
-            "tier": dict(n_jobs=673_214, n_L=233_809)}
+            "tier": dict(n_jobs=673_214, n_L=233_809),
+            # #290: 判定用 4 集合。本数は list の段で数えて manifest に書く（None = 固定しない）
+            "holdout": dict(n_jobs=None, n_L=None),
+            "holdout_tier": dict(n_jobs=None, n_L=None)}
+HOLDOUT_PARTS = ("holdout", "holdout_tier")
+EXPECTED_N_MOLS_HOLDOUT = 1_358
+HOLD_TABLE = "outputs/local_eval/features/holdout_v3.parquet"   # dump_dev.py --which holdout の表（行は cc・N1 の表と同じ）
+HOLD_LIST = "docs/bench/holdout_list.csv"
 SHARD_SIZE = 20_000
 DEV_B8 = "outputs/local_eval/features/dev_b8.parquet"
 PER_MOL = "outputs/local_eval/i236_recall/per_molecule.parquet"
@@ -167,7 +182,7 @@ def select_rows(dev, part: str):
     pool = is_tier = 0 の行（表にあるのが既に対照の上位 60）、tier = is_tier = 1 の全行（#268）。"""
     if part not in EXPECTED:
         raise ValueError(f"part は {sorted(EXPECTED)} のどれか")
-    L = dev[dev.is_tier == (1 if part == "tier" else 0)].copy()
+    L = dev[dev.is_tier == (1 if part in ("tier", "holdout_tier") else 0)].copy()
     L["molecule_id"] = L.molecule_id.astype(str)
     L = L.sort_values(["set", "molecule_id", "ctrl_rank"], kind="stable")
     assert not L.duplicated(["set", "molecule_id", "cand_smiles"]).any()
@@ -175,9 +190,15 @@ def select_rows(dev, part: str):
     return L
 
 
-def cand_msg_overlap(L, mols, key_tv: set) -> dict:
+def cand_msg_overlap(L, mols, key_tv: set, by_truth: bool = True) -> dict:
     """候補の鍵（cand_key = 正規化キー）が MSG train ∪ val と一致する行の数（#268: 記録だけ。除外も補正もしない）。
-    正解の行（cand_key = 分子の key）を除いた数（偽物の候補）も型ごとに出す。値・MRR は見ない。"""
+    正解の行（cand_key = 分子の key）を除いた数（偽物の候補）も型ごとに出す。値・MRR は見ない。
+    by_truth = False（#290 の holdout）: 正解の鍵を使わず、行の数と一致の数だけ（正解か偽物かで分けない）。"""
+    if not by_truth:
+        hit = L.cand_key.isin(key_tv).to_numpy()
+        by = {t: dict(n_rows=int((L.type == t).sum()), n_hit=int((hit & (L.type == t).to_numpy()).sum()))
+              for t in sorted(L.type.unique())}
+        return dict(n_rows=int(len(L)), n_hit=int(hit.sum()), by_type=by)
     m = L.merge(mols[["set", "molecule_id", "key"]], on=["set", "molecule_id"], how="left", validate="many_to_one")
     hit = m.cand_key.isin(key_tv).to_numpy()
     decoy = (m.cand_key != m.key).to_numpy()
@@ -212,9 +233,47 @@ def _to_key(s):
         return None
 
 
+def holdout_truth_keys(root: Path, sets) -> "pd.DataFrame":
+    """#290: 判定用の集合の分子ごとの正解の鍵（MSG との重なりの印にだけ使う）。列 set, molecule_id, type, inchikey14
+    （truth.csv の値）, inchikey14_rdkit（正解の SMILES から RDKit）, key（mrr25.to_key）。holdout_list.csv と分子が一致すること。"""
+    import pandas as pd
+    from rdkit import Chem, RDLogger
+    RDLogger.DisableLog("rdApp.*")
+    hl = pd.read_csv(root / HOLD_LIST, dtype=str)
+    out = []
+    for s in sets:
+        tr = pd.read_csv(root / f"outputs/local_eval/{s}/truth.csv", dtype=str)
+        h = hl[hl.set == s]
+        assert sorted(tr.molecule_id) == sorted(h.molecule_id), f"{s}: truth.csv と holdout_list の分子が違う"
+        t = tr[["molecule_id", "inchikey14", "smiles"]].merge(h[["molecule_id", "type"]], on="molecule_id",
+                                                             validate="one_to_one")
+        t.insert(0, "set", s)
+        out.append(t)
+    t = pd.concat(out, ignore_index=True)
+
+    def ik(smi):
+        m = Chem.MolFromSmiles(smi)
+        return (Chem.MolToInchiKey(m) or "")[:14] if m is not None else ""
+    t["inchikey14_rdkit"] = [ik(x) for x in t.smiles]
+    t["key"] = [_to_key(x) for x in t.smiles]
+    return t.drop(columns=["smiles"])
+
+
+def mark_msg(mols, ms: dict) -> None:
+    """#242 の漏れの規則（生の InChIKey14 か正規化キーで MSG と一致 → 1）。holdout は生の鍵を 2 つ（truth.csv・RDKit）とも見る。"""
+    raw = [mols.inchikey14] + ([mols.inchikey14_rdkit] if "inchikey14_rdkit" in mols.columns else [])
+    for name, rk, kk in (("msg_overlap", "raw_tv", "key_tv"), ("msg_overlap_all", "raw_all", "key_all")):
+        hit = mols.key.isin(ms[kk])
+        for r in raw:
+            hit = hit | r.isin(ms[rk])
+        mols[name] = hit.astype(np.int8)
+
+
 def stage_list(root: Path, out_dir: Path, workers: int, part: str = "pool") -> dict:
     import pandas as pd
     import glacier_counts as G
+    if part in HOLDOUT_PARTS:
+        return stage_list_holdout(root, out_dir, workers, part)
     t0 = time.time()
     dev = pd.read_parquet(root / DEV_B8, columns=["set", "type", "molecule_id", "cand_key", "cand_smiles", "is_tier",
                                                   "ctrl_rank"])
@@ -300,6 +359,103 @@ def stage_list(root: Path, out_dir: Path, workers: int, part: str = "pool") -> d
     return man
 
 
+def build_jobs(root: Path, mols, L):
+    """区分 (r) と行 = 分子 × 候補 × 区分（stage_list と同じ規則）。mols に n_cat_r・n_jobs を付けて (jobs, mols, n_spec) を返す。"""
+    import pandas as pd
+    import glacier_counts as G
+    cols = ["molecule_id", "adduct", "ionization_mode", "instrument_type", "collision_energy_orig",
+            "collision_energy_ev", "collision_energy_orig_units"]
+    cats = {}
+    n_spec = 0
+    for s in sorted(mols.set.unique()):
+        q = pd.read_parquet(root / f"data/holdouts/{s}/test.parquet", columns=cols)
+        for r in q.itertuples(index=False):
+            n_spec += 1
+            cats.setdefault((s, str(r.molecule_id)), set()).update(
+                G.spectrum_jobs(r.adduct, r.ionization_mode, r.instrument_type, r.collision_energy_orig_units,
+                                r.collision_energy_orig, r.collision_energy_ev, G.COV_R))
+    mols = mols.copy()
+    mols["n_cat_r"] = [len(cats.get((s, m), ())) for s, m in zip(mols.set, mols.molecule_id)]
+    rec = []
+    for (s, m), g in L.groupby(["set", "molecule_id"], sort=True):
+        cs = sorted(cats.get((s, m), ()), key=lambda t: (t[0], t[1], t[2]))
+        for cr, ck, smi in zip(g.cand_rank, g.cand_key, g.cand_smiles):
+            for ad, ins, ce in cs:
+                rec.append((s, m, int(cr), str(ck), str(smi), ad, ins, float(ce)))
+    jobs = pd.DataFrame(rec, columns=["set", "molecule_id", "cand_rank", "cand_key", "smiles", "adduct", "instr", "ce"])
+    jobs.insert(0, "row", np.arange(len(jobs), dtype=np.int64))
+    nj = jobs.groupby(["set", "molecule_id"]).size().rename("n_jobs").reset_index()
+    mols = mols.merge(nj, on=["set", "molecule_id"], how="left").fillna({"n_jobs": 0})
+    mols["n_jobs"] = mols.n_jobs.astype(np.int64)
+    assert int((mols.n_L * mols.n_cat_r).sum()) == len(jobs)
+    assert np.isfinite(jobs.ce.values).all()
+    return jobs, mols, n_spec
+
+
+def stage_list_holdout(root: Path, out_dir: Path, workers: int, part: str) -> dict:
+    """#290: 判定用 4 集合の list。dev の stage_list と同じ行の選び方・区分・行の順。本数は数えて manifest に書く。"""
+    import pandas as pd
+    t0 = time.time()
+    tab = pd.read_parquet(root / HOLD_TABLE, columns=["set", "type", "molecule_id", "cand_key", "cand_smiles", "is_tier",
+                                                      "ctrl_rank"])
+    mols = tab[["set", "type", "molecule_id"]].drop_duplicates().copy()
+    mols["molecule_id"] = mols.molecule_id.astype(str)
+    assert len(mols) == EXPECTED_N_MOLS_HOLDOUT, len(mols)
+    L = select_rows(tab, part)
+    nL = L.groupby(["set", "molecule_id"]).size().rename("n_L").reset_index()
+    mols = mols.merge(nL, on=["set", "molecule_id"], how="left").fillna({"n_L": 0})
+    mols["n_L"] = mols.n_L.astype(np.int64)
+    if part == "holdout":
+        assert (mols.n_L <= TOPN).all(), "|L| が 60 を超える分子がある"
+    jobs, mols, n_spec = build_jobs(root, mols, L)
+    tk = holdout_truth_keys(root, sorted(mols.set.unique()))
+    mols = mols.merge(tk.drop(columns=["type"]), on=["set", "molecule_id"], how="left", validate="one_to_one")
+    assert mols.inchikey14.notna().all()
+    n_key_none = int(mols.key.isna().sum())
+    ms = msg_key_sets(root, workers)
+    mark_msg(mols, ms)
+    cmo = cand_msg_overlap(L, mols, ms["key_tv"], by_truth=False)
+    mols = mols[["set", "molecule_id", "type", "inchikey14", "inchikey14_rdkit", "key", "n_L", "n_cat_r", "n_jobs",
+                 "msg_overlap", "msg_overlap_all"]].sort_values(["set", "molecule_id"]).reset_index(drop=True)
+    out_dir.mkdir(parents=True, exist_ok=True)
+    for name, df in (("jobs", jobs), ("molecules", mols)):
+        tmp = out_dir / f"{name}.parquet.tmp"
+        df.to_parquet(tmp, index=False)
+        os.replace(tmp, out_dir / f"{name}.parquet")
+    n_uniq = int(jobs[["smiles", "adduct", "instr", "ce"]].drop_duplicates().shape[0])
+    truths = [f"outputs/local_eval/{s}/truth.csv" for s in sorted(mols.set.unique())]
+    man = dict(
+        part=part, n_mols=len(mols), n_L=int(len(L)), n_jobs=int(len(jobs)), n_jobs_unique_smiles_cat=n_uniq,
+        n_jobs_counted_at_list=True, n_query_spectra=n_spec, n_mols_no_cov=int((mols.n_cat_r == 0).sum()),
+        n_mols_no_L=int((mols.n_L == 0).sum()), shard_size=SHARD_SIZE,
+        n_shards=len(shard_bounds(len(jobs), SHARD_SIZE)),
+        by_set={s: dict(n_mols=int((mols.set == s).sum()), n_L=int(mols.n_L[mols.set == s].sum()),
+                        n_jobs=int(mols.n_jobs[mols.set == s].sum()), n_msg1=int(mols.msg_overlap[mols.set == s].sum()))
+                for s in sorted(mols.set.unique())},
+        msg_overlap=dict(n1=int(mols.msg_overlap.sum()), n1_all=int(mols.msg_overlap_all.sum()),
+                         n_truth_key_none=n_key_none,
+                         n1_raw_truthcsv=int(mols.inchikey14.isin(ms["raw_tv"]).sum()),
+                         n1_raw_rdkit=int(mols.inchikey14_rdkit.isin(ms["raw_tv"]).sum()),
+                         n1_key=int(mols.key.isin(ms["key_tv"]).sum()),
+                         by_type={t: dict(n=int((mols.type == t).sum()), n1=int(mols.msg_overlap[mols.type == t].sum()))
+                                  for t in sorted(mols.type.unique())},
+                         msg_rows=ms["n_rows"], msg_smiles=ms["n_smiles"], msg_key_none=ms["n_key_none"]),
+        cand_msg_overlap_tv=cmo,
+        inputs={p: sha256(root / p) for p in [HOLD_TABLE, HOLD_LIST, MSG] + truths},
+        outputs={f"{n}.parquet": sha256(out_dir / f"{n}.parquet") for n in ("jobs", "molecules")},
+        seconds=round(time.time() - t0, 1))
+    (out_dir / "manifest.json").write_text(json.dumps(man, indent=1, ensure_ascii=False))
+    print(json.dumps({k: v for k, v in man.items() if k != "inputs"}, ensure_ascii=False))
+    return man
+
+
+def expected_n_jobs(man: dict):
+    """run の段・点検で比べる本数: dev の part は固定の値、holdout の part は list の段で manifest に書いた値。"""
+    part = man.get("part", "pool")
+    e = EXPECTED[part]["n_jobs"]
+    return man["n_jobs"] if e is None else e
+
+
 # ---------------------------------------------------------------- 段: run
 def make_predict_fn(pkg: Path, site: Path, threads: int, log):
     sys.path.insert(0, str(pkg))
@@ -349,8 +505,8 @@ def stage_run(out_dir: Path, pkg: Path, site: Path, threads: int, max_shards: in
     jp = out_dir / "jobs.parquet"
     assert sha256(jp) == man["outputs"]["jobs.parquet"], "jobs.parquet が manifest と違う"
     jobs = pd.read_parquet(jp, columns=["row", "smiles", "adduct", "instr", "ce"])
-    part = man.get("part", "pool")             # #242 の manifest には part が無い（= pool）
-    assert len(jobs) == man["n_jobs"] == EXPECTED[part]["n_jobs"]
+    # #242 の manifest には part が無い（= pool）。holdout の part は manifest の本数（list の段で数えた値）
+    assert len(jobs) == man["n_jobs"] == expected_n_jobs(man)
 
     def log(*x):
         print(time.strftime("%H:%M:%S"), *x, flush=True)
