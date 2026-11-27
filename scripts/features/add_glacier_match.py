@@ -21,6 +21,16 @@ dev 表に GLACIER L60 の予測と観測の一致の列（Issue #259）を足�
 
 Issue #268: `--gl-dir-tier <glacier_tier>`（glacier_l60.py list --part tier の出力）を渡すと、PubChem 層の行
 （is_tier = 1）にも同じ関数・同じ定義で列を埋める（parts は parts_gl_dev_tier/）。渡さなければ #259 と同じ動き。
+
+Issue #290（項目 6）: `--which holdout` で判定用 4 集合（holdout_v3_cc_n1、1,358 分子。行数は dump_dev の記録の
+n_rows の和 = add_neighbour_ref.expect_for と同じ）に同じ定義・同じ点検で足す。parts は parts_gl_holdout[_tier]/。
+holdout は値を開かない: 記録は行数・分子数・has_gl の数・NaN/inf・sha256 だけ（正解のラベルの列は読まない）。
+
+    $PY scripts/features/add_glacier_match.py --which holdout \
+        --in  /Users/taichi/work/molecule-id-dev/outputs/local_eval/features/holdout_v3_cc_n1.parquet \
+        --out /Users/taichi/work/molecule-id-dev/outputs/local_eval/features/holdout_v3_cc_n1_gl.parquet \
+        --gl-dir      /Users/taichi/work/molecule-id-dev/outputs/local_eval/glacier_holdout/pool \
+        --gl-dir-tier /Users/taichi/work/molecule-id-dev/outputs/local_eval/glacier_holdout/tier
 """
 from __future__ import annotations
 
@@ -47,6 +57,19 @@ N_SPEC = 16                      # run.py の query_spectra の上限
 EXPECT = dict(n_mol=3901, n_rows=430979)
 SHARD_SIZE = 20_000              # glacier_l60.SHARD_SIZE
 NEW_COLS = GM.SIM_COLS + ("has_gl",)
+
+
+def expect_for(which: str, parts_dir: Path | None = None) -> dict:
+    """期待の集合と数。dev は固定の値（#259）、holdout は add_neighbour_ref.expect_for（dump_dev の記録の和、#290）。"""
+    if which == "dev":
+        return dict(sets=None, **EXPECT)
+    import add_neighbour_ref as NR
+    return NR.expect_for(which) if parts_dir is None else NR.expect_for(which, parts_dir)
+
+
+def parts_name(which: str, tier: bool) -> str:
+    """集合ごとの parts の置き場の名前（dev は #259/#268 と同じ名前のまま）。"""
+    return ("parts_gl_dev" if which == "dev" else "parts_gl_holdout") + ("_tier" if tier else "")
 
 
 def sha256_file(p: Path) -> str:
@@ -217,17 +240,22 @@ def main():
                     help="#268: PubChem 層の予測（glacier_l60.py list --part tier の out-dir）。渡すと層の行も埋める")
     ap.add_argument("--workers", type=int, default=4)
     ap.add_argument("--sets", default="", help="試しに一部の集合だけ（parts だけ書いて表は書かない）")
+    ap.add_argument("--which", choices=["dev", "holdout"], default="dev",
+                    help="#290: holdout = 判定用 4 集合（期待の数は dump_dev の記録）")
     a = ap.parse_args()
+    exp = expect_for(a.which)
     assert a.inp.is_absolute() and a.out.is_absolute() and a.gl_dir.is_absolute(), "絶対パスで渡す"
     assert a.gl_dir_tier is None or a.gl_dir_tier.is_absolute(), "絶対パスで渡す"
     assert a.inp.resolve() != a.out.resolve(), "入力と同じ名前には書かない"
     t0 = time.time()
     tol = mz_tol()
-    parts = a.out.parent / ("parts_gl_dev" if a.gl_dir_tier is None else "parts_gl_dev_tier")
+    parts = a.out.parent / parts_name(a.which, a.gl_dir_tier is not None)
     parts.mkdir(parents=True, exist_ok=True)
     key = pd.read_parquet(a.inp, columns=KEY_COLS)
     key["molecule_id"] = key.molecule_id.astype(str)
     sets = list(dict.fromkeys(key.set.tolist()))
+    if exp["sets"] is not None and sorted(sets) != sorted(exp["sets"]):
+        raise ValueError(f"表の集合が {a.which} の {len(exp['sets'])} 集合と違う: {sets}")
     run_sets = [s for s in a.sets.split(",") if s] or sets
     jobs = []
     for s in run_sets:
@@ -266,7 +294,8 @@ def main():
     pd.testing.assert_frame_equal(back[tab.columns.tolist()], tab)   # 元の列は値も順序も同じ
     old = tab.select_dtypes(include=[np.number]).to_numpy(np.float64)
     tier = out.is_tier.to_numpy()
-    rep = dict(issue=259 if a.gl_dir_tier is None else 268, input=str(a.inp), input_sha256=sha256_file(a.inp), output=str(a.out),
+    rep = dict(issue=(259 if a.gl_dir_tier is None else 268) if a.which == "dev" else 290, which=a.which,
+               expect=dict(n_mol=exp["n_mol"], n_rows=exp["n_rows"]), input=str(a.inp), input_sha256=sha256_file(a.inp), output=str(a.out),
                output_sha256=sha256_file(a.out), gl_dir=str(a.gl_dir),
                jobs_sha256=sha256_file(a.gl_dir / "jobs.parquet"), mz_tol=tol,
                **({} if a.gl_dir_tier is None else dict(
@@ -279,7 +308,8 @@ def main():
                n_nan_old_cols=int(np.isnan(old).sum()), n_inf_old_cols=int(np.isinf(old).sum()),
                n_molecules_has_gl1=int(out.loc[h1, ["set", "molecule_id"]].drop_duplicates().shape[0]),
                secs=round(time.time() - t0, 1), per_set=recs)
-    assert rep["n_molecules"] == EXPECT["n_mol"] and rep["n_rows"] == EXPECT["n_rows"], rep
+    assert rep["n_molecules"] == exp["n_mol"] and rep["n_rows"] == exp["n_rows"], rep
+    assert rep["n_rows"] == int(len(tab)), rep   # 行数不変
     rp = a.out.with_name(a.out.stem + "_report.json")
     rp.write_text(json.dumps(rep, ensure_ascii=False, indent=1))
     print(json.dumps({k: v for k, v in rep.items() if k != "per_set"}, ensure_ascii=False, indent=1))
