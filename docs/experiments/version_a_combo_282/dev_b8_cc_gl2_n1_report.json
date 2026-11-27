@@ -1,0 +1,33 @@
+{
+ "issue": 282,
+ "base": "outputs/local_eval/features/dev_b8_cc_gl2.parquet",
+ "base_sha256": "8769bb50f997dd49004c066021ade1a531fc0f4bcb27afacbb348251b27783e6",
+ "src": "outputs/local_eval/features/dev_b8_cc_n2_n1.parquet",
+ "src_sha256": "eea312e46150f0b0f36fee707bb4a0f1b7d69f4159d1089d0d16e62e10de65f2",
+ "output": "outputs/local_eval/features/dev_b8_cc_gl2_n1.parquet",
+ "output_sha256": "4eb2dadcef53cf3bbe8a56368c2a27d1d7e5ffcdac6f4053045ff50f4ec1c496",
+ "n_molecules": 3901,
+ "n_rows": 430979,
+ "n_rows_src": 430979,
+ "n_src_unused": 0,
+ "added": [
+  "nbr_ms_mean",
+  "nbr_tani_mean"
+ ],
+ "keys": [
+  "set",
+  "molecule_id",
+  "cand_key"
+ ],
+ "n_missing": 0,
+ "n_dup_base": 0,
+ "n_dup_src": 0,
+ "n_inf": 0,
+ "nan": {
+  "nbr_ms_mean": 0,
+  "nbr_tani_mean": 0
+ },
+ "original_columns_identical": true,
+ "n_cols_in": 88,
+ "n_cols_out": 90
+}
