@@ -1,0 +1,772 @@
+{
+ "b8_f1_a_t10": {
+  "set": "b8_f1_a_t10",
+  "rule": "enveda_libs",
+  "n_drop_keys": 200,
+  "n_train_rows_read": 64525,
+  "n_train_rows_kept": 63306,
+  "n_molecules": 193,
+  "n_molecules_with_query": 193,
+  "query_family_counts": {
+   "timsTOF": 896
+  },
+  "ref_family_counts": {
+   "timsTOF": 44578,
+   "Orbitrap/FT": 16406,
+   "TOF": 2076,
+   "QQQ": 104,
+   "<none>": 90,
+   "IonTrap": 51,
+   "other": 1
+  },
+  "check": {
+   "n_rows": 22098,
+   "max_abs_diff_lib_max_sim": 0.0,
+   "n_mismatch_lib_max_sim": 0,
+   "n_mismatch_has_ref": 0,
+   "n_has_ref": 8787,
+   "n_has_ref_xi": 1521,
+   "n_sa_pos": 1439,
+   "n_xi_lt_full": 7313
+  },
+  "secs": {
+   "read_train": 5.4,
+   "sims": 0.3
+  },
+  "secs_total": 7.2,
+  "table_sha256": "4eb2dadcef53cf3bbe8a56368c2a27d1d7e5ffcdac6f4053045ff50f4ec1c496",
+  "out_sha256": "636f2bae385752dfbf763ee84341f4a9f9bdff8192c1b65389e9b377d68e7961"
+ },
+ "b8_f1_b_t10": {
+  "set": "b8_f1_b_t10",
+  "rule": "all",
+  "n_drop_keys": 210,
+  "n_train_rows_read": 40479,
+  "n_train_rows_kept": 35621,
+  "n_molecules": 196,
+  "n_molecules_with_query": 196,
+  "query_family_counts": {
+   "Orbitrap/FT": 1050,
+   "TOF": 448,
+   "<none>": 141,
+   "IonTrap": 62,
+   "QQQ": 48,
+   "other": 2
+  },
+  "ref_family_counts": {
+   "Orbitrap/FT": 16272,
+   "TOF": 10398,
+   "timsTOF": 6590,
+   "<none>": 1055,
+   "QQQ": 726,
+   "IonTrap": 577,
+   "other": 3
+  },
+  "check": {
+   "n_rows": 19315,
+   "max_abs_diff_lib_max_sim": 0.0,
+   "n_mismatch_lib_max_sim": 0,
+   "n_mismatch_has_ref": 0,
+   "n_has_ref": 2080,
+   "n_has_ref_xi": 1766,
+   "n_sa_pos": 1519,
+   "n_xi_lt_full": 826
+  },
+  "secs": {
+   "read_train": 3.4,
+   "sims": 0.4
+  },
+  "secs_total": 4.5,
+  "table_sha256": "4eb2dadcef53cf3bbe8a56368c2a27d1d7e5ffcdac6f4053045ff50f4ec1c496",
+  "out_sha256": "857cab28ec72857e3b2ec132fbc7feb5e0215c0de103c1ef23a045ec0a37b4b2"
+ },
+ "b8_f1_c_t10": {
+  "set": "b8_f1_c_t10",
+  "rule": "all",
+  "n_drop_keys": 202,
+  "n_train_rows_read": 63252,
+  "n_train_rows_kept": 62248,
+  "n_molecules": 197,
+  "n_molecules_with_query": 197,
+  "query_family_counts": {
+   "timsTOF": 924
+  },
+  "ref_family_counts": {
+   "timsTOF": 47600,
+   "Orbitrap/FT": 13324,
+   "TOF": 1123,
+   "<none>": 89,
+   "QQQ": 89,
+   "IonTrap": 23
+  },
+  "check": {
+   "n_rows": 22291,
+   "max_abs_diff_lib_max_sim": 0.0,
+   "n_mismatch_lib_max_sim": 0,
+   "n_mismatch_has_ref": 0,
+   "n_has_ref": 8630,
+   "n_has_ref_xi": 1213,
+   "n_sa_pos": 1157,
+   "n_xi_lt_full": 7487
+  },
+  "secs": {
+   "read_train": 3.5,
+   "sims": 0.3
+  },
+  "secs_total": 4.1,
+  "table_sha256": "4eb2dadcef53cf3bbe8a56368c2a27d1d7e5ffcdac6f4053045ff50f4ec1c496",
+  "out_sha256": "8aa71215f633c3385ec328dccca6c3edcd67ac84328c694a13010b041de63e6c"
+ },
+ "b8_f1_d_t10": {
+  "set": "b8_f1_d_t10",
+  "rule": "all",
+  "n_drop_keys": 201,
+  "n_train_rows_read": 59782,
+  "n_train_rows_kept": 58677,
+  "n_molecules": 190,
+  "n_molecules_with_query": 190,
+  "query_family_counts": {
+   "timsTOF": 487
+  },
+  "ref_family_counts": {
+   "timsTOF": 44103,
+   "Orbitrap/FT": 13428,
+   "TOF": 1007,
+   "QQQ": 62,
+   "<none>": 55,
+   "IonTrap": 22
+  },
+  "check": {
+   "n_rows": 21596,
+   "max_abs_diff_lib_max_sim": 0.0,
+   "n_mismatch_lib_max_sim": 0,
+   "n_mismatch_has_ref": 0,
+   "n_has_ref": 8344,
+   "n_has_ref_xi": 1270,
+   "n_sa_pos": 1103,
+   "n_xi_lt_full": 7089
+  },
+  "secs": {
+   "read_train": 3.4,
+   "sims": 0.2
+  },
+  "secs_total": 3.9,
+  "table_sha256": "4eb2dadcef53cf3bbe8a56368c2a27d1d7e5ffcdac6f4053045ff50f4ec1c496",
+  "out_sha256": "aac2b3a957ef2af7b20a7a44131084f7d2a09d7778d3ff18491147d0b02135bf"
+ },
+ "b8_f1_e_t10": {
+  "set": "b8_f1_e_t10",
+  "rule": "enveda_libs",
+  "n_drop_keys": 200,
+  "n_train_rows_read": 66039,
+  "n_train_rows_kept": 65085,
+  "n_molecules": 198,
+  "n_molecules_with_query": 198,
+  "query_family_counts": {
+   "timsTOF": 961
+  },
+  "ref_family_counts": {
+   "timsTOF": 47126,
+   "Orbitrap/FT": 16713,
+   "TOF": 1030,
+   "QQQ": 120,
+   "<none>": 78,
+   "IonTrap": 17,
+   "other": 1
+  },
+  "check": {
+   "n_rows": 22629,
+   "max_abs_diff_lib_max_sim": 0.0,
+   "n_mismatch_lib_max_sim": 0,
+   "n_mismatch_has_ref": 0,
+   "n_has_ref": 8897,
+   "n_has_ref_xi": 1548,
+   "n_sa_pos": 1493,
+   "n_xi_lt_full": 7415
+  },
+  "secs": {
+   "read_train": 3.5,
+   "sims": 0.3
+  },
+  "secs_total": 4.1,
+  "table_sha256": "4eb2dadcef53cf3bbe8a56368c2a27d1d7e5ffcdac6f4053045ff50f4ec1c496",
+  "out_sha256": "fe65ab0fa15276a7bada942e0fc9f1f837eec83212b9f96e992ed1964b259c53"
+ },
+ "b8_f2_a_t10": {
+  "set": "b8_f2_a_t10",
+  "rule": "enveda_libs",
+  "n_drop_keys": 201,
+  "n_train_rows_read": 64358,
+  "n_train_rows_kept": 63055,
+  "n_molecules": 200,
+  "n_molecules_with_query": 200,
+  "query_family_counts": {
+   "timsTOF": 931
+  },
+  "ref_family_counts": {
+   "timsTOF": 45673,
+   "Orbitrap/FT": 16026,
+   "TOF": 1165,
+   "<none>": 82,
+   "QQQ": 72,
+   "IonTrap": 37
+  },
+  "check": {
+   "n_rows": 22475,
+   "max_abs_diff_lib_max_sim": 0.0,
+   "n_mismatch_lib_max_sim": 0,
+   "n_mismatch_has_ref": 0,
+   "n_has_ref": 8767,
+   "n_has_ref_xi": 1478,
+   "n_sa_pos": 1371,
+   "n_xi_lt_full": 7348
+  },
+  "secs": {
+   "read_train": 3.5,
+   "sims": 0.3
+  },
+  "secs_total": 4.1,
+  "table_sha256": "4eb2dadcef53cf3bbe8a56368c2a27d1d7e5ffcdac6f4053045ff50f4ec1c496",
+  "out_sha256": "3e9afad6c8b19895e732e3d765aab3596d71437f95f31f14f862257c14a40688"
+ },
+ "b8_f2_b_t10": {
+  "set": "b8_f2_b_t10",
+  "rule": "all",
+  "n_drop_keys": 214,
+  "n_train_rows_read": 47164,
+  "n_train_rows_kept": 41902,
+  "n_molecules": 199,
+  "n_molecules_with_query": 199,
+  "query_family_counts": {
+   "Orbitrap/FT": 1064,
+   "TOF": 657,
+   "IonTrap": 78,
+   "<none>": 76,
+   "QQQ": 58,
+   "timsTOF": 6
+  },
+  "ref_family_counts": {
+   "Orbitrap/FT": 21484,
+   "TOF": 11414,
+   "timsTOF": 5865,
+   "<none>": 1134,
+   "IonTrap": 1080,
+   "QQQ": 921,
+   "other": 4
+  },
+  "check": {
+   "n_rows": 19941,
+   "max_abs_diff_lib_max_sim": 0.0,
+   "n_mismatch_lib_max_sim": 0,
+   "n_mismatch_has_ref": 0,
+   "n_has_ref": 2185,
+   "n_has_ref_xi": 1927,
+   "n_sa_pos": 1682,
+   "n_xi_lt_full": 896
+  },
+  "secs": {
+   "read_train": 3.4,
+   "sims": 0.4
+  },
+  "secs_total": 4.1,
+  "table_sha256": "4eb2dadcef53cf3bbe8a56368c2a27d1d7e5ffcdac6f4053045ff50f4ec1c496",
+  "out_sha256": "642b7498f5059d0538f29f4914e4f44033c6102ab690297f6755d23fee56eadb"
+ },
+ "b8_f2_c_t10": {
+  "set": "b8_f2_c_t10",
+  "rule": "all",
+  "n_drop_keys": 201,
+  "n_train_rows_read": 62775,
+  "n_train_rows_kept": 61887,
+  "n_molecules": 196,
+  "n_molecules_with_query": 196,
+  "query_family_counts": {
+   "timsTOF": 881
+  },
+  "ref_family_counts": {
+   "timsTOF": 46686,
+   "Orbitrap/FT": 13676,
+   "TOF": 1293,
+   "<none>": 105,
+   "IonTrap": 63,
+   "QQQ": 62,
+   "other": 2
+  },
+  "check": {
+   "n_rows": 22304,
+   "max_abs_diff_lib_max_sim": 0.0,
+   "n_mismatch_lib_max_sim": 0,
+   "n_mismatch_has_ref": 0,
+   "n_has_ref": 8533,
+   "n_has_ref_xi": 1242,
+   "n_sa_pos": 1183,
+   "n_xi_lt_full": 7339
+  },
+  "secs": {
+   "read_train": 3.5,
+   "sims": 0.3
+  },
+  "secs_total": 4.1,
+  "table_sha256": "4eb2dadcef53cf3bbe8a56368c2a27d1d7e5ffcdac6f4053045ff50f4ec1c496",
+  "out_sha256": "3d1af71d3a4f49ff67cf4543466ebd20f83fe14207f59c332b21ab2c38510897"
+ },
+ "b8_f2_d_t10": {
+  "set": "b8_f2_d_t10",
+  "rule": "all",
+  "n_drop_keys": 201,
+  "n_train_rows_read": 58847,
+  "n_train_rows_kept": 57764,
+  "n_molecules": 184,
+  "n_molecules_with_query": 184,
+  "query_family_counts": {
+   "timsTOF": 524
+  },
+  "ref_family_counts": {
+   "timsTOF": 43658,
+   "Orbitrap/FT": 12717,
+   "TOF": 1228,
+   "<none>": 87,
+   "QQQ": 54,
+   "IonTrap": 19,
+   "other": 1
+  },
+  "check": {
+   "n_rows": 20820,
+   "max_abs_diff_lib_max_sim": 0.0,
+   "n_mismatch_lib_max_sim": 0,
+   "n_mismatch_has_ref": 0,
+   "n_has_ref": 8055,
+   "n_has_ref_xi": 1168,
+   "n_sa_pos": 1065,
+   "n_xi_lt_full": 6921
+  },
+  "secs": {
+   "read_train": 3.5,
+   "sims": 0.2
+  },
+  "secs_total": 4.0,
+  "table_sha256": "4eb2dadcef53cf3bbe8a56368c2a27d1d7e5ffcdac6f4053045ff50f4ec1c496",
+  "out_sha256": "7fb7c545ccfe397262e6ebbe616ec2c291eef138e316ec8148fa08b1e1062aef"
+ },
+ "b8_f2_e_t10": {
+  "set": "b8_f2_e_t10",
+  "rule": "enveda_libs",
+  "n_drop_keys": 200,
+  "n_train_rows_read": 63643,
+  "n_train_rows_kept": 62745,
+  "n_molecules": 196,
+  "n_molecules_with_query": 196,
+  "query_family_counts": {
+   "timsTOF": 924
+  },
+  "ref_family_counts": {
+   "timsTOF": 46444,
+   "Orbitrap/FT": 14977,
+   "TOF": 1062,
+   "QQQ": 114,
+   "<none>": 100,
+   "IonTrap": 45,
+   "other": 3
+  },
+  "check": {
+   "n_rows": 22326,
+   "max_abs_diff_lib_max_sim": 0.0,
+   "n_mismatch_lib_max_sim": 0,
+   "n_mismatch_has_ref": 0,
+   "n_has_ref": 8834,
+   "n_has_ref_xi": 1444,
+   "n_sa_pos": 1345,
+   "n_xi_lt_full": 7462
+  },
+  "secs": {
+   "read_train": 3.5,
+   "sims": 0.3
+  },
+  "secs_total": 4.2,
+  "table_sha256": "4eb2dadcef53cf3bbe8a56368c2a27d1d7e5ffcdac6f4053045ff50f4ec1c496",
+  "out_sha256": "5cc58d307eab66347385c49ec2515b408048e55ff5275bce3604ec50a3102f36"
+ },
+ "b8_f3_a_t10": {
+  "set": "b8_f3_a_t10",
+  "rule": "enveda_libs",
+  "n_drop_keys": 203,
+  "n_train_rows_read": 64303,
+  "n_train_rows_kept": 63082,
+  "n_molecules": 197,
+  "n_molecules_with_query": 197,
+  "query_family_counts": {
+   "timsTOF": 889
+  },
+  "ref_family_counts": {
+   "timsTOF": 45338,
+   "Orbitrap/FT": 15935,
+   "TOF": 1594,
+   "<none>": 80,
+   "IonTrap": 72,
+   "QQQ": 63
+  },
+  "check": {
+   "n_rows": 22167,
+   "max_abs_diff_lib_max_sim": 0.0,
+   "n_mismatch_lib_max_sim": 0,
+   "n_mismatch_has_ref": 0,
+   "n_has_ref": 8501,
+   "n_has_ref_xi": 1429,
+   "n_sa_pos": 1310,
+   "n_xi_lt_full": 7139
+  },
+  "secs": {
+   "read_train": 3.5,
+   "sims": 0.3
+  },
+  "secs_total": 4.2,
+  "table_sha256": "4eb2dadcef53cf3bbe8a56368c2a27d1d7e5ffcdac6f4053045ff50f4ec1c496",
+  "out_sha256": "aeb39b06f518be3e4f0d793c7435d1f35d4fa4d6ba206cf69355ab98f7e8eefa"
+ },
+ "b8_f3_b_t10": {
+  "set": "b8_f3_b_t10",
+  "rule": "all",
+  "n_drop_keys": 217,
+  "n_train_rows_read": 42009,
+  "n_train_rows_kept": 36922,
+  "n_molecules": 194,
+  "n_molecules_with_query": 194,
+  "query_family_counts": {
+   "Orbitrap/FT": 1102,
+   "TOF": 474,
+   "<none>": 78,
+   "IonTrap": 70,
+   "QQQ": 56
+  },
+  "ref_family_counts": {
+   "Orbitrap/FT": 16349,
+   "TOF": 9702,
+   "timsTOF": 8865,
+   "<none>": 714,
+   "IonTrap": 699,
+   "QQQ": 584,
+   "other": 9
+  },
+  "check": {
+   "n_rows": 19321,
+   "max_abs_diff_lib_max_sim": 0.0,
+   "n_mismatch_lib_max_sim": 0,
+   "n_mismatch_has_ref": 0,
+   "n_has_ref": 2437,
+   "n_has_ref_xi": 2121,
+   "n_sa_pos": 1870,
+   "n_xi_lt_full": 759
+  },
+  "secs": {
+   "read_train": 3.5,
+   "sims": 0.3
+  },
+  "secs_total": 4.0,
+  "table_sha256": "4eb2dadcef53cf3bbe8a56368c2a27d1d7e5ffcdac6f4053045ff50f4ec1c496",
+  "out_sha256": "2271ce4c914a3f578afe3a558dbd7aa7454a3d383d9b3cb6ad3969aa86c0b068"
+ },
+ "b8_f3_c_t10": {
+  "set": "b8_f3_c_t10",
+  "rule": "all",
+  "n_drop_keys": 200,
+  "n_train_rows_read": 63500,
+  "n_train_rows_kept": 62572,
+  "n_molecules": 197,
+  "n_molecules_with_query": 197,
+  "query_family_counts": {
+   "timsTOF": 927
+  },
+  "ref_family_counts": {
+   "timsTOF": 48059,
+   "Orbitrap/FT": 12943,
+   "TOF": 1219,
+   "QQQ": 167,
+   "<none>": 108,
+   "IonTrap": 76
+  },
+  "check": {
+   "n_rows": 22472,
+   "max_abs_diff_lib_max_sim": 0.0,
+   "n_mismatch_lib_max_sim": 0,
+   "n_mismatch_has_ref": 0,
+   "n_has_ref": 8965,
+   "n_has_ref_xi": 1268,
+   "n_sa_pos": 1200,
+   "n_xi_lt_full": 7771
+  },
+  "secs": {
+   "read_train": 3.6,
+   "sims": 0.3
+  },
+  "secs_total": 4.3,
+  "table_sha256": "4eb2dadcef53cf3bbe8a56368c2a27d1d7e5ffcdac6f4053045ff50f4ec1c496",
+  "out_sha256": "6fdf6c2170506552ce79bd972f3afb70b9e11949b5e356a8e99d31d79b6972b6"
+ },
+ "b8_f3_d_t10": {
+  "set": "b8_f3_d_t10",
+  "rule": "all",
+  "n_drop_keys": 201,
+  "n_train_rows_read": 59913,
+  "n_train_rows_kept": 58755,
+  "n_molecules": 188,
+  "n_molecules_with_query": 188,
+  "query_family_counts": {
+   "timsTOF": 473
+  },
+  "ref_family_counts": {
+   "timsTOF": 44373,
+   "Orbitrap/FT": 12959,
+   "TOF": 1001,
+   "QQQ": 243,
+   "<none>": 97,
+   "IonTrap": 82
+  },
+  "check": {
+   "n_rows": 21437,
+   "max_abs_diff_lib_max_sim": 0.0,
+   "n_mismatch_lib_max_sim": 0,
+   "n_mismatch_has_ref": 0,
+   "n_has_ref": 8231,
+   "n_has_ref_xi": 1203,
+   "n_sa_pos": 1061,
+   "n_xi_lt_full": 7065
+  },
+  "secs": {
+   "read_train": 3.5,
+   "sims": 0.2
+  },
+  "secs_total": 4.0,
+  "table_sha256": "4eb2dadcef53cf3bbe8a56368c2a27d1d7e5ffcdac6f4053045ff50f4ec1c496",
+  "out_sha256": "c6dd3e719f1bfcea5f10482051df04593a994562cd4344977a128f99692a760b"
+ },
+ "b8_f3_e_t10": {
+  "set": "b8_f3_e_t10",
+  "rule": "enveda_libs",
+  "n_drop_keys": 200,
+  "n_train_rows_read": 65161,
+  "n_train_rows_kept": 64205,
+  "n_molecules": 199,
+  "n_molecules_with_query": 199,
+  "query_family_counts": {
+   "timsTOF": 924
+  },
+  "ref_family_counts": {
+   "timsTOF": 46713,
+   "Orbitrap/FT": 15966,
+   "TOF": 1233,
+   "<none>": 117,
+   "QQQ": 114,
+   "IonTrap": 60,
+   "other": 2
+  },
+  "check": {
+   "n_rows": 22519,
+   "max_abs_diff_lib_max_sim": 0.0,
+   "n_mismatch_lib_max_sim": 0,
+   "n_mismatch_has_ref": 0,
+   "n_has_ref": 8959,
+   "n_has_ref_xi": 1505,
+   "n_sa_pos": 1409,
+   "n_xi_lt_full": 7527
+  },
+  "secs": {
+   "read_train": 3.6,
+   "sims": 0.3
+  },
+  "secs_total": 4.2,
+  "table_sha256": "4eb2dadcef53cf3bbe8a56368c2a27d1d7e5ffcdac6f4053045ff50f4ec1c496",
+  "out_sha256": "ca47fa60ad5cabaf2beb1bb2d864825d64cf95f4e0eaa92d98bc0a890c2491d5"
+ },
+ "b8_f4_a_t10": {
+  "set": "b8_f4_a_t10",
+  "rule": "enveda_libs",
+  "n_drop_keys": 202,
+  "n_train_rows_read": 62624,
+  "n_train_rows_kept": 61296,
+  "n_molecules": 199,
+  "n_molecules_with_query": 199,
+  "query_family_counts": {
+   "timsTOF": 964
+  },
+  "ref_family_counts": {
+   "timsTOF": 44827,
+   "Orbitrap/FT": 14921,
+   "TOF": 1235,
+   "QQQ": 137,
+   "<none>": 113,
+   "IonTrap": 56,
+   "other": 7
+  },
+  "check": {
+   "n_rows": 22398,
+   "max_abs_diff_lib_max_sim": 0.0,
+   "n_mismatch_lib_max_sim": 0,
+   "n_mismatch_has_ref": 0,
+   "n_has_ref": 8730,
+   "n_has_ref_xi": 1429,
+   "n_sa_pos": 1322,
+   "n_xi_lt_full": 7365
+  },
+  "secs": {
+   "read_train": 3.5,
+   "sims": 0.3
+  },
+  "secs_total": 4.1,
+  "table_sha256": "4eb2dadcef53cf3bbe8a56368c2a27d1d7e5ffcdac6f4053045ff50f4ec1c496",
+  "out_sha256": "fcc89737875f3ea1452397d6b1a25e3d8a815024f447a989c134aaf550e73e3c"
+ },
+ "b8_f4_b_t10": {
+  "set": "b8_f4_b_t10",
+  "rule": "all",
+  "n_drop_keys": 209,
+  "n_train_rows_read": 33946,
+  "n_train_rows_kept": 30146,
+  "n_molecules": 198,
+  "n_molecules_with_query": 198,
+  "query_family_counts": {
+   "Orbitrap/FT": 1010,
+   "TOF": 439,
+   "<none>": 99,
+   "IonTrap": 50,
+   "QQQ": 25
+  },
+  "ref_family_counts": {
+   "Orbitrap/FT": 14610,
+   "TOF": 6960,
+   "timsTOF": 6418,
+   "IonTrap": 794,
+   "<none>": 711,
+   "QQQ": 652,
+   "other": 1
+  },
+  "check": {
+   "n_rows": 19478,
+   "max_abs_diff_lib_max_sim": 0.0,
+   "n_mismatch_lib_max_sim": 0,
+   "n_mismatch_has_ref": 0,
+   "n_has_ref": 2163,
+   "n_has_ref_xi": 1765,
+   "n_sa_pos": 1529,
+   "n_xi_lt_full": 817
+  },
+  "secs": {
+   "read_train": 3.4,
+   "sims": 0.3
+  },
+  "secs_total": 3.9,
+  "table_sha256": "4eb2dadcef53cf3bbe8a56368c2a27d1d7e5ffcdac6f4053045ff50f4ec1c496",
+  "out_sha256": "391058f271026bc08153c072d8b28c7e721312dc14d42202c9a376ae19c49317"
+ },
+ "b8_f4_c_t10": {
+  "set": "b8_f4_c_t10",
+  "rule": "all",
+  "n_drop_keys": 200,
+  "n_train_rows_read": 62187,
+  "n_train_rows_kept": 61322,
+  "n_molecules": 198,
+  "n_molecules_with_query": 198,
+  "query_family_counts": {
+   "timsTOF": 878
+  },
+  "ref_family_counts": {
+   "timsTOF": 47614,
+   "Orbitrap/FT": 12164,
+   "TOF": 1248,
+   "<none>": 143,
+   "QQQ": 109,
+   "IonTrap": 44
+  },
+  "check": {
+   "n_rows": 22260,
+   "max_abs_diff_lib_max_sim": 0.0,
+   "n_mismatch_lib_max_sim": 0,
+   "n_mismatch_has_ref": 0,
+   "n_has_ref": 8646,
+   "n_has_ref_xi": 1122,
+   "n_sa_pos": 1048,
+   "n_xi_lt_full": 7612
+  },
+  "secs": {
+   "read_train": 3.5,
+   "sims": 0.3
+  },
+  "secs_total": 4.1,
+  "table_sha256": "4eb2dadcef53cf3bbe8a56368c2a27d1d7e5ffcdac6f4053045ff50f4ec1c496",
+  "out_sha256": "7c30029bf0fcc9122a6d81eb5b9f7cd994545444f181c7dbb38188454478b9f2"
+ },
+ "b8_f4_d_t10": {
+  "set": "b8_f4_d_t10",
+  "rule": "all",
+  "n_drop_keys": 200,
+  "n_train_rows_read": 56765,
+  "n_train_rows_kept": 55613,
+  "n_molecules": 183,
+  "n_molecules_with_query": 183,
+  "query_family_counts": {
+   "timsTOF": 457
+  },
+  "ref_family_counts": {
+   "timsTOF": 42642,
+   "Orbitrap/FT": 11839,
+   "TOF": 910,
+   "QQQ": 129,
+   "<none>": 80,
+   "IonTrap": 13
+  },
+  "check": {
+   "n_rows": 20587,
+   "max_abs_diff_lib_max_sim": 0.0,
+   "n_mismatch_lib_max_sim": 0,
+   "n_mismatch_has_ref": 0,
+   "n_has_ref": 7645,
+   "n_has_ref_xi": 1130,
+   "n_sa_pos": 987,
+   "n_xi_lt_full": 6552
+  },
+  "secs": {
+   "read_train": 3.6,
+   "sims": 0.2
+  },
+  "secs_total": 4.0,
+  "table_sha256": "4eb2dadcef53cf3bbe8a56368c2a27d1d7e5ffcdac6f4053045ff50f4ec1c496",
+  "out_sha256": "20f47562b3a69587510eb6b858f5f9afb36d0ce98e32b19bdc528f2fbfd13af0"
+ },
+ "b8_f4_e_t10": {
+  "set": "b8_f4_e_t10",
+  "rule": "enveda_libs",
+  "n_drop_keys": 201,
+  "n_train_rows_read": 64639,
+  "n_train_rows_kept": 63668,
+  "n_molecules": 199,
+  "n_molecules_with_query": 199,
+  "query_family_counts": {
+   "timsTOF": 984
+  },
+  "ref_family_counts": {
+   "timsTOF": 47073,
+   "Orbitrap/FT": 15342,
+   "TOF": 1063,
+   "<none>": 78,
+   "QQQ": 70,
+   "IonTrap": 37,
+   "other": 5
+  },
+  "check": {
+   "n_rows": 22545,
+   "max_abs_diff_lib_max_sim": 0.0,
+   "n_mismatch_lib_max_sim": 0,
+   "n_mismatch_has_ref": 0,
+   "n_has_ref": 8701,
+   "n_has_ref_xi": 1404,
+   "n_sa_pos": 1330,
+   "n_xi_lt_full": 7369
+  },
+  "secs": {
+   "read_train": 3.5,
+   "sims": 0.3
+  },
+  "secs_total": 4.2,
+  "table_sha256": "4eb2dadcef53cf3bbe8a56368c2a27d1d7e5ffcdac6f4053045ff50f4ec1c496",
+  "out_sha256": "c93662abf87130c9282bebfb58f620dfe4086678e9515d64bd388109744e1379"
+ }
+}

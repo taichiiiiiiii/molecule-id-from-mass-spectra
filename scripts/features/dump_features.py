@@ -28,6 +28,10 @@ CHANNELS = ["fz", "tani_pred", "lib_max_sim", "metfrag_lite", "np_score"]
 BASE = ["fz", "tani_pred", "lib_max_sim", "has_ref", "is_tier", "prior_unverified_pop", "ctrl_rank", "q_rank",
         "metfrag_lite", "has_frag", "np_score", "has_np"]
 EXCLUDED = ("src", "train_sid", "np_coconut", "p", "b8_p", "y", "label", "is_truth", "used_b8", "msg_overlap", "in_train")
+# #287 H2: lib 系の列を装置の系統の規則で作り直した列に置き換える（build の h2_refs を渡したときだけ。既定は今のまま）
+H2_DROP = ("lib_max_sim", "has_ref")
+H2_COLS = ("lib_max_sim_xi", "has_ref_xi", "lib_max_sim_xi_sa")
+CHANNELS_H2 = tuple("lib_max_sim_xi" if c == "lib_max_sim" else c for c in CHANNELS)
 MISSING_RANK = 61   # TOPN + 1: その候補源の並びに居ない
 SHA_NAME = "pubchem_fold0.logits_sha256"
 
@@ -98,8 +102,12 @@ class NPScorer:
 
 def build(holdout: str, truth: dict, targets: dict, zf, pool, fpc, hidden: set, rule: dict, spectra: dict, frag, fcache,
           lists: dict, preds: dict, logits: Path, refs_cache: Path, qrows: pd.DataFrame | None = None,
-          np_scorer: NPScorer | None = None):
-    """1 集合の表（DataFrame）と記録（dict）。"""
+          np_scorer: NPScorer | None = None, h2_refs: dict | None = None, h2_inst: dict | None = None):
+    """1 集合の表（DataFrame）と記録（dict）。
+    h2_refs（#287）: 隠す規則を当てた後の L ∪ Q の参照 key -> [(prep, 系統, 付加イオン)]（library.refs_with_meta）。渡すと
+    lib_max_sim・has_ref（と相対の列）を外し、H2_COLS と lib_max_sim_xi の相対の列を入れる。h2_inst は分子 -> 問い合わせ
+    （spectra[mid] と同じ順）の instrument_type。作り直しの点検として、系統の規則なしの値が今の lib_max_sim・has_ref と
+    一致することを確かめて止める。"""
     import library as L
     import mass_feasibility as MF
     import relativize as RZ
@@ -150,6 +158,16 @@ def build(holdout: str, truth: dict, targets: dict, zf, pool, fpc, hidden: set, 
             lib.update(L.lib_scores(sp, qk, refs_q))
         lms = np.array([lib.get(k, 0.0) for k in keys])
         has_ref = np.array([bool(refs.get(k)) or bool(refs_q.get(k)) for k in keys], np.int8)
+        h2 = None
+        if h2_refs is not None:
+            ins = (h2_inst or {}).get(mid, [])
+            assert len(ins) == len(sp), f"{holdout}/{mid}: h2_inst の数が問い合わせと違う"
+            qm = [dict(q, inst=v) for q, v in zip(sp, ins)]
+            xs = L.lib_scores_xinst(qm, keys, h2_refs)
+            arr = np.array([xs[k] for k in keys], np.float64).reshape(len(keys), 5)
+            assert np.allclose(arr[:, 0], lms, rtol=0, atol=1e-12), f"{holdout}/{mid}: 作り直しの lib_max_sim が違う"
+            assert (arr[:, 1].astype(np.int8) == has_ref).all(), f"{holdout}/{mid}: 作り直しの has_ref が違う"
+            h2 = dict(lib_max_sim_xi=arr[:, 2], has_ref_xi=arr[:, 3].astype(np.int8), lib_max_sim_xi_sa=arr[:, 4])
         fr = frag.score_molecule(sp, smis, cache=fcache) if sp else [None] * n
         mfl = np.array([0.0 if v is None else float(v) for v in fr])
         has_frag = np.array([v is not None for v in fr], np.int8)
@@ -166,11 +184,15 @@ def build(holdout: str, truth: dict, targets: dict, zf, pool, fpc, hidden: set, 
             ctrl_rank=np.r_[np.arange(1, n_l + 1), np.full(n - n_l, MISSING_RANK)].astype(np.int16),
             q_rank=np.r_[np.full(n_l, MISSING_RANK), np.arange(1, n - n_l + 1)].astype(np.int16),
             metfrag_lite=mfl, has_frag=has_frag, np_score=nps, has_np=has_np))
+        if h2 is not None:
+            df = df.drop(columns=list(H2_DROP))
+            for c in H2_COLS:
+                df.insert(df.columns.get_loc("is_tier"), c, h2[c])
         assert all(c.startswith("mf_") for c in MF.feature_names())
         df = pd.concat([df, pd.DataFrame(mf, columns=MF.feature_names())], axis=1)
         parts.append(df)
     tab = pd.concat(parts, ignore_index=True)
-    tab = RZ.add_relative(tab, ["set", "molecule_id"], CHANNELS)
+    tab = RZ.add_relative(tab, ["set", "molecule_id"], CHANNELS if h2_refs is None else CHANNELS_H2)
     bad = [c for c in tab.columns if c in EXCLUDED]
     assert not bad, f"入れない列がある: {bad}"
     num = tab.select_dtypes(include=[np.number])

@@ -494,7 +494,7 @@ def _dump(holdout, truth, targets, zf, pool, fpc, hidden, rule, spectra, frag, f
           opts: dict) -> dict:
     """#244: scripts/features/dump_features.build を呼んで parquet を書く。opts: refs_cache（L の参照のキャッシュ、既定は
     outputs/local_eval/<h>/refs_top60.parquet）、qrows（Q の候補の train の行の parquet。無ければ train.parquet を 1 回読む）、
-    np_scorer（fold ごとの使い回し）。"""
+    np_scorer（fold ごとの使い回し）、h2（#287、真なら H2 の列に置き換える）。"""
     sys.path.insert(0, str(ROOT / "scripts/features"))
     import dump_features as DF
     import library as L
@@ -505,8 +505,15 @@ def _dump(holdout, truth, targets, zf, pool, fpc, hidden, rule, spectra, frag, f
     else:
         pc = json.loads((ROOT / f"outputs/local_eval/{holdout}/pubchem_fold0.json").read_text())
         qrows = L._read_rows(ROOT / "data/train.parquet", {k for m in lists for _s, _f, k in (pc.get(m) or [])})
+    h2_refs = h2_inst = None
+    if opts.get("h2"):   # #287: lib 系の列を装置の系統の規則で作り直した列に置き換える（既定は無効）
+        keys = {pool.key[i] for rows in lists.values() for _, i in rows} | set(qrows.inchikey14)
+        raw = L._read_rows(ROOT / "data/train.parquet", keys, cols=L.REF_META_COLS)
+        h2_refs = L.refs_with_meta(L.hide_rows(raw, rule, L.drop_keys(holdout)))
+        te = pd.read_parquet(ROOT / f"data/holdouts/{holdout}/test.parquet", columns=["molecule_id", "instrument_type"])
+        h2_inst = {str(m): list(g.instrument_type)[:16] for m, g in te.groupby("molecule_id", sort=False)}
     tab, rec = DF.build(holdout, truth, targets, zf, pool, fpc, hidden, rule, spectra, frag, fcache, lists, preds,
-                        logits, refs_cache, qrows, opts.get("np_scorer"))
+                        logits, refs_cache, qrows, opts.get("np_scorer"), h2_refs=h2_refs, h2_inst=h2_inst)
     path.parent.mkdir(parents=True, exist_ok=True)
     tab.to_parquet(path, index=False)
     rec["path"] = str(path)
