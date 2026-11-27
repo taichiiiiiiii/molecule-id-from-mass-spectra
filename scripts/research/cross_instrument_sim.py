@@ -44,7 +44,6 @@ JUDGE = ("v3_c1u_t10", "enveda_v1u_t10", "v3_c2_t10", "v3_c2nu_t10")
 DEV = tuple(f"b8_f{k}_{t}" for k in (1, 2, 3, 4) for t in "abcde")
 EXCL_SETS = JUDGE + DEV + tuple(f"{h}_t10" for h in DEV)
 ENVEDA = {"enveda-180", "enveda-np-examples"}
-MISSING = {"", "nan", "n/a", "none", "null"}
 META_COLS = ["inchikey14", "instrument_type", "adduct", "ingest_lib"]
 SPEC_COLS = META_COLS + ["ms2_mzs", "ms2_normalized_intensities"]
 QS = (0.1, 0.25, 0.5, 0.75, 0.9)
@@ -60,32 +59,8 @@ def sha256(p: Path) -> str:
 
 # ---------------------------------------------------------------- 小さな道具（単体テストの対象）
 
-def inst_value(v) -> str | None:
-    """instrument_type の生の値。欠け（None・NaN・空・nan・N/A など）は None。"""
-    if v is None or (isinstance(v, float) and np.isnan(v)):
-        return None
-    s = str(v)
-    return None if s.strip().lower() in MISSING else s
-
-
-def family(s: str | None) -> str | None:
-    """装置の系統（#280 で数える前に固定）。大小文字を無視した部分文字列の規則を上から順に当てる。欠けは None。"""
-    s = inst_value(s)
-    if s is None:
-        return None
-    t = s.lower()
-    if "tims" in t:
-        return "timsTOF"
-    if ("orbitrap" in t or "exactive" in t or "qehf" in t or "qft" in t or "itft" in t or "hybrid ft" in t
-            or t.endswith("-ft") or t.endswith(" ft") or t.endswith("qit-ft") or "hrms" in t):
-        return "Orbitrap/FT"
-    if "tof" in t or "maxis" in t or "impact" in t or "synapt" in t:
-        return "TOF"
-    if "qq" in t:
-        return "QQQ"
-    if "trap" in t or "qit" in t or t in ("lit", "lc-esi-it", "ltq") or "ltq" in t:
-        return "IonTrap"
-    return "other"
+# inst_value・family は #287 で scripts/local_eval/instrument.py に移した（中身は同じ）。ここでは名前をそのまま使う
+from instrument import family, inst_value  # noqa: E402,F401
 
 
 def pick_structures(inst_sets: dict, excluded: set, n: int) -> tuple[list, dict]:

@@ -38,6 +38,7 @@ CODE_FILES = [
     "scripts/kaggle/e2e_timing.py",
     "scripts/cv/local_fold0_logits.py",
     "scripts/local_eval/run.py", "scripts/local_eval/pubchem.py", "scripts/local_eval/library.py",
+    "scripts/local_eval/instrument.py",   # #287: library の H2 の関数が読む（既定の動きでは読まない）
     "scripts/local_eval/selpred.py", "scripts/local_eval/elem_rule.py",
     "scripts/features/dump_features.py", "scripts/features/mass_feasibility.py", "scripts/features/relativize.py",
     "scripts/features/np_likeness.py", "scripts/features/contrastive_coverage.py",

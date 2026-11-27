@@ -116,6 +116,7 @@ def main() -> None:
     ap = argparse.ArgumentParser()
     ap.add_argument("--which", choices=["dev", "holdout"], required=True)
     ap.add_argument("--out", required=True)
+    ap.add_argument("--h2", action="store_true", help="#287: lib 系の列を装置の系統の規則で作り直した列に置き換える")
     ap.add_argument("--sets", default=None, help="カンマ区切りで一部の集合だけ（試し用。つなぎと点検はしない）")
     a = ap.parse_args()
     t0 = time.time()
@@ -123,7 +124,7 @@ def main() -> None:
     sets = DEV_SETS if a.which == "dev" else HOLDOUT_SETS
     if a.sets:
         sets = a.sets.split(",")
-    parts = out.parent / f"parts_{a.which}"
+    parts = out.parent / (f"parts_{a.which}" + ("_h2dump" if a.h2 else ""))
     parts.mkdir(parents=True, exist_ok=True)
     qp = q_rows(DEV_SETS if a.which == "dev" else HOLDOUT_SETS, parts / "qrows.parquet")
     scorers: dict = {}
@@ -137,7 +138,7 @@ def main() -> None:
         if fold not in scorers:
             scorers[fold] = DF.NPScorer(fold)
         d = ROOT / f"outputs/local_eval/{h}"
-        opts = dict(qrows=str(qp), np_scorer=scorers[fold])
+        opts = dict(qrows=str(qp), np_scorer=scorers[fold], h2=a.h2)
         if a.which == "holdout":
             opts["refs_cache"] = str(parts / f"{h}_refs_top60.parquet")
         rec = R.run(h, STAGES, logits_dir=d, truth_dir=d, dump_features=pq_, dump_opts=opts)

@@ -58,6 +58,9 @@ EXTRA_ALLOWED = {
            + tuple(f"{v}_src_{r}" for v in ("fz", "tani_pred") for r in _REL)),
     # 群 N1（近傍の参照の照合、MS2Query の入力 4・5 の形、#261 で定義を固定・playbook §4.2(c) の hide_rule）: 2 列
     "n1": ("#261", ("nbr_ms_mean", "nbr_tani_mean")),
+    # 群 H2（lib_max_sim の装置の系統による置き換え、#287 で定義を固定）: 3 列・lib_max_sim_xi の相対化 5 = 8 列。
+    # 置き換えなので、使うときは --exclude-features で lib_max_sim・has_ref・lib_max_sim_*（相対）を外す
+    "h2": ("#287", ("lib_max_sim_xi", "has_ref_xi", "lib_max_sim_xi_sa") + tuple(f"lib_max_sim_xi_{r}" for r in _REL)),
 }
 EXTRA_ALL = tuple(c for _iss, cols in EXTRA_ALLOWED.values() for c in cols)
 ROWS_MODES = ("all", "pool")
@@ -104,18 +107,25 @@ def resolve_features(exclude=(), extra=()) -> tuple:
     return feats
 
 
-def check_columns(columns, extra=()) -> dict:
+def check_columns(columns, extra=(), exclude=()) -> dict:
     """表の列名を点検する。入れない列がある・期待の列（ID_COLS＋FEATURES＋求めた追加の列）が欠けている・
-    知らない列（登録表にも無い列）があるなら止める。登録済みで求めていない列は止めない（学習にも使わない）。"""
+    知らない列（登録表にも無い列）があるなら止める。登録済みで求めていない列は止めない（学習にも使わない）。
+    exclude（#287）: --exclude-features で外した FEATURES の列は表に無くても止めない（置き換えた表のため）。
+    表にあっても止めない（学習に使わないだけ）。既定の () なら今と同じ。"""
     cols = list(columns)
     extra = _split(extra)
+    exclude = _split(exclude)
+    bad_ex = [c for c in exclude if c not in FEATURES]
+    if bad_ex:
+        raise HarnessError(f"exclude に FEATURES に無い名前: {bad_ex}")
     bad_add = [c for c in extra if c not in EXTRA_ALL]
     if bad_add:
         raise HarnessError(f"登録表 EXTRA_ALLOWED に無い追加の列: {bad_add}")
     forbidden = [c for c in cols if c in FORBIDDEN]
-    expected = list(ID_COLS) + list(FEATURES) + list(extra)
+    expected = list(ID_COLS) + [c for c in FEATURES if c not in exclude] + list(extra)
     missing = [c for c in expected if c not in cols]
-    unknown = [c for c in cols if c not in expected and c not in FORBIDDEN and c not in EXTRA_ALL]
+    unknown = [c for c in cols if c not in expected and c not in FORBIDDEN and c not in EXTRA_ALL
+               and c not in exclude]
     ignored = [c for c in cols if c in EXTRA_ALL and c not in extra]
     dup = sorted({c for c in cols if cols.count(c) > 1})
     rep = dict(n_columns=len(cols), n_expected=len(expected), n_features=len(FEATURES) + len(extra), missing=missing,
@@ -258,13 +268,13 @@ def set_files(eval_root: Path, s: str) -> dict:
     return dict(truth=d / "truth.csv", control=d / "submission_score+prior+frag.csv")
 
 
-def check_only(table: Path, eval_root: Path, extra=(), features=None) -> dict:
+def check_only(table: Path, eval_root: Path, extra=(), features=None, exclude=()) -> dict:
     """列名・行数・fold・型・正解と対照のファイルの有無。正解の SMILES と特徴の値は読まない。
     extra（求めた追加の列）と features（実際に使う一覧、既定 FEATURES）は #255。"""
     import pyarrow.parquet as pq
     features = tuple(features) if features is not None else FEATURES
     pf = pq.ParquetFile(table)
-    rep = dict(table=str(table), mode="check-only", columns=check_columns(pf.schema_arrow.names, extra))
+    rep = dict(table=str(table), mode="check-only", columns=check_columns(pf.schema_arrow.names, extra, exclude))
     schema = pf.schema_arrow
     non_numeric = [c for c in features if not (pd.api.types.is_numeric_dtype(schema.field(c).type.to_pandas_dtype()))]
     if non_numeric:
@@ -326,9 +336,10 @@ def run_fit(table: Path, eval_root: Path, out_dir: Path, seed: int, approval: st
         raise HarnessError(f"--rows は {ROWS_MODES} のどれか: {rows}")
     extra_features = _split(extra_features)
     features = resolve_features(exclude_features, extra_features)
-    rep = check_only(table, eval_root, extra=extra_features, features=features)   # truth と表の分子の一覧の点検（絞る前）
+    rep = check_only(table, eval_root, extra=extra_features, features=features,
+                     exclude=_split(exclude_features))   # truth と表の分子の一覧の点検（絞る前）
     df = pd.read_parquet(table)
-    check_columns(df.columns, extra_features)
+    check_columns(df.columns, extra_features, _split(exclude_features))
     n_rows_table = int(len(df))
     g_all = set(group_ids(df))
     sets = {str(s): str(t) for s, t in df.groupby("set", sort=True)["type"].first().items()}
@@ -390,7 +401,8 @@ def main(argv=None) -> int:
     a = ap.parse_args(argv)
     if a.check_only:
         feats = resolve_features(a.exclude_features, a.extra_features)
-        print(json.dumps(check_only(Path(a.table), Path(a.eval_root), extra=_split(a.extra_features), features=feats),
+        print(json.dumps(check_only(Path(a.table), Path(a.eval_root), extra=_split(a.extra_features), features=feats,
+                                    exclude=_split(a.exclude_features)),
                          indent=2, ensure_ascii=False))
         return 0
     if not a.approval:
