@@ -1,0 +1,115 @@
+{
+ "issue": 278,
+ "kernel": "taichiiiii/casmi26-e2e-timing-274",
+ "version": 2,
+ "kaggle_status": "COMPLETE",
+ "poller_done": "DONE COMPLETE code_commit=608c9b75ee1b536dc74aadf8d677da3a4e8e7630",
+ "poller_complete_at": "2026-11-27 13:48:05 JST",
+ "code_commit": "608c9b75ee1b536dc74aadf8d677da3a4e8e7630",
+ "output_sha256": {
+  "timing.json": "d4aedd449e51df3a62ae0c4e13e68045f0252d9337e36d9d74cda42a4ab85b7e",
+  "pubchem_check.json": "7e511863d81fb557fd4090594a8593e7a0550a71ee353d52c86f09e060ba1077",
+  "submission.csv": "6fcc3353bad23751938dcc0dc60dfa54665a9b138179d522523c70620ec717d3",
+  "e2e.log": "ff9a6d49fc22745f253ac03236cde90e57693241bb8dd5a6e8b080a427c47af5",
+  "casmi26-e2e-timing-274.log": "1d93b655c125242e71121eeb5fe8998b461c52a074b298fb6c2a13b1d346c5e7"
+ },
+ "stages_secs_400": {
+  "prepare": 1.17,
+  "logits": 137.31,
+  "pubchem": 3258.8,
+  "qrows": 32.33,
+  "features": 656.97,
+  "cc": 62.52,
+  "rank": 0.4
+ },
+ "total_secs_400": 4149.5,
+ "wall_secs_400_incl_check": 5259.6,
+ "notebook_setup_secs": 35.72,
+ "notebook_last_log_time_secs": 5319.19,
+ "extrapolation_1200": {
+  "formula": "stage_secs x 1200/400 (#274 / #278 pre-registered; pubchem_check excluded)",
+  "stages": {
+   "prepare": 3.5,
+   "logits": 411.9,
+   "pubchem": 9776.4,
+   "qrows": 97.0,
+   "features": 1970.9,
+   "cc": 187.6,
+   "rank": 1.2
+  },
+  "total": 12448.5,
+  "limit_secs": 16200.0,
+  "over": [],
+  "verdict": "PASS (<= 16,200 s)",
+  "margin_secs": 3751.5,
+  "margin_frac": 0.2316
+ },
+ "sensitivity_not_gate": {
+  "note": "pubchem_check warms the first 40 windows (optimistic direction, review minor in #278). Bound: add the 40-molecule parallel check secs x3 back",
+  "total_plus_check_parallel_x3": 13416.72,
+  "total_plus_setup": 12484.22
+ },
+ "pubchem_workers": {
+  "workers": 4,
+  "mode": "auto",
+  "mem_available": 31302795264,
+  "cpu_count": 4,
+  "shared": 18454937,
+  "private": 840501240
+ },
+ "auto_formula_raw": 29,
+ "pubchem_check": {
+  "secs": 1109.8,
+  "serial_secs": 787.06,
+  "parallel_secs": 322.74,
+  "workers": 4,
+  "n": 40,
+  "identical": true,
+  "first_diff": null,
+  "main_vs_serial": {
+   "n": 40,
+   "identical": true,
+   "first_diff": null
+  }
+ },
+ "pubchem_speed": {
+  "v2_secs_per_mol": 8.147,
+  "v1_secs_per_mol": 12.798,
+  "v2_over_v1": 0.6366,
+  "check_speedup_serial_over_parallel": 2.439
+ },
+ "v1_stages_secs_400": {
+  "prepare": 0.98,
+  "logits": 123.84,
+  "pubchem": 5119.26,
+  "qrows": 44.17,
+  "features": 408.0,
+  "cc": 40.1,
+  "rank": 0.25
+ },
+ "submission_check": {
+  "n_rows": 400,
+  "ids_equal_sample_submission": true,
+  "same_order": true,
+  "n_cand_min": 25,
+  "n_cand_max": 25,
+  "empty": 0,
+  "dup_in_row": 0,
+  "cco_filler_rows": 0,
+  "validate_submission_with_expected_ids": "OK",
+  "ranker_rows": 400,
+  "fallback_cco": 0,
+  "sha256": "6fcc3353bad23751938dcc0dc60dfa54665a9b138179d522523c70620ec717d3"
+ },
+ "cross_session_v1_vs_v2": {
+  "v1_sha256": "7cb2df2478b891f87e80f4c4ee9b62390f5b7e369fbd33835aa32c10d0127575",
+  "rows_differ": 3,
+  "top1_differ": 0,
+  "detail": "m_8071e1 ranks 4,11 / m_9e99f7 rank 4 / m_b047da rank 11: same mrr25.to_key, different SMILES string of the same structure (explicit [CH] vs plain); all other strings byte-equal, so key lists equal for 400/400",
+  "note": "not a pre-registered criterion; sessions on different machines (features 408.0 s vs 656.97 s)"
+ },
+ "features_sha256": "e0b73e5cd9e46e0b11c89dea8aa4b0a03c4182efabc3c45daa0f61880c9ed303",
+ "ranker_sha256": "54cb7d8d31632430f269a245559583660d7a9286d4f7cbe1635562202734ac84",
+ "table_rows": 45173,
+ "submissions_made": 0
+}
