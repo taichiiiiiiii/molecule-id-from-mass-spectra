@@ -41,7 +41,7 @@ Issue #304（計画 2026-11-28 昼 項目 4、カード t_c9b27bf4）。Refs #3 
   - NIST20（Table 3）: Random 0.025、NEIMS (FFN) 0.106、NEIMS (GNN) 0.169、SCARF 0.184、ICEBERG 0.203
   - NPLIB1（Table 4）: Random 0.021、NEIMS (FFN) 0.212、NEIMS (GNN) 0.187、SCARF 0.112、ICEBERG 0.312
   - **ICEBERG を除く 3 手法の順位は、2 つの領域で逆になる**（NIST20: SCARF > GNN > FFN、NPLIB1: FFN > GNN > SCARF）。ただし模型はデータごとに学び直していて、偽物の集合も違う。同じ模型を領域の間で移した比べではない
-- 分け方: 本文は「Both datasets are split into structurally disjoint 90%/10% train-test splits」と書く（構造で互いに重ならない分け方で、MCES の距離は保証しない。S2 によると CANOPUS は 2D InChIKey の分け方）。基準の模型は「[16] の分け方・数を使う」
+- 分け方: 本文は「Both datasets are split into structurally disjoint 90%/10% train-test splits」と書く（構造で互いに重ならない分け方。MCES の距離を保証しない、はこちらの推論で論文の記述ではない。S2 によると CANOPUS は 2D InChIKey の分け方。なお論文は NIST20 の分け方を、ここでは structurally disjoint、§2.5 では「our previous random split」と書いていて、論文の中で言い方が食い違う）。基準の模型は「[16] の分け方・数を使う」
 - ライセンス: 論文は CC BY-NC-SA 4.0（arXiv のページ）。コード samgoldman97/ms-pred は MIT（`gh api` で確認。今は coleygroup/ms-pred に転送される）。NIST20 は有償なので、NIST20 側の数は手元で再現できない。GLACIER/ICEBERG の使用は 745841 で可（`rules-and-deps.md`）
 
 **S4. Kretschmer ほか「Coverage bias in small molecule machine learning」**（Nat. Commun.、2025-01-09 公開、DOI 10.1038/s41467-024-55462-w、https://www.nature.com/articles/s41467-024-55462-w ）
