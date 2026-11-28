@@ -45,7 +45,16 @@ MAX_READS = 2           # playbook §4.1: holdout は 12/6 の中間と 12/11 �
 SEEDS = (0, 1, 2)       # #290 (b): 版 A の 3 本（seed は選ばない）
 SAME_KEYS = ("table_sha256", "features_sha256", "rows", "num_boost_round", "lightgbm", "exclude_features",
              "extra_features", "train_types", "n_rows")   # feature_groups.SAME_KEYS と同じ
-READS_LOG = ROOT / "outputs/local_eval/judge/reads.jsonl"
+# 読み出しの記録はクローンの実ディレクトリに固定する（worktree・git archive の写しから動かしても同じ記録で数える）
+MAIN_CLONE = Path("/Users/taichi/work/molecule-id-dev")
+READS_REL = "outputs/local_eval/judge/reads.jsonl"
+
+
+def reads_log_path() -> Path:
+    """本番の reads.jsonl。クローン（.git のある実ディレクトリ）が無ければ止める（別の場所に新しい記録を作らない）。"""
+    if not (MAIN_CLONE / ".git").exists():
+        raise JudgeError(f"クローン {MAIN_CLONE} が無い。reads.jsonl を別の場所に作らないため止める")
+    return MAIN_CLONE / READS_REL
 
 # 判定用 4 集合（この順）と型
 HOLDOUT_SETS = (("v3_c1u_t10", "C1 型 (a)"), ("enveda_v1u_t10", "(d) プールにあり・参照なし"),
@@ -229,16 +238,18 @@ def judge_groups(groups, cand: pd.DataFrame, base: pd.DataFrame, msg0: set, msg1
 def render(res: dict, dry_run: bool, c2_only_name: str = "v3_c2_t10") -> str:
     L = []
     unit = "型" if dry_run else "集合"
+    base_name = "基準" if dry_run else "基準 score+prior"
+    g = f"{res['gate']:+.2f}".replace("-", "−")
     if dry_run:
         L.append("【dev の試し。採否には使わない（holdout は読んでいない）】")
     for r in res["sets"]:
         where = (f"全集合 {r['n_full']} のうち MSG と重ならない部分集合で判定" if r["judge_on"] == "subset"
                  else f"msg0 が {r['n_remain']} 分子で {res['min_remain']} 未満なので全集合で判定・MSG との重なり {r['n_msg1']}")
-        L.append(f"- {r['set']}（{r['label']}）: n ＝ {r['n']}（{where}）、基準 ＝ {r['base_mrr']:.4f}、"
+        L.append(f"- {r['set']}（{r['label']}）: n ＝ {r['n']}（{where}）、{base_name} ＝ {r['base_mrr']:.4f}、"
                  f"版 A ＝ {r['cand_mrr']:.4f}、Δ ＝ {r['delta']:+.4f}（記録用）、95% 区間 [{r['lo']:+.4f} , {r['hi']:+.4f}]、"
-                 f"L ≥ {res['gate']}: {'満たす' if r['lo_ge_gate'] else '満たさない'}、L > 0: {'はい' if r['lo_gt_0'] else 'いいえ'}")
+                 f"L ≥ {g}: {'満たす' if r['lo_ge_gate'] else '満たさない'}、L > 0: {'はい' if r['lo_gt_0'] else 'いいえ'}")
     n = len(res["sets"])
-    L.append(f"- (i) {n} {unit}すべてで L ≥ {res['gate']}: " + ("満たす" if res["cond_i"] else
+    L.append(f"- (i) {n} {unit}すべてで L ≥ {g}: " + ("満たす" if res["cond_i"] else
              f"満たさない（満たさない{unit}: " + "・".join(res["cond_i_fail"]) + "）"))
     pos = res["cond_ii_sets"]
     kind = "無し" if not pos else (f"{c2_only_name} だけ" if pos == [c2_only_name] else "ほかを含む")
@@ -284,7 +295,7 @@ def run_dev(cand_dirs, base_dirs, msg0_path, msg1_path, out: Path | None) -> tup
 
 def run_holdout(cand_dirs, baseline_dir, msg0_path, msg1_path, label: str, out: Path, reads_log: Path | None = None,
                 baseline_pins=None, msg_pins=None) -> tuple[dict, str]:
-    reads_log = READS_LOG if reads_log is None else reads_log
+    reads_log = reads_log_path() if reads_log is None else reads_log
     # 中身を開かずに確かめられることだけ先に（パスの打ち間違いで 1 回を使わないため）
     need = [Path(d) / f for d in cand_dirs for f in ("meta.json", "per_molecule.csv")]
     need += [Path(baseline_dir) / f"{s}_rr.csv" for s, _ in HOLDOUT_SETS] + [Path(msg0_path), Path(msg1_path)]
@@ -304,6 +315,8 @@ def run_holdout(cand_dirs, baseline_dir, msg0_path, msg1_path, label: str, out: 
     extra = {s for s, _ in cand.index} - hold
     if extra:
         raise JudgeError(f"版 A に判定用 4 集合以外の集合 {sorted(extra)}")
+    if {s for s, _ in msg0 | msg1} != hold:
+        raise JudgeError("msg0 ∪ msg1 の集合名が判定用 4 集合とちょうど一致しない")
     groups = [(s, lab, list(base.index[base.index.get_level_values(0) == s])) for s, lab in HOLDOUT_SETS]
     if set(cand.index) != set(base.index):
         raise JudgeError("版 A と基準で分子の集合が違う")

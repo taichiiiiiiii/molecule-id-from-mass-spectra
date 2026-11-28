@@ -196,7 +196,8 @@ def test_production_pins_reject_synthetic(tmp_path):
 
 def test_cli_without_holdout_paths_refuses(tmp_path, monkeypatch):
     log = tmp_path / "reads.jsonl"
-    monkeypatch.setattr(J, "READS_LOG", log)
+    monkeypatch.setattr(J, "MAIN_CLONE", tmp_path)
+    (tmp_path / ".git").mkdir()
     for argv in (["--cand", "a", "b", "c", "--msg0", "m0", "--msg1", "m1"],
                  ["--cand", "a", "b", "c", "--msg0", "m0", "--msg1", "m1", "--label", "x", "--out", "o"],
                  ["--cand", "a", "b", "c", "--base", "x", "y", "z", "--msg0", "m0", "--msg1", "m1"],
@@ -204,7 +205,7 @@ def test_cli_without_holdout_paths_refuses(tmp_path, monkeypatch):
                   "--baseline-dir", "outputs/local_eval/baseline_1206"]):
         with pytest.raises(SystemExit):
             J.main(argv)
-    assert not log.exists()
+    assert not (tmp_path / J.READS_REL).exists()
     src = (ROOT / "scripts/local_eval/judge_holdout.py").read_text()
     assert "baseline_1206\"" not in src.split("HOLDOUT_MARKERS")[0]   # 既定のパスとして持たない
 
@@ -237,13 +238,14 @@ def _mk_dev(root: Path, n_per_type=150, prefix="b8_f1_"):
     return dirs, root / "dev_m0.csv", root / "dev_m1.csv"
 
 
-LINE = re.compile(r"^- \S+（.+）: n ＝ \d+（.+）、基準 ＝ \d\.\d{4}、版 A ＝ -?\d\.\d{4}、Δ ＝ [+-]\d\.\d{4}（記録用）、"
-                  r"95% 区間 \[[+-]\d\.\d{4} , [+-]\d\.\d{4}\]、L ≥ -0\.02: (満たす|満たさない)、L > 0: (はい|いいえ)$")
+LINE = re.compile(r"^- \S+（.+）: n ＝ \d+（.+）、基準( score\+prior)? ＝ \d\.\d{4}、版 A ＝ -?\d\.\d{4}、Δ ＝ [+-]\d\.\d{4}（記録用）、"
+                  r"95% 区間 \[[+-]\d\.\d{4} , [+-]\d\.\d{4}\]、L ≥ −0\.02: (満たす|満たさない)、L > 0: (はい|いいえ)$")
 
 
 def test_dev_dry_run_same_format(tmp_path, monkeypatch):
     log = tmp_path / "reads.jsonl"
-    monkeypatch.setattr(J, "READS_LOG", log)
+    monkeypatch.setattr(J, "MAIN_CLONE", tmp_path)
+    (tmp_path / ".git").mkdir()
     dirs, m0, m1 = _mk_dev(tmp_path)
     opened = []
     real_open = builtins.open
@@ -260,7 +262,7 @@ def test_dev_dry_run_same_format(tmp_path, monkeypatch):
     lines = text.splitlines()
     assert lines[0].startswith("【dev の試し。採否には使わない")
     assert sum(bool(LINE.match(x)) for x in lines) == 5
-    assert any(x.startswith("- (i) 5 型すべてで L ≥ -0.02: 満たす") for x in lines)
+    assert any(x.startswith("- (i) 5 型すべてで L ≥ −0.02: 満たす") for x in lines)
     assert "- 判定: 条件を満たす" in lines
     # holdout の書式と同じ行の形（合成の holdout と比べる）
     h = _mk_holdout(tmp_path / "h", {s: 0.01 for s in SETS})
@@ -269,7 +271,7 @@ def test_dev_dry_run_same_format(tmp_path, monkeypatch):
     norm = lambda x: re.sub(r"\d", "", x.split(":")[0])  # noqa: E731
     assert [norm(x) for x in htext.splitlines()[-5:]] == [norm(x).replace("型", "集合") for x in lines[-5:]]
     # reads.jsonl を作らない・holdout らしいパスを開かない
-    assert not log.exists()
+    assert not (tmp_path / J.READS_REL).exists()
     assert not any(any(k in p for k in J.HOLDOUT_MARKERS) for p in opened)
     assert (tmp_path / "dev_out" / "judge.md").read_text() == text
 
@@ -290,3 +292,35 @@ def test_seed_set_enforced(tmp_path):
     (dirs["cand"][2] / "meta.json").write_text(json.dumps({"seed": 0, "sets": {"b8_f1_a_t10": "a"}}))
     with pytest.raises(J.JudgeError, match="seed の組"):
         J.run_dev(dirs["cand"], dirs["base"], m0, m1, None)
+
+
+def test_reads_log_fixed_to_clone(tmp_path, monkeypatch):
+    """既定の reads.jsonl はスクリプトの置き場所ではなくクローンの実ディレクトリ。クローンが無ければ何も読まずに止まる。"""
+    assert J.MAIN_CLONE == Path("/Users/taichi/work/molecule-id-dev")
+    assert J.READS_REL == "outputs/local_eval/judge/reads.jsonl"
+    h = _mk_holdout(tmp_path, {s: 0.01 for s in SETS})
+    monkeypatch.setattr(J, "MAIN_CLONE", tmp_path / "no_clone")
+    with pytest.raises(J.JudgeError, match="クローン"):
+        J.run_holdout(h["cands"], h["bdir"], h["m0"], h["m1"], "x", tmp_path / "o", baseline_pins=h["pins"],
+                      msg_pins=h["mpins"])
+    assert not (tmp_path / "no_clone").exists()
+    clone = tmp_path / "clone"
+    (clone / ".git").mkdir(parents=True)
+    monkeypatch.setattr(J, "MAIN_CLONE", clone)
+    for lab in ("interim_1206", "final_1211"):
+        J.run_holdout(h["cands"], h["bdir"], h["m0"], h["m1"], lab, tmp_path / lab, baseline_pins=h["pins"],
+                      msg_pins=h["mpins"])
+    assert J.count_reads(clone / J.READS_REL) == 2
+    with pytest.raises(J.ReadLimitError):
+        J.run_holdout(h["cands"], h["bdir"], h["m0"], h["m1"], "third", tmp_path / "third", baseline_pins=h["pins"],
+                      msg_pins=h["mpins"])
+
+
+def test_msg_lists_must_name_exactly_judge_sets(tmp_path):
+    h = _mk_holdout(tmp_path, {s: 0.0 for s in SETS})
+    d = pd.read_csv(h["m1"])
+    d.loc[len(d)] = ["b8_f1_a_t10", "zz"]
+    d.to_csv(h["m1"], index=False)
+    h["mpins"]["msg1"] = J.sha256_file(h["m1"])
+    with pytest.raises(J.JudgeError, match="4 集合とちょうど"):
+        _run(tmp_path, h, tmp_path / "reads.jsonl")
