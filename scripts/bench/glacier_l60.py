@@ -457,7 +457,10 @@ def expected_n_jobs(man: dict):
 
 
 # ---------------------------------------------------------------- 段: run
-def make_predict_fn(pkg: Path, site: Path, threads: int, log):
+def make_predict_fn(pkg: Path, site: Path, threads: int, log, device: str = "cpu", deadline: float = float("inf")):
+    """device は R.load_model と R.Predictor の両方に同じ値を渡す（#302。既定 cpu = 前と同じ動き）。
+    deadline（time.time() の値）を過ぎたら予測を止め、stats の finished を False にする（#302 の 50 分の上限。
+    既定 inf では前と同じく止まらず、止まれば assert で落ちる）。"""
     sys.path.insert(0, str(pkg))
     import gl_runner as R
     a = types.SimpleNamespace(pkg=str(pkg), site="none", any_rdkit=True, wheels=None)
@@ -467,13 +470,13 @@ def make_predict_fn(pkg: Path, site: Path, threads: int, log):
     if threads > 0:
         torch.set_num_threads(threads)
     torch.use_deterministic_algorithms(True, warn_only=True)
-    model = R.load_model(str(pkg), "cpu", log)
+    model = R.load_model(str(pkg), device, log)
     env = dict(rdkit=rd, torch=torch.__version__, threads=torch.get_num_threads(),
                gl_runner_sha256=sha256(pkg / "gl_runner.py"), ckpt_sha256=sha256(pkg / "ckpt" / "glacier.pt"))
     log("ENV " + json.dumps(env))
 
     def predict(keys):
-        pred = R.Predictor(model, "cpu", 32, log)        # shard ごとに新しいキャッシュ（メモリを抑える）
+        pred = R.Predictor(model, device, 32, log)       # shard ごとに新しいキャッシュ（メモリを抑える）
         fail = np.zeros(len(keys), np.int8)
         good = []
         for n, (smi, ad, ins, ce) in enumerate(keys):
@@ -483,8 +486,8 @@ def make_predict_fn(pkg: Path, site: Path, threads: int, log):
             else:
                 fail[n] = FAIL_SMILES
         jobs = {keys[n] for n in good}
-        finished = pred.predict(jobs, float("inf"))
-        assert finished
+        finished = pred.predict(jobs, deadline)
+        assert finished or deadline != float("inf")
         preds = [None] * len(keys)
         for n in good:
             v = pred.cache.get(keys[n])
@@ -493,6 +496,8 @@ def make_predict_fn(pkg: Path, site: Path, threads: int, log):
         stats = dict(count_unit_model="canonical (smiles, adduct, instr, ce)",
                      n_model_calls=int(pred.n_pred), n_model_fail=int(pred.n_fail),
                      n_feat_fail=int(pred.n_feat_fail), t_pred=round(pred.t_pred, 2), bs_final=int(pred.bs), **env)
+        if deadline != float("inf"):          # 既定（inf）の stats は前と同じ鍵のまま
+            stats["finished"] = bool(finished)
         if len(R._CANON) > 200_000:
             R._CANON.clear()
         return preds, fail, stats
