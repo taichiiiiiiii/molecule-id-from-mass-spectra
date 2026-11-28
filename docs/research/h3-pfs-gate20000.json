@@ -1,0 +1,202 @@
+{
+ "subset20000": {
+  "time_l": {
+   "real_s": 340.52,
+   "max_rss_bytes": 1518960640,
+   "peak_footprint_bytes": 1074218736
+  },
+  "train_counts": {
+   "subset": 20000,
+   "use_raw_sha256": "83aed7b0075dbf77b29b0d83fe8201e28e0e9550abdcb9b55c44a89c4ca01187",
+   "n_train_spectra_counted": 135592,
+   "n_unparsable_train": 0,
+   "n_records": 1333970,
+   "n_record_names": 278038,
+   "chunk": 10000,
+   "secs_build": {
+    "load": 0.4,
+    "train_enumerate": 117.6,
+    "train_stream_io": 7.6,
+    "train_match_count": 7.0,
+    "train_aggregate": 1.4
+   },
+   "peak_rss_gb_after_build": 1.368,
+   "loaded_from_cache": false
+  },
+  "set": {
+   "n_records_kept": 1051943,
+   "n_keys_kept": 557395,
+   "n_bins_kept": 20474,
+   "n_rows": 19315,
+   "n_molecules": 196,
+   "n_unique_cand": 18944,
+   "n_rows_with_own": 127,
+   "counts": {
+    "pfs_ll": {
+     "nan": 0,
+     "inf": 0,
+     "zero": 0
+    },
+    "pfs_ll_per_peak": {
+     "nan": 0,
+     "inf": 0,
+     "zero": 0
+    },
+    "pfs_seen_frac": {
+     "nan": 0,
+     "inf": 0,
+     "zero": 2397
+    },
+    "pfs_ll_fdmax": {
+     "nan": 0,
+     "inf": 0,
+     "zero": 2648
+    }
+   },
+   "secs": {
+    "set_counts": 0.1,
+    "cand_enumerate": 192.3,
+    "features": 12.6
+   },
+   "secs_set": 205.0,
+   "peak_rss_gb": 1.415,
+   "out_sha256": "24e7798c82a799b3779bce330e5728ad29d0ab455be3b7f7442a4a2a989b3f0d"
+  }
+ },
+ "subset10000": {
+  "time_l": {
+   "real_s": 287.84,
+   "max_rss_bytes": 1410859008,
+   "peak_footprint_bytes": 1086031432
+  },
+  "train_counts": {
+   "subset": 10000,
+   "use_raw_sha256": "0a73e45af61f291db2d273a904e11def06e08b49d5413c7a002e87b6f9b2cd9f",
+   "n_train_spectra_counted": 68194,
+   "n_unparsable_train": 0,
+   "n_records": 666715,
+   "n_record_names": 155655,
+   "chunk": 10000,
+   "secs_build": {
+    "load": 0.5,
+    "train_enumerate": 65.2,
+    "train_stream_io": 3.8,
+    "train_match_count": 3.8,
+    "train_aggregate": 0.8
+   },
+   "peak_rss_gb_after_build": 1.314,
+   "loaded_from_cache": false
+  },
+  "set": {
+   "n_records_kept": 524878,
+   "n_keys_kept": 310107,
+   "n_bins_kept": 16547,
+   "n_rows": 19315,
+   "n_molecules": 196,
+   "n_unique_cand": 18944,
+   "n_rows_with_own": 61,
+   "counts": {
+    "pfs_ll": {
+     "nan": 0,
+     "inf": 0,
+     "zero": 0
+    },
+    "pfs_ll_per_peak": {
+     "nan": 0,
+     "inf": 0,
+     "zero": 0
+    },
+    "pfs_seen_frac": {
+     "nan": 0,
+     "inf": 0,
+     "zero": 2624
+    },
+    "pfs_ll_fdmax": {
+     "nan": 0,
+     "inf": 0,
+     "zero": 2672
+    }
+   },
+   "secs": {
+    "set_counts": 0.1,
+    "cand_enumerate": 199.5,
+    "features": 12.5
+   },
+   "secs_set": 212.1,
+   "peak_rss_gb": 1.314,
+   "out_sha256": "8d7bb09ddfabf1d64e4ed7f728a488a026af886285b02719836ca844500b58fc"
+  }
+ },
+ "synthetic_table_20000": {
+  "args": {
+   "records": 1333970,
+   "names": 278038,
+   "structs": 20000,
+   "chunks": 2
+  },
+  "rss_gb": {
+   "start": 0.072,
+   "parts": 0.129,
+   "concat": 0.179,
+   "from_hashed": 0.232,
+   "for_set": 0.293,
+   "own": 0.293
+  },
+  "secs_from_hashed": 0.1,
+  "secs_set": 0.1,
+  "n_records": 1333970,
+  "n_vocab": 275746,
+  "table_bytes": 54692770,
+  "time_l": {
+   "real_s": 0.46,
+   "max_rss_bytes": 315490304,
+   "peak_footprint_bytes": 282936112
+  }
+ },
+ "synthetic_table_275810": {
+  "args": {
+   "records": 18396000,
+   "names": 3834000,
+   "structs": 275810,
+   "chunks": 28
+  },
+  "rss_gb": {
+   "start": 0.07,
+   "parts": 0.792,
+   "concat": 1.478,
+   "from_hashed": 1.49,
+   "for_set": 2.265,
+   "own": 2.266
+  },
+  "secs_from_hashed": 3.0,
+  "secs_set": 1.9,
+  "n_records": 18396000,
+  "n_vocab": 3802333,
+  "table_bytes": 754236000,
+  "time_l": {
+   "real_s": 5.57,
+   "max_rss_bytes": 2433138688,
+   "peak_footprint_bytes": 2278656328
+  }
+ },
+ "fit": {
+  "formula": "peak(N) = a + b*N（10,000 と 20,000 の 2 点、maximum resident set size）",
+  "a_bytes": 1302757376.0,
+  "b_bytes_per_struct": 10810.1632,
+  "peak_full_bytes": 4284308488.1920004,
+  "peak_full_gib": 3.9900732116699222
+ },
+ "components": {
+  "formula": "peak_full ≈ (実の 20,000 の peak − 合成の 20,000 の表の段の peak) + 合成の全 train の大きさの表の段の peak",
+  "fixed_bytes": 1203470336,
+  "table_full_bytes": 2433138688,
+  "peak_full_bytes": 3636609024,
+  "peak_full_gib": 3.3868560791015625
+ },
+ "gate": {
+  "limit": "≤ 3 GB（3e9 B）",
+  "peak20000_ok": true,
+  "full_fit_ok": false,
+  "full_components_ok": false
+ }
+}
