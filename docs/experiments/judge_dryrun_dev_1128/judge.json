@@ -96,7 +96,7 @@
  ],
  "pass_": true,
  "mode": "dry-run-dev",
- "commit": "3d7e2ae88e0b5c5868e226176f9e10d6984ad2e3",
+ "commit": "0ee28f8a53f031c34809a207345ba5769ba111cc",
  "cand": [
   "outputs/local_eval/ranker/lambdarank/exp016",
   "outputs/local_eval/ranker/lambdarank/exp017",
