@@ -61,6 +61,8 @@ EXTRA_ALLOWED = {
     # 群 H2（lib_max_sim の装置の系統による置き換え、#287 で定義を固定）: 3 列・lib_max_sim_xi の相対化 5 = 8 列。
     # 置き換えなので、使うときは --exclude-features で lib_max_sim・has_ref・lib_max_sim_*（相対）を外す
     "h2": ("#287", ("lib_max_sim_xi", "has_ref_xi", "lib_max_sim_xi_sa") + tuple(f"lib_max_sim_xi_{r}" for r in _REL)),
+    # 群 H3（断片の構造の統計、MetFrag 2.4.5 の S_Peak の形、#296 で定義を固定・hide_rule と fold・own-out）: 4 列
+    "h3": ("#296", ("pfs_ll", "pfs_ll_per_peak", "pfs_seen_frac", "pfs_ll_fdmax")),
 }
 EXTRA_ALL = tuple(c for _iss, cols in EXTRA_ALLOWED.values() for c in cols)
 ROWS_MODES = ("all", "pool")
