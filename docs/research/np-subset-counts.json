@@ -1,0 +1,516 @@
+{
+ "issue": 300,
+ "definitions": "https://github.com/taichiiiiiiii/molecule-id-from-mass-spectra/issues/300",
+ "np_definition": "canonical key in pool_meta src in {2,3}",
+ "n_coconut_keys": 462261,
+ "n_np_examples": 250,
+ "dev_breakdown": {
+  "rule": "n < 30 は n だけ。区間 = evaluate.paired_bootstrap（2,000 回、seed 0）",
+  "n_key_none": 0,
+  "np_count_by_type": {
+   "a": {
+    "n": 789,
+    "np": 4,
+    "np_raw": 4,
+    "np_examples": 0
+   },
+   "b": {
+    "n": 787,
+    "np": 787,
+    "np_raw": 787,
+    "np_examples": 0
+   },
+   "c": {
+    "n": 788,
+    "np": 0,
+    "np_raw": 0,
+    "np_examples": 0
+   },
+   "d": {
+    "n": 745,
+    "np": 0,
+    "np_raw": 0,
+    "np_examples": 0
+   },
+   "e": {
+    "n": 792,
+    "np": 2,
+    "np_raw": 2,
+    "np_examples": 0
+   }
+  },
+  "exp003_vs_score_prior_frag": {
+   "n": 3901,
+   "cells": {
+    "a": {
+     "np": {
+      "n": 4
+     },
+     "non_np": {
+      "n": 785,
+      "mrr": 0.9033,
+      "mrr_ref": 0.8957,
+      "delta": 0.0076,
+      "lo": -0.0067,
+      "hi": 0.0213
+     },
+     "all": {
+      "n": 789,
+      "mrr": 0.9013,
+      "mrr_ref": 0.8962,
+      "delta": 0.0051,
+      "lo": -0.0086,
+      "hi": 0.0191
+     }
+    },
+    "b": {
+     "np": {
+      "n": 787,
+      "mrr": 0.7403,
+      "mrr_ref": 0.6293,
+      "delta": 0.1109,
+      "lo": 0.0956,
+      "hi": 0.128
+     },
+     "non_np": {
+      "n": 0
+     },
+     "all": {
+      "n": 787,
+      "mrr": 0.7403,
+      "mrr_ref": 0.6293,
+      "delta": 0.1109,
+      "lo": 0.0956,
+      "hi": 0.128
+     }
+    },
+    "c": {
+     "np": {
+      "n": 0
+     },
+     "non_np": {
+      "n": 788,
+      "mrr": 0.4652,
+      "mrr_ref": 0.0,
+      "delta": 0.4652,
+      "lo": 0.4362,
+      "hi": 0.4934
+     },
+     "all": {
+      "n": 788,
+      "mrr": 0.4652,
+      "mrr_ref": 0.0,
+      "delta": 0.4652,
+      "lo": 0.4362,
+      "hi": 0.4934
+     }
+    },
+    "d": {
+     "np": {
+      "n": 0
+     },
+     "non_np": {
+      "n": 745,
+      "mrr": 0.9724,
+      "mrr_ref": 0.8523,
+      "delta": 0.1201,
+      "lo": 0.1038,
+      "hi": 0.1366
+     },
+     "all": {
+      "n": 745,
+      "mrr": 0.9724,
+      "mrr_ref": 0.8523,
+      "delta": 0.1201,
+      "lo": 0.1038,
+      "hi": 0.1366
+     }
+    },
+    "e": {
+     "np": {
+      "n": 2
+     },
+     "non_np": {
+      "n": 790,
+      "mrr": 0.4044,
+      "mrr_ref": 0.0,
+      "delta": 0.4044,
+      "lo": 0.3758,
+      "hi": 0.4327
+     },
+     "all": {
+      "n": 792,
+      "mrr": 0.4037,
+      "mrr_ref": 0.0,
+      "delta": 0.4037,
+      "lo": 0.3756,
+      "hi": 0.4317
+     }
+    }
+   }
+  },
+  "cand3_vs_ctrl3": {
+   "n": 3373,
+   "ctrl": [
+    "exp007",
+    "exp014",
+    "exp015"
+   ],
+   "cand": [
+    "exp016",
+    "exp017",
+    "exp018"
+   ],
+   "np_count_by_type": {
+    "a": 0,
+    "b": 279,
+    "c": 0,
+    "d": 0,
+    "e": 0
+   },
+   "cells": {
+    "a": {
+     "np": {
+      "n": 0
+     },
+     "non_np": {
+      "n": 776,
+      "mrr": 0.9187,
+      "mrr_ref": 0.9037,
+      "delta": 0.0149,
+      "lo": 0.0044,
+      "hi": 0.026
+     },
+     "all": {
+      "n": 776,
+      "mrr": 0.9187,
+      "mrr_ref": 0.9037,
+      "delta": 0.0149,
+      "lo": 0.0044,
+      "hi": 0.026
+     }
+    },
+    "b": {
+     "np": {
+      "n": 279,
+      "mrr": 0.6763,
+      "mrr_ref": 0.6667,
+      "delta": 0.0096,
+      "lo": -0.0108,
+      "hi": 0.0293
+     },
+     "non_np": {
+      "n": 0
+     },
+     "all": {
+      "n": 279,
+      "mrr": 0.6763,
+      "mrr_ref": 0.6667,
+      "delta": 0.0096,
+      "lo": -0.0108,
+      "hi": 0.0293
+     }
+    },
+    "c": {
+     "np": {
+      "n": 0
+     },
+     "non_np": {
+      "n": 788,
+      "mrr": 0.5507,
+      "mrr_ref": 0.4564,
+      "delta": 0.0943,
+      "lo": 0.0782,
+      "hi": 0.1118
+     },
+     "all": {
+      "n": 788,
+      "mrr": 0.5507,
+      "mrr_ref": 0.4564,
+      "delta": 0.0943,
+      "lo": 0.0782,
+      "hi": 0.1118
+     }
+    },
+    "d": {
+     "np": {
+      "n": 0
+     },
+     "non_np": {
+      "n": 745,
+      "mrr": 0.9772,
+      "mrr_ref": 0.9705,
+      "delta": 0.0066,
+      "lo": 0.0006,
+      "hi": 0.0129
+     },
+     "all": {
+      "n": 745,
+      "mrr": 0.9772,
+      "mrr_ref": 0.9705,
+      "delta": 0.0066,
+      "lo": 0.0006,
+      "hi": 0.0129
+     }
+    },
+    "e": {
+     "np": {
+      "n": 0
+     },
+     "non_np": {
+      "n": 785,
+      "mrr": 0.5491,
+      "mrr_ref": 0.4295,
+      "delta": 0.1196,
+      "lo": 0.1032,
+      "hi": 0.1357
+     },
+     "all": {
+      "n": 785,
+      "mrr": 0.5491,
+      "mrr_ref": 0.4295,
+      "delta": 0.1196,
+      "lo": 0.1032,
+      "hi": 0.1357
+     }
+    }
+   }
+  }
+ },
+ "fold_counts": {
+  "rule": "① hold∩timsTOF∩天然物 → ② 質量 157〜1159 → ③ MSG 1.0 train∪val と重ならない → ④ 既存の集合の正解と重ならない（4 鍵）。a′ = ④ ∩ 公開の参照あり、d′ = ④",
+  "by_fold": {
+   "0": {
+    "n_structures": 55102,
+    "n_tims": 36583,
+    "n1_tims_np": 9,
+    "n2_mass": 9,
+    "n3_no_msg": 8,
+    "n4_no_sets": 5,
+    "n4_groups": 5,
+    "a_prime": 0,
+    "d_prime": 5,
+    "drop_msg": 1,
+    "drop_sets": 3,
+    "n1_tims_nonnp": 36574
+   },
+   "np": {
+    "n_structures": 265,
+    "n_tims": 250,
+    "n1_tims_np": 249,
+    "n2_mass": 244,
+    "n3_no_msg": 24,
+    "n4_no_sets": 24,
+    "n4_groups": 24,
+    "a_prime": 24,
+    "d_prime": 24,
+    "drop_msg": 220,
+    "drop_sets": 0,
+    "n1_tims_nonnp": 1
+   },
+   "1": {
+    "n_structures": 55106,
+    "n_tims": 36587,
+    "n1_tims_np": 13,
+    "n2_mass": 13,
+    "n3_no_msg": 12,
+    "n4_no_sets": 12,
+    "n4_groups": 12,
+    "a_prime": 0,
+    "d_prime": 12,
+    "drop_msg": 1,
+    "drop_sets": 0,
+    "n1_tims_nonnp": 36574
+   },
+   "2": {
+    "n_structures": 55118,
+    "n_tims": 36587,
+    "n1_tims_np": 7,
+    "n2_mass": 7,
+    "n3_no_msg": 6,
+    "n4_no_sets": 5,
+    "n4_groups": 5,
+    "a_prime": 0,
+    "d_prime": 5,
+    "drop_msg": 1,
+    "drop_sets": 1,
+    "n1_tims_nonnp": 36580
+   },
+   "3": {
+    "n_structures": 55119,
+    "n_tims": 36591,
+    "n1_tims_np": 11,
+    "n2_mass": 11,
+    "n3_no_msg": 8,
+    "n4_no_sets": 8,
+    "n4_groups": 8,
+    "a_prime": 0,
+    "d_prime": 8,
+    "drop_msg": 3,
+    "drop_sets": 0,
+    "n1_tims_nonnp": 36580
+   },
+   "4": {
+    "n_structures": 55100,
+    "n_tims": 36593,
+    "n1_tims_np": 11,
+    "n2_mass": 11,
+    "n3_no_msg": 9,
+    "n4_no_sets": 9,
+    "n4_groups": 9,
+    "a_prime": 0,
+    "d_prime": 9,
+    "drop_msg": 2,
+    "drop_sets": 0,
+    "n1_tims_nonnp": 36582
+   }
+  },
+  "dev_folds_sum": {
+   "n_structures": 220443,
+   "n_tims": 146358,
+   "n1_tims_np": 42,
+   "n2_mass": 42,
+   "n3_no_msg": 35,
+   "n4_no_sets": 34,
+   "n4_groups": 34,
+   "a_prime": 0,
+   "d_prime": 34,
+   "drop_msg": 7,
+   "drop_sets": 1,
+   "n1_tims_nonnp": 146316
+  },
+  "msg": {
+   "rows": 231104,
+   "smiles": 31602,
+   "key_none": 0,
+   "raw_tv": 25931,
+   "key_tv": 25903
+  },
+  "set_exclusion": {
+   "sets": [
+    "v3_c1",
+    "v3_c2",
+    "enveda_v1",
+    "v3_c2n",
+    "v3_c1b",
+    "v3_c2nb",
+    "enveda_v1b",
+    "v3_c1u_t10",
+    "v3_c2_t10",
+    "enveda_v1u_t10",
+    "v3_c2nu_t10",
+    "b8_f1_a_t10",
+    "b8_f1_b_t10",
+    "b8_f1_c_t10",
+    "b8_f1_d_t10",
+    "b8_f1_e_t10",
+    "b8_f2_a_t10",
+    "b8_f2_b_t10",
+    "b8_f2_c_t10",
+    "b8_f2_d_t10",
+    "b8_f2_e_t10",
+    "b8_f3_a_t10",
+    "b8_f3_b_t10",
+    "b8_f3_c_t10",
+    "b8_f3_d_t10",
+    "b8_f3_e_t10",
+    "b8_f4_a_t10",
+    "b8_f4_b_t10",
+    "b8_f4_c_t10",
+    "b8_f4_d_t10",
+    "b8_f4_e_t10"
+   ],
+   "drop_keys_from": [
+    "b8_f1_a",
+    "b8_f1_a_t10",
+    "b8_f1_b",
+    "b8_f1_b_t10",
+    "b8_f1_c",
+    "b8_f1_c_t10",
+    "b8_f1_d",
+    "b8_f1_d_t10",
+    "b8_f1_e",
+    "b8_f1_e_t10",
+    "b8_f2_a",
+    "b8_f2_a_t10",
+    "b8_f2_b",
+    "b8_f2_b_t10",
+    "b8_f2_c",
+    "b8_f2_c_t10",
+    "b8_f2_d",
+    "b8_f2_d_t10",
+    "b8_f2_e",
+    "b8_f2_e_t10",
+    "b8_f3_a",
+    "b8_f3_a_t10",
+    "b8_f3_b",
+    "b8_f3_b_t10",
+    "b8_f3_c",
+    "b8_f3_c_t10",
+    "b8_f3_d",
+    "b8_f3_d_t10",
+    "b8_f3_e",
+    "b8_f3_e_t10",
+    "b8_f4_a",
+    "b8_f4_a_t10",
+    "b8_f4_b",
+    "b8_f4_b_t10",
+    "b8_f4_c",
+    "b8_f4_c_t10",
+    "b8_f4_d",
+    "b8_f4_d_t10",
+    "b8_f4_e",
+    "b8_f4_e_t10",
+    "enveda_v1",
+    "enveda_v1b",
+    "enveda_v1u_t10",
+    "v3_c1",
+    "v3_c1b",
+    "v3_c1u_t10",
+    "v3_c2",
+    "v3_c2",
+    "v3_c2_t10",
+    "v3_c2n",
+    "v3_c2nb",
+    "v3_c2nu_t10"
+   ],
+   "e_raw": 5495,
+   "e_key": 5495,
+   "e_grp": 5397
+  },
+  "n_train_rows": 2539608,
+  "n_train_structs": 275810
+ },
+ "decision": {
+  "holdout_fold0": {
+   "n_a_prime": 0,
+   "n_d_prime_pool": 5,
+   "make_a_prime": false,
+   "d_prime_remainder": 5,
+   "make_d_prime": false,
+   "add": false
+  },
+  "dev_folds_1_4": {
+   "n_a_prime": 0,
+   "n_d_prime_pool": 34,
+   "make_a_prime": false,
+   "d_prime_remainder": 34,
+   "make_d_prime": false,
+   "add": false
+  },
+  "note": "np の行は (d) の数に入れない（#300 (d)）"
+ },
+ "inputs_sha256": {
+  "data/ext/panel/casmi26-identity-disjoint-validation-folds/structures.parquet": "7c16c4968a15956e94eba58e3ff94d4a6c2f6899b10a2f2824047601a46bd6c8",
+  "data/ext/v4g/casmi26-v2-pool/train_structs.parquet": "f20aa1cac23af42e430a6633707fda34e48dea97114bdc3e443897f692df3656",
+  "data/ext/v4g/casmi26-v2-pool/pool_meta.parquet": "82b8c40315611289b9a4004b3af18d6d3402b3cd5baa4ee5723da07b7e2f6bb0",
+  "exp003/per_molecule.csv": "9d551e7b3bebb0b976dfa012b4e8fd29dbd6b61c8146be173a71fe8c6968b995",
+  "exp007/per_molecule.csv": "b41d8544b3019128c0561aa2ac4d56664b80b913dbe2e9c523d95b57a2feedee",
+  "exp014/per_molecule.csv": "7ad6565019ba4c6235e759e9a0f8d46576399a185cd599ef47e165e02496f327",
+  "exp015/per_molecule.csv": "7b7887a7f8d49e386f7b02021a28cce162f4bae3a169a37aca2d743906bb0271",
+  "exp016/per_molecule.csv": "f317f685e255b06a931e140fa8768ebd272be74ef46be7973cbce099fa58c474",
+  "exp017/per_molecule.csv": "24ae2a869312e8342978c703db3111b6d792e6000f45b4bce69661a24dae6f7a",
+  "exp018/per_molecule.csv": "5259c47c933f7a91f7a446559bd721e59764de536c1c8666926e1f581ce5fbf4"
+ },
+ "seconds": 79.2
+}
