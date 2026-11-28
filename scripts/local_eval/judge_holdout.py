@@ -244,7 +244,9 @@ def render(res: dict, dry_run: bool, c2_only_name: str = "v3_c2_t10") -> str:
     kind = "無し" if not pos else (f"{c2_only_name} だけ" if pos == [c2_only_name] else "ほかを含む")
     L.append(f"- (ii) L > 0 の{unit}: " + ("・".join(pos) if pos else "無し") + f"（{kind}）")
     L.append(f"- 判定: {'条件を満たす' if res['pass_'] else '条件を満たさない'}")
-    L.append(f"- 結果の使い方: {USE_PASS if res['pass_'] else USE_FAIL}")
+    use = USE_PASS if res["pass_"] else USE_FAIL
+    L.append(f"- 結果の使い方: （dev の試しなので適用しない。holdout の判定なら次の文）{use}" if dry_run
+             else f"- 結果の使い方: {use}")
     L.append(f"- 区間: 分子単位の対応のある bootstrap {res['n_boot']} 回・seed {res['boot_seed']}・百分位"
              f"（evaluate.paired_bootstrap）。比べは丸める前の値")
     return "\n".join(L) + "\n"
