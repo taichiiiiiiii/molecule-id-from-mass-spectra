@@ -10,6 +10,7 @@ Issue #302: 版 A の時間測定 版 4。GLACIER の予測の段だけを Kaggl
   - ms/本 = fn(keys) の wall / 本数、固定費 = wheel の導入と探索 ＋ make_predict_fn の wall（重みの読み込み・CUDA への移し込み）
   - 外挿（B5 の直しの案、#195）: 12,448.5 / 3 × 1.24 ＋ (ms/本 / 1000 × 312.25 × 400 ＋ 固定費) × 1.24 ＋ 8.67 × 400 × 1.24
   - 判定: ≤ 16,200 関門内 / ≤ 32,400 上限内・関門外 / それより上 上限外
+  - 参考（判定に使わない）: 直す前の B5（1,200 分子）の式での合計と判定も reference_old_b5_1200 に出す
   - 上限: --deadline（time.time() の値）を過ぎたら予測を止め、途中の ms/本（予測した canonical の本数あたり）を出す。判定しない
 
     python scripts/kaggle/e2e_timing_v4.py --out-dir <dir> [--device cuda] [--gl-jobs 4000] [--deadline <epoch>] \\
@@ -51,6 +52,13 @@ def extrapolate_v4(gl_ms_per_job: float, gl_fixed_secs: float) -> dict:
                 gate=GATE, limit=LIMIT, margin_to_gate=round(GATE - total, 1), verdict=V3.verdict_of(total))
 
 
+def old_b5_reference(gl_ms_per_job: float, gl_fixed_secs: float) -> dict:
+    """参考（判定に使わない）: 直す前の B5（1,200 分子、×1.24 なし、#294 の式で test の本数 = dev）での合計と判定。"""
+    gl = gl_ms_per_job / 1000.0 * JOBS_PER_MOL * 1200 + gl_fixed_secs
+    total = V2_TOTAL_1200 + gl + N1_SECS_PER_MOL * 1200
+    return dict(glacier=round(gl, 1), total=round(total, 1), verdict=V3.verdict_of(total), note="参考・判定に使わない")
+
+
 def require_device(device: str):
     """cuda を頼んで使えなければ止める（CPU に戻さない）。使う device の名前を返す。"""
     import torch
@@ -68,8 +76,8 @@ def run(a) -> dict:
         print(time.strftime("%H:%M:%S"), *x, flush=True)
     rep = dict(issue=302, device=a.device, gl_jobs=a.gl_jobs, cpu_count=os.cpu_count(), python=sys.version.split()[0],
                code_commit=os.environ.get("CASMI_CODE_COMMIT"), deadline=a.deadline)
+    t0 = time.time()                       # 固定費: torch の import・CUDA の初期化（require_device）から含める
     rep["gpu"] = require_device(a.device)
-    t0 = time.time()
     pkg = Path(a.gl_pkg) if a.gl_pkg else V3.find_glacier_pkg()
     site = Path(a.gl_site)
     sys.path.insert(0, str(pkg))
@@ -100,6 +108,7 @@ def run(a) -> dict:
     if finished:
         rep["ms_per_job"] = round(t_pred / len(keys) * 1000, 3)
         rep["extrapolation"] = extrapolate_v4(t_pred / len(keys) * 1000, t_install + t_load)
+        rep["reference_old_b5_1200"] = old_b5_reference(t_pred / len(keys) * 1000, t_install + t_load)
     else:   # 上限で止めた: 途中の値だけ（判定しない）
         n = int(stats.get("n_model_calls") or 0)
         rep["partial_ms_per_model_call"] = round(stats["t_pred"] / n * 1000, 3) if n else None

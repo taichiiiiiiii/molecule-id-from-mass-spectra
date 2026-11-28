@@ -96,6 +96,12 @@ def test_extrapolate_v4_bands():
     assert V4.extrapolate_v4(250.0, 0.0)["verdict"] == "上限外"
 
 
+def test_old_b5_reference_matches_v3_formula():
+    # 版 3 の CPU の 100.418 ms/本・39.8 s → #294 の 60,519.2 s（test の本数 < dev なので dev の 312.25）
+    ref = V4.old_b5_reference(100.418, 39.8)
+    assert abs(ref["total"] - 60_519.2) <= 0.2 and ref["verdict"] == "上限外"
+
+
 def test_require_device_never_falls_back(monkeypatch):
     fake = types.SimpleNamespace(cuda=types.SimpleNamespace(is_available=lambda: False))
     monkeypatch.setitem(sys.modules, "torch", fake)
