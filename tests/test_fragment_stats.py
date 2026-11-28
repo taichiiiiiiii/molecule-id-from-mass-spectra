@@ -176,3 +176,94 @@ def test_subset_keys_deterministic():
     a, b = AF.subset_keys(keys, 10), AF.subset_keys(keys, 10)
     assert a.tolist() == b.tolist() and len(set(a)) == 10 and list(a) == sorted(a)
     assert AF.subset_keys(keys, 0).tolist() == keys.tolist()
+
+
+# ---------------------------------------------------------------- 5. #296 の直し: 名前の hash・塊ごとの集約が旧（名前の辞書）と同じ値
+_TRAIN = ["CCO", "CC(=O)O", "OCC(O)CO", "CCN", "c1ccccc1O", "CC(C)O", "NCC(=O)O", "COC"]
+_CANDS = ["CCO", "OCC", "CC(=O)O", "OC(C)C", "CCCO", "NCCO", "c1ccccc1O", "COC", "bad_smiles"]
+
+
+def _spectra_of(smi, rng):
+    """合成の参照: 断片の質量 + 1（担い手）にいくつかの雑音のピーク。"""
+    fr = P.enumerate_fragments(smi, F0)
+    mz = np.concatenate([rng.choice(fr.mass, size=min(4, len(fr.mass)), replace=False) + 1.0, rng.uniform(5, 80, 2)])
+    return [dict(mz=mz, it=rng.uniform(0.1, 1.0, len(mz)), adduct="[M+H]+", mode=1) for _ in range(2)]
+
+
+def _old_table(specs):
+    """ed16a3c の build_counts と同じ: 名前 → 番号の辞書（列挙の順に setdefault）、鍵 = (bin << 40) | 番号。"""
+    fid: dict = {}
+    frs = {s: P.enumerate_fragments(s, F0) for s in _TRAIN}
+    gid = {s: np.array([fid.setdefault(nm, len(fid)) for nm in fr.name], np.int64) for s, fr in frs.items()}
+    rows = []
+    for si, (s, env, sp) in enumerate(specs):
+        b, fi = P.count_spectrum(frs[s], sp, F0)
+        rows += [(_TRAIN.index(s), env, int(k)) for k in (b << P.FID_BITS) | gid[s][fi]]
+    return P.CountTable.from_rows(rows), fid
+
+
+def _new_table(specs, chunk):
+    frs = {s: P.enumerate_fragments(s, F0, keep_names=False) for s in _TRAIN}
+    assert all(fr.name is None for fr in frs.values())
+    order = sorted(range(len(_TRAIN)), key=lambda i: _TRAIN[i])
+    parts = []
+    for c0 in range(0, len(order), chunk):
+        chunk_s = {_TRAIN[i] for i in order[c0:c0 + chunk]}
+        S, E, B, H = [], [], [], []
+        for s, env, sp in specs:
+            if s not in chunk_s:
+                continue
+            b, fi = P.count_spectrum(frs[s], sp, F0)
+            S.append(np.full(len(b), _TRAIN.index(s)))
+            E.append(np.full(len(b), env))
+            B.append(b)
+            H.append(frs[s].h[fi])
+        if S:
+            parts.append(P.aggregate_records(np.concatenate(S), np.concatenate(E), np.concatenate(B), np.concatenate(H)))
+    cat = [np.concatenate([p[i] for p in parts]) for i in range(5)]
+    return P.CountTable.from_hashed(*cat)
+
+
+def _features(tab, ids_of, query, own_struct):
+    sc = tab.for_set(np.ones(len(tab.key), bool))
+    cands, owns, forms = [], [], []
+    for i, s in enumerate(_CANDS):
+        fr = P.enumerate_fragments(s, F0)
+        cands.append((None, None) if fr is None else (fr, ids_of(fr)))
+        owns.append(sc.own(own_struct[i]) if own_struct[i] else None)
+        forms.append(P.formula_of(s))
+    return P.molecule_features(query, cands, sc, owns, forms, 0.005)
+
+
+def test_hashed_counts_equal_name_dictionary():
+    rng = np.random.default_rng(0)
+    specs = [(s, int(j % 2), sp) for j, s in enumerate(_TRAIN) for sp in _spectra_of(s, rng)]
+    old, fid = _old_table(specs)
+    rq = np.random.default_rng(1)
+    query = [P.prep(sp, F0) for s in ("CCO", "CC(=O)O", "c1ccccc1O") for sp in _spectra_of(s, rq)]
+    own_struct = [{_TRAIN.index(s)} if s in _TRAIN else set() for s in _CANDS]
+    f_old = _features(old, lambda fr: np.array([fid.get(nm, -1) for nm in fr.name], np.int64), query, own_struct)
+    for chunk in (1, 2, len(_TRAIN)):
+        new, vocab = _new_table(specs, chunk)
+        assert len(new.key) == len(old.key) and new.cnt.sum() == old.cnt.sum()
+        f_new = _features(new, lambda fr: P.vocab_ids(vocab, fr.h), query, own_struct)
+        for c in P.COLUMNS:
+            assert np.array_equal(f_old[c], f_new[c]), (chunk, c)
+    assert np.any(f_old["pfs_seen_frac"] > 0)          # 合成の参照で「見た」ピークがある（空の比べではない）
+
+
+def test_name_hash_and_aggregate():
+    h = P.name_hash(["C", "CO", "C"])
+    assert h.dtype == np.int64 and h[0] == h[2] and h[0] != h[1]
+    assert P.name_hash(["CCO"])[0] == P.name_hash(["CCO"])[0]
+    s, e, b, hh, c = P.aggregate_records([1, 0, 1, 1], [0, 0, 0, 1], [5, 5, 5, 5], [7, 7, 7, 7])
+    assert s.tolist() == [0, 1, 1] and e.tolist() == [0, 0, 1] and c.tolist() == [1, 2, 1]
+    assert [len(x) for x in P.aggregate_records([], [], [], [])] == [0] * 5
+    vocab = np.array([-5, 3, 9], np.int64)
+    assert P.vocab_ids(vocab, np.array([3, 4, -5, 10])).tolist() == [1, -1, 0, -1]
+    assert P.vocab_ids(np.zeros(0, np.int64), np.array([1])).tolist() == [-1]
+    tab, voc = P.CountTable.from_hashed(np.array([0, 1]), np.array([0, 1]), np.array([2, 3]), np.array([9, -5]),
+                                        np.array([4, 1]))
+    assert voc.tolist() == [-5, 9] and tab.key.tolist() == [(2 << P.FID_BITS) | 1, (3 << P.FID_BITS) | 0]
+    with pytest.raises(ValueError):
+        P.CountTable.from_hashed(np.array([0]), np.array([0]), np.array([-1]), np.array([1]), np.array([1]))
